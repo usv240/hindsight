@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "engine": "duckdb",
+  "cutoff_predicate": "available_at <= prediction_time",
+  "rows": 4000,
+  "excluded_post_cutoff_records": 4000,
+  "leakage_case": {
+    "baseline_auc": 0.698288,
+    "observed_auc": 1.0,
+    "point_in_time_auc": 0.83363,
+    "observed_advantage": 0.301712,
+    "point_in_time_advantage": 0.135342,
+    "advantage_retained": 0.44858,
+    "collapsed": true
+  },
+  "safe_control": {
+    "baseline_auc": 0.698288,
+    "observed_auc": 0.924842,
+    "point_in_time_auc": 0.924842,
+    "observed_advantage": 0.226554,
+    "point_in_time_advantage": 0.226554,
+    "advantage_retained": 1.0,
+    "collapsed": false
+  }
+}

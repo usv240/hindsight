@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "direction": "upstream",
+  "hops": 1,
+  "source": {
+    "dataset": "hindsight.payment_events_after_decision",
+    "column": "payment_recorded_at"
+  },
+  "target": {
+    "dataset": "hindsight.feature_pipeline_leaky",
+    "column": "days_since_last_payment"
+  },
+  "path": [
+    "payment_events_after_decision.payment_recorded_at",
+    "feature_pipeline_leaky.days_since_last_payment"
+  ]
+}

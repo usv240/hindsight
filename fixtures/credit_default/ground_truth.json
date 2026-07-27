@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "case_id": "credit-default-leaked-payment-event",
+  "model_urn": "urn:li:mlModel:hindsight.credit_default_v1_leaky",
+  "feature_urn": "urn:li:schemaField:(hindsight.feature_pipeline_leaky,days_since_last_payment)",
+  "source_kind": "post_outcome",
+  "source_available_at": "2026-02-10T09:00:00Z",
+  "prediction_time": "2026-01-10T09:00:00Z",
+  "expected_verdict": "confirmed",
+  "expected_release_decision": "block",
+  "safe_control": {
+    "case_id": "credit-default-prior-delinquencies-safe-control",
+    "model_urn": "urn:li:mlModel:hindsight.credit_default_v2_safe",
+    "feature_urn": "urn:li:schemaField:(hindsight.customer_history_point_in_time,prior_delinquencies)",
+    "lineage_path": [
+      "customer_history_point_in_time.prior_delinquencies",
+      "feature_pipeline_safe.prior_delinquencies"
+    ],
+    "source_kind": "pre_outcome",
+    "source_available_at": "2026-01-09T09:00:00Z",
+    "prediction_time": "2026-01-10T09:00:00Z",
+    "expected_verdict": "clear_for_release"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-07-27",
+  "fixture_id": "credit-default-live-recording-v1",
+  "manifest_sha256": "c8cc7990df436902595cc80b21276466ec6fdd1ff950a8eee6dd7a4c9f717973",
+  "status": "passed",
+  "runtime_seconds": 0.022996,
+  "external_services_used": [],
+  "release_decision": "block",
+  "leakage_verdict": "confirmed",
+  "safe_control_verdict": "clear_for_release",
+  "checks_passed": 9,
+  "checks_total": 9,
+  "live_semantic_equivalence": {
+    "status": "passed",
+    "checks_passed": 5,
+    "checks_total": 5,
+    "datahub_core": "v1.5.0.6"
+  }
+}

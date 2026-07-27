@@ -1,0 +1,42 @@
+﻿{
+  "schema_version": 1,
+  "captured_at": "2026-07-27",
+  "scenario": "credit_default_at_origination",
+  "config_sha256": "232e483525bd89a8bc692b69252a50ca84990fec6bb491a9de1093c88141dbf1",
+  "seed": 20260727,
+  "rows": 4000,
+  "runtime_seconds": 0.158656,
+  "status": "passed",
+  "reconstruction": {
+    "engine": "duckdb",
+    "cutoff_predicate": "available_at <= prediction_time",
+    "excluded_post_cutoff_records": 4000
+  },
+  "leakage_case": {
+    "baseline_auc": 0.698288,
+    "observed_auc": 1.0,
+    "point_in_time_auc": 0.83363,
+    "observed_advantage": 0.301712,
+    "point_in_time_advantage": 0.135342,
+    "advantage_retained": 0.44858,
+    "collapsed": true,
+    "verdict": "confirmed"
+  },
+  "safe_control": {
+    "baseline_auc": 0.698288,
+    "observed_auc": 0.924842,
+    "point_in_time_auc": 0.924842,
+    "observed_advantage": 0.226554,
+    "point_in_time_advantage": 0.226554,
+    "advantage_retained": 1.0,
+    "collapsed": false,
+    "verdict": "clear_for_release"
+  },
+  "checks": {
+    "post_cutoff_records_were_excluded": true,
+    "leaked_feature_advantage_collapsed": true,
+    "safe_feature_has_large_ablation_delta": true,
+    "safe_feature_advantage_persisted": true,
+    "safe_feature_is_point_in_time_stable": true
+  }
+}

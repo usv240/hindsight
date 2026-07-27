@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "fixture_id": "credit-default-live-recording-v1",
+  "description": "Sanitized semantic recording of the Hindsight credit leakage golden path.",
+  "captured_at": "2026-07-27",
+  "captured_from": {
+    "datahub_core": "v1.5.0.6",
+    "datahub_sdk": "1.6.0.16",
+    "mcp_server_datahub": "0.6.0"
+  },
+  "files": [
+    {
+      "path": "ground_truth.json",
+      "sha256": "3c38aa5fd6397d4416e5654339b792f8546fac80ce854350d01b6b890d55082a"
+    },
+    {
+      "path": "remediation.sql",
+      "sha256": "6069a18533a78f3514a7c279d6ad59a6b532bb946a9182f7155177f848df5ffc"
+    },
+    {
+      "path": "responses/entity.json",
+      "sha256": "f5aa1fb4af1119a67be812a0c66bbae2883745f98b0cc17e9e09fecb551f5a6e"
+    },
+    {
+      "path": "responses/lineage.json",
+      "sha256": "c48533f9ce8184b1b010251ceadc1630363a8acd2b9dedfa46237e171cff58a3"
+    },
+    {
+      "path": "responses/validation.json",
+      "sha256": "cf6ea8809304a6f0751d4d058bcb0df81f69e23bb15cce8bf45a8fb3445a374c"
+    },
+    {
+      "path": "transformation.sql",
+      "sha256": "2f93b731111334f7d0759bb0bcfd45cbb9660b2ed856c20c41cea76098b1c1d5"
+    }
+  ],
+  "expected": {
+    "leakage_verdict": "confirmed",
+    "safe_control_verdict": "clear_for_release",
+    "release_decision": "block",
+    "transformation_status": "violation",
+    "remediation_status": "safe"
+  }
+}

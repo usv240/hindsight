@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "entity_type": "dataset",
+  "platform": "duckdb",
+  "logical_name": "hindsight.feature_pipeline_leaky",
+  "schema": [
+    {
+      "field_path": "application_id",
+      "native_type": "string",
+      "tags": []
+    },
+    {
+      "field_path": "days_since_last_payment",
+      "native_type": "integer",
+      "tags": [
+        "urn:li:tag:hindsight:leakage-candidate"
+      ]
+    }
+  ]
+}

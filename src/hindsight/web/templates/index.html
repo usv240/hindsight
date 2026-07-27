@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Hindsight evidence-based ML release audit">
+  <title>Hindsight · Release evidence</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">
+  <script defer src="{{ url_for('static', path='/app.js') }}"></script>
+</head>
+<body>
+  <a class="skip-link" href="#evidence">Skip to evidence</a>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Hindsight home">
+      <span class="brand-mark" aria-hidden="true">H</span>
+      <span>Hindsight</span>
+    </a>
+    <div class="connection"><span class="pulse" aria-hidden="true"></span> DataHub evidence connected</div>
+  </header>
+
+  <main id="evidence" class="shell">
+    <section class="hero" aria-labelledby="audit-title">
+      <div>
+        <p class="eyebrow">Pre-production release audit</p>
+        <h1 id="audit-title">Your model is not smarter.<br><span>It has hindsight.</span></h1>
+        <p class="lede">Hindsight found outcome data that became available after the model's prediction cutoff—and proved the advantage disappears when time is reconstructed honestly.</p>
+      </div>
+      <div class="decision-card" aria-label="Release decision block">
+        <p>Release decision</p>
+        <strong>{{ bundle.release_decision | upper }}</strong>
+        <span class="verdict-dot"></span>
+        <small>Deterministic verdict: {{ bundle.verdict }}</small>
+      </div>
+    </section>
+
+    <section class="facts" aria-label="Audit summary">
+      <div><span>Case</span><strong>{{ bundle.case_id }}</strong></div>
+      <div><span>Audit runtime</span><strong>{{ "%.3f"|format(bundle.validation.runtime_seconds) }}s</strong></div>
+      <div><span>Records tested</span><strong>{{ "{:,}".format(bundle.validation.rows) }}</strong></div>
+      <div><span>Post-cutoff excluded</span><strong>{{ "{:,}".format(bundle.validation.reconstruction.excluded_post_cutoff_records) }}</strong></div>
+    </section>
+
+    <section class="panel lineage-panel" aria-labelledby="lineage-heading">
+      <div class="section-heading">
+        <div><p class="eyebrow">Directional column lineage</p><h2 id="lineage-heading">The evidence path</h2></div>
+        <span class="finding danger">Temporal violation</span>
+      </div>
+      <div class="lineage" role="img" aria-label="Payment recorded at flows into days since last payment after the prediction cutoff">
+        <article class="asset source">
+          <span>Post-outcome source</span>
+          <strong>payment_events_after_decision</strong>
+          <code>payment_recorded_at</code>
+        </article>
+        <div class="lineage-edge" aria-hidden="true"><span>available +31 days</span><i>→</i></div>
+        <article class="asset target">
+          <span>Model feature</span>
+          <strong>feature_pipeline_leaky</strong>
+          <code>days_since_last_payment</code>
+        </article>
+      </div>
+      <p class="finding-copy">{{ bundle.sql_verification.reason }}</p>
+    </section>
+
+    <div class="two-column">
+      <section class="panel" aria-labelledby="reconstruction-heading">
+        <div class="section-heading">
+          <div><p class="eyebrow">Counterfactual test</p><h2 id="reconstruction-heading">Point-in-time reconstruction</h2></div>
+          <span class="finding danger">Confirmed</span>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label"><span>Observed training AUC</span><strong>{{ "%.6f"|format(leakage.observed_auc) }}</strong></div>
+          <div class="bar"><i class="observed" style="width: {{ observed_width }}%"></i></div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label"><span>Honest reconstructed AUC</span><strong>{{ "%.6f"|format(leakage.point_in_time_auc) }}</strong></div>
+          <div class="bar"><i class="honest" style="width: {{ reconstructed_width }}%"></i></div>
+        </div>
+        <div class="delta-callout"><strong>{{ "%.1f"|format((1 - leakage.advantage_retained) * 100) }}%</strong><span>of the apparent feature advantage disappeared</span></div>
+      </section>
+
+      <section class="panel safe-panel" aria-labelledby="control-heading">
+        <div class="section-heading">
+          <div><p class="eyebrow">False-positive defense</p><h2 id="control-heading">Strong signal, still safe</h2></div>
+          <span class="finding safe">Clear</span>
+        </div>
+        <p>The legitimate <code>prior_delinquencies</code> feature remains predictive because it existed before the decision.</p>
+        <div class="metric-row compact">
+          <div class="metric-label"><span>Observed and reconstructed AUC</span><strong>{{ "%.6f"|format(safe.observed_auc) }}</strong></div>
+          <div class="bar"><i class="safe-bar" style="width: {{ safe_width }}%"></i></div>
+        </div>
+        <dl class="control-stats">
+          <div><dt>Ablation delta</dt><dd>{{ "%.6f"|format(safe.observed_advantage) }}</dd></div>
+          <div><dt>Advantage retained</dt><dd>{{ "%.0f"|format(safe.advantage_retained * 100) }}%</dd></div>
+          <div><dt>Verdict</dt><dd>clear_for_release</dd></div>
+        </dl>
+      </section>
+    </div>
+
+    <div class="two-column lower-grid">
+      <section class="panel trace-panel" aria-labelledby="trace-heading">
+        <div class="section-heading"><div><p class="eyebrow">Inspectable execution</p><h2 id="trace-heading">Evidence trace</h2></div></div>
+        <ol class="trace">
+          {% for event in bundle.trace %}
+          <li>
+            <span class="trace-index">{{ "%02d"|format(loop.index) }}</span>
+            <div><strong>{{ event.step | replace('_', ' ') | title }}</strong><small>{{ event.status | replace('_', ' ') }}</small></div>
+          </li>
+          {% endfor %}
+        </ol>
+      </section>
+
+      <section class="panel remediation-panel" aria-labelledby="remediation-heading">
+        <div class="section-heading">
+          <div><p class="eyebrow">Smallest safe repair</p><h2 id="remediation-heading">Cut off future knowledge</h2></div>
+          <span class="finding safe">SQL verified</span>
+        </div>
+        <pre><code>{{ bundle.remediation.verification.cutoff_predicates[0] }}</code></pre>
+        <p>The proposal is verified independently. Hindsight never merges or applies pipeline code automatically.</p>
+      </section>
+    </div>
+
+    <section class="panel approval-panel" aria-labelledby="approval-heading">
+      <div class="approval-copy">
+        <p class="eyebrow">Human approval boundary</p>
+        <h2 id="approval-heading">Publish evidence to DataHub</h2>
+        <p>Dry-run is the default. Explicit approval writes the field tag, structured verdict, linked audit Document, and active incident—then rereads every one.</p>
+      </div>
+      <form method="post" action="/publish" id="publish-form">
+        <label for="target-urn">Synthetic target dataset URN</label>
+        <input id="target-urn" name="target_urn" required value="{{ target_urn }}" placeholder="urn:li:dataset:(urn:li:dataPlatform:duckdb,…,PROD)">
+        <label for="server">DataHub GMS</label>
+        <input id="server" name="server" required value="{{ server }}">
+        <label class="approval-check">
+          <input type="checkbox" name="approve_writeback" value="true" id="approve-writeback">
+          <span>I approve these four catalog mutations against this synthetic asset.</span>
+        </label>
+        <button type="submit" id="publish-button">Preview write-back</button>
+        <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
+      </form>
+      {% if publication %}
+      <div class="publication-result {{ 'success' if publication.status == 'published' else 'neutral' }}" role="status">
+        <strong>{{ publication.status | replace('_', ' ') | title }}</strong>
+        <span>Mutation performed: {{ publication.mutation_performed | string | lower }}</span>
+        {% if publication.checks %}<span>{{ publication.checks.values() | select | list | length }}/{{ publication.checks | length }} reread checks passed</span>{% endif %}
+        {% if publication.message %}<small>{{ publication.message }}</small>{% endif %}
+      </div>
+      {% endif %}
+    </section>
+  </main>
+
+  <footer><span>Hindsight 0.1</span><span>Evidence, not intuition.</span></footer>
+</body>
+</html>

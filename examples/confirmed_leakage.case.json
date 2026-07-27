@@ -1,0 +1,17 @@
+{
+  "case_id": "credit-default-post-payment",
+  "model_urn": "urn:li:mlModel:(hindsight,credit_default_v1_leaky,PROD)",
+  "feature_urn": "urn:li:schemaField:(urn:li:dataset:(urn:li:dataPlatform:duckdb,feature_pipeline_leaky,PROD),days_since_last_payment)",
+  "lineage_path": [
+    "payment_events_after_decision.payment_recorded_at",
+    "feature_pipeline_leaky.days_since_last_payment"
+  ],
+  "source_kind": "post_outcome",
+  "source_available_at": "2026-01-12T09:00:00Z",
+  "prediction_time": "2026-01-10T09:00:00Z",
+  "metadata_complete": true,
+  "deterministic_cutoff_proof": true,
+  "point_in_time_advantage_collapsed": false,
+  "ablation_delta": 0.21,
+  "notes": ["Frozen synthetic scenario; score was not preselected."]
+}
