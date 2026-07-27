@@ -21,6 +21,9 @@ def run_judge_demo(project_root: Path) -> dict[str, Any]:
     leaked = audit_case(AuditCase.from_dict(leaked_payload))
     safe = audit_case(AuditCase.from_dict(safe_payload))
     replay = run_fixture_replay(project_root / "fixtures/credit_default")
+    manifest = json.loads(
+        (project_root / "fixtures/credit_default/manifest.json").read_text(encoding="utf-8")
+    )
     leaked_delta = float(leaked_payload["ablation_delta"])
     safe_delta = float(safe_payload["ablation_delta"])
     checks = {
@@ -37,6 +40,27 @@ def run_judge_demo(project_root: Path) -> dict[str, Any]:
         "status": "passed" if all(checks.values()) else "failed",
         "headline": "An ablation-only detector gets this exactly backwards.",
         "checks": checks,
+        "datahub_evidence": {
+            "why_datahub_is_required": (
+                "Leakage is a cross-system, column-level defect. The notebook cannot see it "
+                "because the leak happened upstream in the warehouse; the feature store sees "
+                "features but not their ancestry; model monitoring fires months later. Only a "
+                "column-level lineage graph makes the question answerable before release."
+            ),
+            "feature_urn": leaked_payload["feature_urn"],
+            "model_urn": leaked_payload["model_urn"],
+            "column_lineage_path": list(leaked.evidence["lineage_path"]),
+            "source_kind": leaked.evidence["source_kind"],
+            "recorded_from": manifest.get("captured_from", {}),
+            "captured_at": manifest.get("captured_at"),
+            "reprove_command": "hindsight verify-fixture-live",
+            "live_path_writes_back": [
+                "hindsight:leakage-confirmed field tag",
+                "hindsight.auditVerdict structured property",
+                "linked audit Document",
+                "active ML_LEAKAGE incident",
+            ],
+        },
         "deterministic_proof_fixture": {
             "case_id": leaked.case_id,
             "verdict": leaked.verdict.value,
@@ -95,9 +119,30 @@ def render_judge_demo(report: dict[str, Any]) -> str:
     leaked = report["deterministic_proof_fixture"]
     safe = report["safe_control"]
     point_in_time = report["point_in_time_proof_fixture"]
+    dh = report["datahub_evidence"]
+    captured = dh.get("recorded_from", {})
     lines = [
         "HINDSIGHT - GOLDEN DEMO",
         "=" * 25,
+        "",
+        "DATAHUB COLUMN LINEAGE (the evidence this verdict rests on)",
+        *[
+            f"  {'   ' if i else ''}{'-> ' if i else ''}{node}"
+            for i, node in enumerate(dh["column_lineage_path"])
+        ],
+        f"  source classified as: {dh['source_kind']}",
+        "",
+        "  Recorded from live DataHub Core "
+        f"{captured.get('datahub_core', '?')} via MCP server "
+        f"{captured.get('mcp_server_datahub', '?')} on {dh.get('captured_at', '?')}.",
+        f"  Re-prove against your own instance: {dh['reprove_command']}",
+        "",
+        "  Why DataHub is required: the notebook cannot see this leak (it happened",
+        "  upstream in the warehouse), the feature store sees features but not their",
+        "  ancestry, and model monitoring fires months later. Column-level lineage is",
+        "  what makes the question answerable before release.",
+        "",
+        "-" * 25,
         f"LEAKED FEATURE   ablation {leaked['ablation_delta']:.2f}  -> {leaked['verdict']}",
         f"SAFE CONTROL     ablation {safe['ablation_delta']:.2f}  -> {safe['verdict']}",
         "",
@@ -110,8 +155,12 @@ def render_judge_demo(report: dict[str, Any]) -> str:
         "",
         "Disclosure: The planted leak is total by construction; AUC 1.000000 is expected.",
         "Real-world leakage can be subtler.",
-        "Policy: majority-loss (>50%) is configurable and is never sufficient without ",
+        "Policy: majority-loss (>50%) is configurable and is never sufficient without",
         "directional post-outcome lineage and a time violation.",
+        "",
+        "On the live path this verdict is written back to DataHub as:",
+        *[f"  - {item}" for item in dh["live_path_writes_back"]],
+        "each re-read to prove persistence. Publication is dry-run until approved.",
         "",
         f"DEMO STATUS: {report['status'].upper()}",
     ]

@@ -1,4 +1,4 @@
-﻿# Phase 0 evidence
+# Phase 0 evidence
 
 Generated `*.local.json` reports are intentionally ignored because they describe one machine. The sanitized, dated evidence snapshot records only reproducible outcomes and known limitations.
 

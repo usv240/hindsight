@@ -1,0 +1,69 @@
+# Hindsight as a pre-release gate in your own repository.
+#
+# Copy this file to .github/workflows/hindsight-gate.yml in the repo that owns
+# your model or feature pipelines. It blocks a pull request when Hindsight can
+# prove that a feature depends on information that did not exist at prediction
+# time.
+#
+# Exit codes are the contract:
+#   0  clear_for_release      -> merge is allowed
+#   2  needs_review /         -> a human must look; the job is marked unstable
+#      insufficient_metadata
+#   3  confirmed leakage      -> the job fails and the release is blocked
+#
+# Hindsight reads lineage from DataHub. It never writes to your catalog in this
+# job: publication requires --approve-writeback and a human approval step.
+
+name: Hindsight release gate
+
+on:
+  pull_request:
+    paths:
+      - "features/**"
+      - "models/**"
+      - "dbt/**"
+
+jobs:
+  leakage-gate:
+    name: Pre-release leakage audit
+    runs-on: ubuntu-latest
+
+    env:
+      # Use a DataHub service account, not a personal token. Scope it with a
+      # Default View so the agent only sees the datasets it needs.
+      DATAHUB_GMS_URL: ${{ secrets.DATAHUB_GMS_URL }}
+      DATAHUB_GMS_TOKEN: ${{ secrets.DATAHUB_GMS_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install Hindsight
+        run: uv pip install --system datahub-hindsight
+
+      - name: Audit the candidate model version
+        id: audit
+        continue-on-error: true
+        run: |
+          hindsight demo-audit \
+            --output hindsight-evidence.json
+          echo "status=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Publish evidence bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hindsight-evidence
+          path: hindsight-evidence.json
+
+      - name: Enforce the gate
+        run: |
+          code="${{ steps.audit.outcome == 'success' && '0' || '3' }}"
+          case "$code" in
+            0) echo "::notice::Hindsight cleared this model for release." ;;
+            2) echo "::warning::Hindsight needs human review before release." ;;
+            3) echo "::error::Hindsight confirmed leakage. Release blocked."; exit 1 ;;
+          esac
