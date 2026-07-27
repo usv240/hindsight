@@ -1,0 +1,94 @@
+{#- The cutoff timeline. Colour never carries meaning alone: every track has a
+    name, a status word, and a row in the table view below. -#}
+
+<figure class="timeline" role="group"
+        aria-label="Data availability against the prediction cutoff">
+
+  <div class="tl-zones" aria-hidden="true">
+    <div class="tl-zone past" style="width: {{ timeline.cutoff_pct }}%"></div>
+    <div class="tl-zone future" style="width: {{ 100 - timeline.cutoff_pct }}%"></div>
+  </div>
+
+  <span class="tl-zone-label left" aria-hidden="true">Knowable at decision time</span>
+  <span class="tl-zone-label right" aria-hidden="true">Did not exist yet</span>
+
+  <div class="tl-cutoff" aria-hidden="true"
+       data-label="Prediction cutoff"
+       style="left: calc(250px + var(--sp-4) + (100% - 250px - var(--sp-4)) * {{ timeline.cutoff_pct / 100 }});"></div>
+
+  {% for track in timeline.tracks %}
+  <div class="tl-track" data-kind="{{ track.kind }}">
+    <div class="tl-name">
+      <strong>{{ track.label }}</strong>
+      <span>{{ track.column }}</span>
+    </div>
+    <div class="tl-lane">
+      <div class="tl-bar"
+           style="left: {{ track.start_pct }}%; width: {{ track.end_pct - track.start_pct }}%"></div>
+      {% if track.crosses %}
+      <div class="tl-reach"
+           style="left: {{ track.end_pct }}%; width: {{ track.reach_pct - track.end_pct }}%"></div>
+      <span class="tl-flag" style="left: {{ track.reach_pct }}%">
+        +{{ track.days_after }} days
+      </span>
+      {% endif %}
+    </div>
+    <p class="tl-note">{{ track.note }}</p>
+  </div>
+  {% endfor %}
+
+  <div class="tl-axis" aria-hidden="true">
+    {% for tick in timeline.ticks %}
+    <span class="tl-tick{% if tick.is_cutoff %} is-cutoff{% endif %}"
+          style="left: {{ tick.pct }}%">{{ tick.label }}</span>
+    {% endfor %}
+  </div>
+
+  <div class="tl-legend">
+    <span class="tl-key"><span class="tl-swatch safe" aria-hidden="true"></span> Stays before the cutoff</span>
+    <span class="tl-key"><span class="tl-swatch leak" aria-hidden="true"></span> Feature under audit</span>
+    <span class="tl-key"><span class="tl-swatch future" aria-hidden="true"></span> Reaches past the decision</span>
+  </div>
+
+  <figcaption class="visually-hidden">
+    Timeline of data availability relative to the prediction cutoff on
+    {{ timeline.cutoff_label }}. The table below repeats every value.
+  </figcaption>
+</figure>
+
+{#- Table view: the WCAG-clean twin. Every timeline value is readable here. -#}
+<details class="table-view">
+  <summary>Table view of the timeline</summary>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Asset</th>
+          <th scope="col">Column</th>
+          <th scope="col">Availability</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for track in timeline.tracks %}
+        <tr>
+          <th scope="row"><code>{{ track.label }}</code></th>
+          <td><code>{{ track.column }}</code></td>
+          <td>
+            {% if track.crosses %}
+              extends {{ track.days_after }} days past the cutoff
+            {% else %}
+              ends at the cutoff
+            {% endif %}
+          </td>
+          <td>
+            {% if track.kind == "leak" %}<span class="finding danger">Violation</span>
+            {% elif track.kind == "safe" %}<span class="finding ok">Clear</span>
+            {% else %}<span class="finding">Source</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</details>

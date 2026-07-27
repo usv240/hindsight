@@ -16,6 +16,29 @@
 </section>
 
 {% if runs %}
+<section class="panel">
+  <div class="section-heading">
+    <div><p class="eyebrow">At a glance</p><h2>Decision history</h2></div>
+    <span class="finding {{ 'danger' if runs[0].release_decision == 'block' else 'ok' }}">
+      latest: {{ runs[0].release_decision | upper }}
+    </span>
+  </div>
+  {#- One mark per run, oldest to newest. Height encodes runtime, colour and the
+      title attribute both carry the decision, so it is never colour alone. -#}
+  {%- set slowest = (runs | map(attribute='runtime_seconds') | select('number') | list | max) or 1 -%}
+  <div class="spark" role="img"
+       aria-label="{{ runs | length }} runs, most recent last. {{ runs | selectattr('release_decision','equalto','block') | list | length }} blocked.">
+    {% for run in runs[::-1] %}
+    <span class="spark-bar" data-decision="{{ run.release_decision }}"
+          style="height: {{ (((run.runtime_seconds or 0) / slowest) * 18 + 4) | round(1) }}px"
+          title="{{ run.run_id }} - {{ run.release_decision }} - {{ '%.3f'|format(run.runtime_seconds or 0) }}s"></span>
+    {% endfor %}
+  </div>
+  <p class="fine">
+    Bar height is runtime; colour and hover text carry the decision. Every value is in the table below.
+  </p>
+</section>
+
 <div class="panel table-wrap">
   <table class="table">
     <caption class="visually-hidden">Recorded audit runs, newest first</caption>

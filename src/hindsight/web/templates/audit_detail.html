@@ -28,11 +28,29 @@
   </div>
 </section>
 
-<section class="facts" aria-label="Audit summary">
-  <div><span>Case</span><strong>{{ bundle.case_id }}</strong></div>
-  <div><span>Audit runtime</span><strong>{{ "%.3f"|format(bundle.validation.runtime_seconds) }}s</strong></div>
-  <div><span>Records tested</span><strong>{{ "{:,}".format(bundle.validation.rows) }}</strong></div>
-  <div><span>Post-cutoff excluded</span><strong>{{ "{:,}".format(bundle.validation.reconstruction.excluded_post_cutoff_records) }}</strong></div>
+<section class="stats" aria-label="Audit summary">
+  <div class="stat">
+    <span class="stat-label">Release decision</span>
+    <span class="stat-value {{ 'is-block' if bundle.release_decision == 'block' else 'is-clear' }}">
+      {{ bundle.release_decision | upper }}
+    </span>
+    <span class="stat-note">verdict: {{ bundle.verdict }}</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Records tested</span>
+    <span class="stat-value">{{ "{:,}".format(bundle.validation.rows) }}</span>
+    <span class="stat-note">{{ "{:,}".format(bundle.validation.reconstruction.excluded_post_cutoff_records) }} excluded post-cutoff</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Advantage lost</span>
+    <span class="stat-value is-block">{{ advantage_lost }}%</span>
+    <span class="stat-note">under point-in-time rebuild</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Audit runtime</span>
+    <span class="stat-value">{{ "%.3f"|format(bundle.validation.runtime_seconds) }}s</span>
+    <span class="stat-note">{{ bundle.case_id }}</span>
+  </div>
 </section>
 
 <section class="panel log-shell" aria-labelledby="activity-heading">
@@ -73,25 +91,15 @@
 <section class="panel" aria-labelledby="lineage-heading">
   <div class="section-heading">
     <div>
-      <p class="eyebrow">Directional column lineage</p>
-      <h2 id="lineage-heading">The evidence path{{ info('column-lineage') }}</h2>
+      <p class="eyebrow">Directional column lineage{{ info('column-lineage') }}</p>
+      <h2 id="lineage-heading">One feature reached across the decision</h2>
     </div>
     <span class="finding danger">Temporal violation</span>
   </div>
-  <div class="lineage">
-    <article class="asset source">
-      <span>Post-outcome source</span>
-      <strong>payment_events_after_decision</strong>
-      <code>payment_recorded_at</code>
-    </article>
-    <div class="lineage-edge" aria-hidden="true"><span>available +31 days</span><i>&rarr;</i></div>
-    <article class="asset target">
-      <span>Model feature</span>
-      <strong>feature_pipeline_leaky</strong>
-      <code>days_since_last_payment</code>
-    </article>
-  </div>
-  <p class="prose" style="margin-top: var(--sp-4);">{{ bundle.sql_verification.reason }}</p>
+
+  {% include "_timeline.html" %}
+
+  <p class="prose" style="margin-top: var(--sp-5);">{{ bundle.sql_verification.reason }}</p>
 </section>
 
 <section class="panel" aria-labelledby="trap-heading">
@@ -101,30 +109,65 @@
       <h2 id="trap-heading">Importance gets this exactly backwards{{ info('ablation-delta') }}</h2>
     </div>
   </div>
-  <div class="trap">
-    <article class="trap-card">
-      <div>
-        <p>Planted leaked feature</p>
-        <p>ablation delta</p>
-        <p class="state">{{ bundle.verdict }}</p>
+  {%- set leaked = bundle.ablation_contrast.leaked_feature -%}
+  {%- set safest = bundle.ablation_contrast.safe_feature -%}
+  {%- set scale = (leaked if leaked > safest else safest) * 1.15 -%}
+
+  <div class="compare" role="group" aria-label="Ablation delta compared on one scale">
+    <div class="compare-row" data-kind="leak">
+      <div class="compare-name">
+        <strong>Planted leaked feature</strong>
+        <span>days_since_last_payment</span>
       </div>
-      <p class="value">{{ "%.2f"|format(bundle.ablation_contrast.leaked_feature) }}</p>
-    </article>
-    <div class="trap-op" aria-hidden="true">&lt;</div>
-    <article class="trap-card safe">
-      <div>
-        <p>Legitimate safe feature{{ info('safe-control') }}</p>
-        <p>ablation delta</p>
-        <p class="state">clear_for_release</p>
+      <div class="compare-track">
+        <div class="compare-fill" style="width: {{ (leaked / scale * 100) | round(1) }}%"></div>
       </div>
-      <p class="value">{{ "%.2f"|format(bundle.ablation_contrast.safe_feature) }}</p>
-    </article>
+      <span class="compare-value">{{ "%.2f"|format(leaked) }}</span>
+    </div>
+
+    <div class="compare-row" data-kind="safe">
+      <div class="compare-name">
+        <strong>Legitimate control{{ info('safe-control') }}</strong>
+        <span>prior_delinquencies</span>
+      </div>
+      <div class="compare-track">
+        <div class="compare-fill" style="width: {{ (safest / scale * 100) | round(1) }}%"></div>
+      </div>
+      <span class="compare-value">{{ "%.2f"|format(safest) }}</span>
+    </div>
+
+    <div class="compare-verdicts">
+      <p class="compare-punch">
+        The longer bar is the <strong>safe</strong> one. Hindsight blocks the shorter feature and
+        clears the longer, because importance measures whether a feature is <em>useful</em> &mdash;
+        never whether the information was <strong>allowed to exist yet</strong>. A detector built on
+        ablation flags exactly the wrong one here.
+      </p>
+    </div>
   </div>
-  <p class="prose" style="margin-top: var(--sp-4);">
-    The safe feature has the larger ablation delta. Hindsight clears it because it existed before
-    prediction. Importance alone cannot prove leakage &mdash; which is why a detector built on
-    ablation would flag the wrong feature here.
-  </p>
+
+  <details class="table-view">
+    <summary>Table view of the comparison</summary>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th scope="col">Feature</th><th scope="col">Ablation delta</th><th scope="col">Verdict</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row"><code>days_since_last_payment</code></th>
+            <td class="num">{{ "%.6f"|format(leakage.observed_advantage) }}</td>
+            <td><span class="finding danger">{{ bundle.verdict }}</span></td>
+          </tr>
+          <tr>
+            <th scope="row"><code>prior_delinquencies</code></th>
+            <td class="num">{{ "%.6f"|format(safe.observed_advantage) }}</td>
+            <td><span class="finding ok">clear_for_release</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
 </section>
 
 <div class="grid-2">

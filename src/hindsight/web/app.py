@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 from typing import Annotated, Any
@@ -15,6 +16,7 @@ from hindsight.web.activity import build_activity
 from hindsight.web.glossary import GLOSSARY
 from hindsight.web.health import datahub_health
 from hindsight.web.runs import get_run, list_runs, record_run
+from hindsight.web.timeline import build_timeline
 from hindsight.workflow import run_demo_audit
 from hindsight.writeback import publish_audit
 
@@ -208,6 +210,8 @@ def _render_detail(
     leakage = bundle["validation"]["leakage_case"]
     safe = bundle["validation"]["safe_control"]
     runs = list_runs(root)
+    config = _audit_config(root)
+    scenario = _read_json(config.scenario_path)
     return templates.TemplateResponse(
         request=request,
         name="audit_detail.html",
@@ -215,6 +219,7 @@ def _render_detail(
         | {
             "bundle": bundle,
             "run": run,
+            "timeline": build_timeline(bundle, scenario),
             "leakage": leakage,
             "safe": safe,
             "publication": publication,
@@ -231,6 +236,13 @@ def _render_detail(
 
 
 # ---- Audit --------------------------------------------------------------
+
+
+def _read_json(path: Path) -> dict[str, Any]:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
 
 
 def _audit_config(root: Path) -> AuditConfig:

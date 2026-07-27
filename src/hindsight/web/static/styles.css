@@ -904,3 +904,301 @@ pre.sql {
   .page-head { grid-template-columns: 1fr; }
   .kv > div { grid-template-columns: 1fr; gap: var(--sp-1); }
 }
+
+/* -- The cutoff timeline ---------------------------------------------------
+   The product's whole thesis, drawn: a hard vertical rule at the moment of
+   decision, data that stays left of it, and one feature reaching across.
+   Colour is never the only signal - every track carries a label, a marker
+   glyph, and a text note, and a table view repeats every value.
+------------------------------------------------------------------------- */
+
+.timeline {
+  position: relative;
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-5) 0 0;
+}
+
+/* Zones: knowable to the left of the rule, not-yet-knowable to the right. */
+.tl-zones {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.tl-zone {
+  position: absolute;
+  top: 0;
+  bottom: 26px;
+  border-radius: var(--radius-sm);
+}
+.tl-zone.past { left: 0; background: color-mix(in srgb, var(--ok) 5%, transparent); }
+.tl-zone.future {
+  right: 0;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--danger) 9%, transparent) 0 2px,
+      transparent 2px 8px
+    );
+}
+
+/* The cutoff rule itself - the single most important line on the page. */
+.tl-cutoff {
+  position: absolute;
+  top: 0;
+  bottom: 26px;
+  width: 0;
+  border-left: 2px solid var(--danger);
+  z-index: 2;
+}
+.tl-cutoff::before {
+  content: attr(data-label);
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font: 700 10px/1 var(--font-sans);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--danger);
+  background: var(--surface);
+  padding: 0 var(--sp-2);
+}
+
+.tl-zone-label {
+  position: absolute;
+  top: -22px;
+  font: 600 10px/1 var(--font-sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.tl-zone-label.left { left: 0; }
+.tl-zone-label.right { right: 0; }
+
+/* One row per asset. */
+.tl-track {
+  position: relative;
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: center;
+  min-height: 34px;
+  z-index: 1;
+}
+.tl-name { display: grid; gap: 1px; min-width: 0; }
+.tl-name strong {
+  font: 500 var(--step--1)/1.3 var(--font-mono);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.tl-name span { font-size: 11px; color: var(--text-faint); }
+
+.tl-lane { position: relative; height: 100%; }
+
+/* The availability bar: thin mark, rounded data-ends, anchored to real time. */
+.tl-bar {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border-strong);
+}
+.tl-track[data-kind="source"] .tl-bar { background: color-mix(in srgb, var(--text-faint) 55%, transparent); }
+.tl-track[data-kind="safe"] .tl-bar { background: var(--ok); }
+.tl-track[data-kind="leak"] .tl-bar { background: var(--danger); }
+
+/* The violation: a bar that continues past the rule, hatched to mark that this
+   data did not exist when the prediction was made. */
+.tl-reach {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 8px;
+  border-radius: 0 4px 4px 0;
+  background:
+    repeating-linear-gradient(135deg, var(--danger) 0 2px, transparent 2px 5px),
+    color-mix(in srgb, var(--danger) 22%, transparent);
+  /* a 2px surface gap so the reach reads as separate from the bar */
+  border-left: 2px solid var(--surface);
+}
+.tl-reach::after {
+  content: "";
+  position: absolute;
+  right: -3px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.tl-flag {
+  position: absolute;
+  top: 50%;
+  transform: translate(var(--sp-3), -50%);
+  white-space: nowrap;
+  font: 700 10px/1 var(--font-sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--danger);
+}
+
+.tl-note {
+  grid-column: 2;
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: -6px;
+}
+.tl-track[data-kind="leak"] .tl-note { color: var(--danger); }
+.tl-track[data-kind="safe"] .tl-note { color: var(--ok); }
+
+/* Axis: solid hairline ticks, one shade off the surface. */
+.tl-axis {
+  position: relative;
+  height: 26px;
+  margin-left: calc(250px + var(--sp-4));
+  border-top: 1px solid var(--border);
+}
+.tl-tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  padding-top: var(--sp-2);
+  font: 500 10px/1 var(--font-mono);
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+.tl-tick.is-cutoff { color: var(--danger); font-weight: 700; }
+
+.tl-legend {
+  display: flex;
+  gap: var(--sp-5);
+  flex-wrap: wrap;
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border);
+  font-size: var(--step--1);
+  color: var(--text-muted);
+}
+.tl-key { display: inline-flex; align-items: center; gap: var(--sp-2); }
+.tl-swatch { width: 18px; height: 8px; border-radius: 4px; flex: none; }
+.tl-swatch.safe { background: var(--ok); }
+.tl-swatch.leak { background: var(--danger); }
+.tl-swatch.future {
+  background: repeating-linear-gradient(135deg, var(--danger) 0 2px, transparent 2px 5px),
+              color-mix(in srgb, var(--danger) 22%, transparent);
+}
+
+@media (max-width: 820px) {
+  .tl-track { grid-template-columns: 1fr; gap: var(--sp-1); }
+  .tl-lane { height: 26px; }
+  .tl-axis { margin-left: 0; }
+  .tl-note { grid-column: 1; }
+}
+
+/* -- Data-ink pass ---------------------------------------------------------
+   Tufte: erase non-data ink. Boxes around numbers are chrome competing with
+   the numbers. Stat rows are separated by hairlines instead, so the figures
+   carry the display and the container disappears.
+------------------------------------------------------------------------- */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.stat {
+  padding: var(--sp-4) var(--sp-5) var(--sp-4) 0;
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  border-right: 1px solid var(--border);
+}
+.stat:last-child { border-right: 0; }
+.stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+/* Hero and stat figures use proportional digits: tabular-nums makes large
+   standalone numbers look loose. Tabular is for columns only. */
+.stat-value { font-size: var(--step-3); font-weight: 750; line-height: 1.05; letter-spacing: -0.02em; }
+.stat-value.is-block { color: var(--danger); }
+.stat-value.is-clear { color: var(--ok); }
+.stat-note { font-size: var(--step--1); color: var(--text-faint); }
+
+/* -- Ablation comparison ---------------------------------------------------
+   Two boxes with numbers in them is a one-bar bar chart twice over. The point
+   is the COMPARISON, so draw one shared scale and let the bars do the arguing:
+   the safe feature is visibly longer, and still cleared.
+------------------------------------------------------------------------- */
+
+.compare { display: grid; gap: var(--sp-5); }
+.compare-row { display: grid; grid-template-columns: 200px minmax(0, 1fr) auto; gap: var(--sp-4); align-items: center; }
+.compare-name { display: grid; gap: 1px; }
+.compare-name strong { font-size: var(--step-0); font-weight: 600; }
+.compare-name span { font-size: 11px; color: var(--text-faint); font-family: var(--font-mono); }
+
+.compare-track { position: relative; height: 10px; background: var(--surface-2); border-radius: 5px; }
+.compare-fill { position: absolute; inset-block: 0; left: 0; border-radius: 5px; }
+.compare-row[data-kind="leak"] .compare-fill { background: var(--danger); }
+.compare-row[data-kind="safe"] .compare-fill { background: var(--ok); }
+
+.compare-value {
+  font-size: var(--step-2);
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  min-width: 4ch;
+  text-align: right;
+}
+.compare-row[data-kind="leak"] .compare-value { color: var(--danger); }
+.compare-row[data-kind="safe"] .compare-value { color: var(--ok); }
+
+.compare-verdicts { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: var(--sp-4); }
+.compare-punch {
+  grid-column: 2;
+  padding: var(--sp-4) var(--sp-5);
+  border-left: 3px solid var(--danger);
+  background: var(--danger-soft);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: var(--step-0);
+}
+.compare-punch strong { color: var(--text); }
+
+/* -- Table view twin ------------------------------------------------------- */
+
+.table-view { margin-top: var(--sp-5); }
+.table-view summary {
+  cursor: pointer;
+  font-size: var(--step--1);
+  color: var(--text-muted);
+  padding: var(--sp-2) 0;
+  list-style: none;
+}
+.table-view summary::-webkit-details-marker { display: none; }
+.table-view summary::before { content: "> "; font-family: var(--font-mono); color: var(--text-faint); }
+.table-view[open] summary::before { content: "v "; }
+.table-view summary:hover { color: var(--accent); }
+
+/* -- Sparkline -------------------------------------------------------------
+   Small multiples for run history: one mark per run, so the trend is visible
+   without a second chart.
+------------------------------------------------------------------------- */
+
+.spark { display: inline-flex; align-items: flex-end; gap: 2px; height: 22px; }
+.spark-bar { width: 5px; border-radius: 2px 2px 0 0; background: var(--ok); opacity: 0.85; }
+.spark-bar[data-decision="block"] { background: var(--danger); }
+.spark-bar:hover { opacity: 1; }
+
+@media (max-width: 820px) {
+  .compare-row, .compare-verdicts { grid-template-columns: 1fr; gap: var(--sp-2); }
+  .compare-punch { grid-column: 1; }
+  .stat { border-right: 0; border-bottom: 1px solid var(--border); padding-right: 0; }
+}
