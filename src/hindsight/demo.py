@@ -96,7 +96,7 @@ def render_judge_demo(report: dict[str, Any]) -> str:
     safe = report["safe_control"]
     point_in_time = report["point_in_time_proof_fixture"]
     lines = [
-        "HINDSIGHT — GOLDEN DEMO",
+        "HINDSIGHT - GOLDEN DEMO",
         "=" * 25,
         f"LEAKED FEATURE   ablation {leaked['ablation_delta']:.2f}  -> {leaked['verdict']}",
         f"SAFE CONTROL     ablation {safe['ablation_delta']:.2f}  -> {safe['verdict']}",
