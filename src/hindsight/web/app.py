@@ -10,6 +10,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from hindsight.demo import run_judge_demo
+from hindsight.web.activity import build_activity
+from hindsight.web.glossary import GLOSSARY
 from hindsight.workflow import run_demo_audit
 from hindsight.writeback import publish_audit
 
@@ -34,6 +36,15 @@ def create_app(project_root: Path | None = None) -> FastAPI:
     @app.get("/api/audit")
     def audit_api() -> dict[str, Any]:
         return _audit(root)
+
+    @app.get("/api/activity")
+    def activity_api() -> dict[str, Any]:
+        """The backend log the console replays, so visitors can watch the work."""
+        return {"activity": build_activity(root, _audit(root))}
+
+    @app.get("/api/glossary")
+    def glossary_api() -> dict[str, Any]:
+        return {"glossary": GLOSSARY}
 
     @app.get("/", response_class=HTMLResponse)
     def console(request: Request) -> HTMLResponse:
@@ -84,6 +95,7 @@ def _render(
 ) -> HTMLResponse:
     leakage = bundle["validation"]["leakage_case"]
     safe = bundle["validation"]["safe_control"]
+    root = Path(request.app.state.project_root)
     return templates.TemplateResponse(
         request=request,
         name="index.html",
@@ -94,6 +106,10 @@ def _render(
             "publication": publication,
             "target_urn": target_urn,
             "server": server,
+            "glossary": GLOSSARY,
+            "activity": build_activity(root, bundle, publication),
+            "advantage_lost": round((1 - leakage["advantage_retained"]) * 100, 1),
+            "safe_retained": round(safe["advantage_retained"] * 100),
             "observed_width": round(leakage["observed_auc"] * 100, 1),
             "reconstructed_width": round(leakage["point_in_time_auc"] * 100, 1),
             "safe_width": round(safe["observed_auc"] * 100, 1),

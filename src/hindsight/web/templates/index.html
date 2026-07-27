@@ -1,35 +1,140 @@
+{#- Info control macro: every term a newcomer might not know gets one. -#}
+{% macro info(key) -%}
+<button class="info" type="button" data-info="{{ key }}" aria-expanded="false"
+        aria-label="What is {{ glossary[key].term }}?">i</button>
+{%- endmacro %}
+
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Hindsight evidence-based ML release audit">
-  <title>Hindsight · Release evidence</title>
+  <meta name="description" content="Hindsight proves whether an ML model was trained on information that did not exist at prediction time, using DataHub column-level lineage.">
+  <meta name="color-scheme" content="dark light">
+  <title>Hindsight - evidence-based ML release audit</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%233ddc97'/><text x='16' y='23' font-size='20' font-family='sans-serif' font-weight='800' text-anchor='middle' fill='%2304140c'>H</text></svg>">
   <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">
+  {#- Applied before paint so the chosen theme never flashes. -#}
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("hindsight-theme");
+        if (t) document.documentElement.setAttribute("data-theme", t);
+      } catch (e) { /* private mode: fall back to the OS preference */ }
+    })();
+  </script>
   <script defer src="{{ url_for('static', path='/app.js') }}"></script>
+  <script id="glossary-data" type="application/json">{{ glossary | tojson }}</script>
+  <script id="activity-data" type="application/json">{{ activity | tojson }}</script>
 </head>
 <body>
-  <a class="skip-link" href="#evidence">Skip to evidence</a>
+  <a class="skip-link" href="#what-is-this">Skip to content</a>
+
   <header class="topbar">
     <a class="brand" href="/" aria-label="Hindsight home">
       <span class="brand-mark" aria-hidden="true">H</span>
       <span>Hindsight</span>
     </a>
-    <div class="connection"><span class="pulse" aria-hidden="true"></span> DataHub evidence connected</div>
+    <span class="topbar-spacer"></span>
+    <span class="connection">
+      <span class="pulse" aria-hidden="true"></span>
+      DataHub evidence connected
+    </span>
+    <button class="theme-toggle" type="button" id="theme-toggle"
+            aria-label="Switch between light and dark theme">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+      </svg>
+    </button>
   </header>
 
-  <main id="evidence" class="shell">
+  <main class="shell">
+
+    <!-- ── 1. What is this? ─────────────────────────────────────────────── -->
+    <section class="panel explainer" id="what-is-this" aria-labelledby="what-heading">
+      <div>
+        <p class="eyebrow">Start here</p>
+        <h2 id="what-heading">What is this?</h2>
+      </div>
+
+      <p class="lede">
+        A credit model scores beautifully in testing. It ships. It fails.
+      </p>
+      <p style="max-width: var(--measure); color: var(--text-muted);">
+        The model was never good. One of its features quietly contained the answer &mdash; built from
+        events that only exist <em>after</em> the decision it is supposed to predict. That is
+        <strong>target leakage</strong>{{ info('target-leakage') }}, and it is one of the most expensive
+        silent failures in production machine learning.
+      </p>
+      <p style="max-width: var(--measure);">
+        <strong>Hindsight proves whether that happened, before the model is released.</strong>
+      </p>
+
+      <div class="callout">
+        <p>
+          <strong>Why this needs DataHub{{ info('datahub') }}.</strong>
+          Leakage is a cross-system, column-level defect. The training notebook cannot see it &mdash; the leak
+          happened upstream in the warehouse. The feature store sees features, not their ancestry. Model
+          monitoring fires months later, after the money is gone. The question only becomes answerable
+          with a column-level lineage graph{{ info('column-lineage') }} spanning all of them.
+        </p>
+      </div>
+
+      <div class="explainer-steps">
+        <article class="step">
+          <h3>Read the ancestry</h3>
+          <p>
+            Walk DataHub&rsquo;s ML lineage{{ info('ml-lineage') }} backwards from the candidate model to find
+            where each feature&rsquo;s information actually originated.
+          </p>
+        </article>
+        <article class="step">
+          <h3>Check the clock</h3>
+          <p>
+            Compare when that information became available against the prediction
+            cutoff{{ info('prediction-cutoff') }}, and parse the transformation
+            SQL{{ info('transformation-check') }} for a guard.
+          </p>
+        </article>
+        <article class="step">
+          <h3>Prove the consequence</h3>
+          <p>
+            Rebuild the feature point-in-time{{ info('point-in-time') }} and retrain. Real skill survives.
+            Borrowed hindsight collapses.
+          </p>
+        </article>
+        <article class="step">
+          <h3>Write it back</h3>
+          <p>
+            On human approval{{ info('approval-gate') }}, publish the verdict into DataHub so the next
+            engineer or agent inherits the finding.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ── 2. Verdict ───────────────────────────────────────────────────── -->
     <section class="hero" aria-labelledby="audit-title">
       <div>
         <p class="eyebrow">Pre-production release audit</p>
         <h1 id="audit-title">Your model is not smarter.<br><span>It has hindsight.</span></h1>
-        <p class="lede">Hindsight found outcome data that became available after the model's prediction cutoff—and proved the advantage disappears when time is reconstructed honestly.</p>
+        <p class="lede">
+          Hindsight found outcome data that became available after the model&rsquo;s prediction cutoff, and
+          proved the advantage disappears when time is reconstructed honestly.
+        </p>
       </div>
-      <div class="decision-card" aria-label="Release decision block">
+      <div class="decision-card">
         <p>Release decision</p>
         <strong>{{ bundle.release_decision | upper }}</strong>
-        <span class="verdict-dot"></span>
-        <small>Deterministic verdict: {{ bundle.verdict }}</small>
+        <small>
+          Deterministic verdict: {{ bundle.verdict }}{{ info('verdict-lattice') }}
+        </small>
       </div>
     </section>
 
@@ -40,127 +145,243 @@
       <div><span>Post-cutoff excluded</span><strong>{{ "{:,}".format(bundle.validation.reconstruction.excluded_post_cutoff_records) }}</strong></div>
     </section>
 
-    <section class="panel lineage-panel" aria-labelledby="lineage-heading">
+    <!-- ── 3. Backend activity ──────────────────────────────────────────── -->
+    <section class="panel log-shell" aria-labelledby="activity-heading">
       <div class="section-heading">
-        <div><p class="eyebrow">Directional column lineage</p><h2 id="lineage-heading">The evidence path</h2></div>
+        <div>
+          <p class="eyebrow">What the agent actually did</p>
+          <h2 id="activity-heading">Backend activity{{ info('recorded-replay') }}</h2>
+        </div>
+        <span class="finding ok" id="log-status">{{ activity | length }} operations</span>
+      </div>
+      <p style="color: var(--text-muted); max-width: var(--measure);">
+        Every DataHub call, SQL check and validation step, in order. Entries marked
+        <strong>LIVE</strong> hit a real DataHub instance during this request; <strong>RECORDED</strong>
+        entries replay responses captured from a real instance so this page works without Docker.
+      </p>
+      <div class="log-controls">
+        <button class="btn" type="button" id="replay-log">Replay step by step</button>
+        <button class="btn ghost" type="button" id="show-all-log">Show all at once</button>
+      </div>
+      <div class="log" id="activity-log" role="log" aria-live="polite" aria-label="Backend activity log"></div>
+      <noscript>
+        <div class="log">
+          {% for item in activity %}
+          <div class="log-line" data-ok="{{ item.ok | lower }}">
+            <span class="chan" data-channel="{{ item.channel }}">{{ item.channel }}</span>
+            <span class="mark">{% if item.ok %}OK{% elif item.ok is none %}--{% else %}!!{% endif %}</span>
+            <span class="body">
+              <span class="msg">{{ item.message }}</span>
+              {% if item.detail %}<span class="detail">{{ item.detail }}</span>{% endif %}
+            </span>
+            <span class="src" data-source="{{ item.source }}">{{ item.source }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </noscript>
+    </section>
+
+    <!-- ── 4. Evidence path ─────────────────────────────────────────────── -->
+    <section class="panel" aria-labelledby="lineage-heading">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Directional column lineage</p>
+          <h2 id="lineage-heading">The evidence path{{ info('column-lineage') }}</h2>
+        </div>
         <span class="finding danger">Temporal violation</span>
       </div>
-      <div class="lineage" role="img" aria-label="Payment recorded at flows into days since last payment after the prediction cutoff">
+      <div class="lineage">
         <article class="asset source">
           <span>Post-outcome source</span>
           <strong>payment_events_after_decision</strong>
           <code>payment_recorded_at</code>
         </article>
-        <div class="lineage-edge" aria-hidden="true"><span>available +31 days</span><i>→</i></div>
+        <div class="lineage-edge" aria-hidden="true"><span>available +31 days</span><i>&rarr;</i></div>
         <article class="asset target">
           <span>Model feature</span>
           <strong>feature_pipeline_leaky</strong>
           <code>days_since_last_payment</code>
         </article>
       </div>
-      <p class="finding-copy">{{ bundle.sql_verification.reason }}</p>
+      <p style="margin-top: var(--sp-4); color: var(--text-muted);">
+        {{ bundle.sql_verification.reason }}
+      </p>
     </section>
 
-    <section class="panel contrast-panel" aria-labelledby="contrast-heading">
+    <!-- ── 5. The ablation trap ─────────────────────────────────────────── -->
+    <section class="panel" aria-labelledby="trap-heading">
       <div class="section-heading">
-        <div><p class="eyebrow">The ablation trap</p><h2 id="contrast-heading">Importance gets this exactly backwards</h2></div>
+        <div>
+          <p class="eyebrow">The ablation trap</p>
+          <h2 id="trap-heading">Importance gets this exactly backwards{{ info('ablation-delta') }}</h2>
+        </div>
       </div>
-      <div class="contrast-grid">
-        <article class="contrast-item danger-card"><span>Planted leaked feature</span><strong>{{ "%.2f"|format(bundle.ablation_contrast.leaked_feature) }}</strong><small>ablation delta</small><b>confirmed</b></article>
-        <div class="contrast-vs" aria-hidden="true">&lt;</div>
-        <article class="contrast-item safe-card"><span>Legitimate safe feature</span><strong>{{ "%.2f"|format(bundle.ablation_contrast.safe_feature) }}</strong><small>ablation delta</small><b>clear_for_release</b></article>
+      <div class="trap">
+        <article class="trap-card">
+          <div>
+            <p>Planted leaked feature</p>
+            <p>ablation delta</p>
+            <p class="state">{{ bundle.verdict }}</p>
+          </div>
+          <p class="value">{{ "%.2f"|format(bundle.ablation_contrast.leaked_feature) }}</p>
+        </article>
+        <div class="trap-op" aria-hidden="true">&lt;</div>
+        <article class="trap-card safe">
+          <div>
+            <p>Legitimate safe feature{{ info('safe-control') }}</p>
+            <p>ablation delta</p>
+            <p class="state">clear_for_release</p>
+          </div>
+          <p class="value">{{ "%.2f"|format(bundle.ablation_contrast.safe_feature) }}</p>
+        </article>
       </div>
-      <p>The safe feature has the larger ablation delta. Hindsight clears it because it existed before prediction; importance alone cannot prove leakage.</p>
+      <p style="margin-top: var(--sp-4); color: var(--text-muted); max-width: var(--measure);">
+        The safe feature has the larger ablation delta. Hindsight clears it because it existed before
+        prediction. Importance alone cannot prove leakage &mdash; which is why a detector built on ablation
+        would flag the wrong feature here.
+      </p>
     </section>
 
-    <div class="two-column">
-      <section class="panel" aria-labelledby="reconstruction-heading">
+    <!-- ── 6. Counterfactual + control ──────────────────────────────────── -->
+    <div class="grid-2">
+      <section class="panel" aria-labelledby="pit-heading">
         <div class="section-heading">
-          <div><p class="eyebrow">Counterfactual test</p><h2 id="reconstruction-heading">Point-in-time reconstruction</h2></div>
+          <div>
+            <p class="eyebrow">Counterfactual test</p>
+            <h2 id="pit-heading">Point-in-time reconstruction{{ info('point-in-time') }}</h2>
+          </div>
           <span class="finding danger">Confirmed</span>
         </div>
-        <div class="metric-row">
-          <div class="metric-label"><span>Observed training AUC</span><strong>{{ "%.6f"|format(leakage.observed_auc) }}</strong></div>
-          <div class="bar"><i class="observed" style="width: {{ observed_width }}%"></i></div>
+        <div class="metric">
+          <div class="metric-head"><span>Observed training AUC</span><strong>{{ "%.6f"|format(leakage.observed_auc) }}</strong></div>
+          <div class="meter bad"><i style="width: {{ observed_width }}%"></i></div>
         </div>
-        <div class="metric-row">
-          <div class="metric-label"><span>Honest reconstructed AUC</span><strong>{{ "%.6f"|format(leakage.point_in_time_auc) }}</strong></div>
-          <div class="bar"><i class="honest" style="width: {{ reconstructed_width }}%"></i></div>
+        <div class="metric">
+          <div class="metric-head"><span>Honest reconstructed AUC</span><strong>{{ "%.6f"|format(leakage.point_in_time_auc) }}</strong></div>
+          <div class="meter mid"><i style="width: {{ reconstructed_width }}%"></i></div>
         </div>
-        <div class="delta-callout"><strong>{{ "%.1f"|format((1 - leakage.advantage_retained) * 100) }}%</strong><span>of the apparent feature advantage disappeared</span></div>
-        <p class="disclosure">AUC 1.000000 is expected: this synthetic planted leak is total by construction. Real leakage can be subtler.</p>
+        <p><span class="headline-stat">{{ advantage_lost }}%</span></p>
+        <p style="color: var(--text-muted);">
+          of the apparent feature advantage disappeared{{ info('advantage-retained') }}
+        </p>
+        <p style="margin-top: var(--sp-4); color: var(--text-faint); font-size: var(--step--1);">
+          AUC 1.000000 is expected: this synthetic planted leak is total by construction. Real leakage
+          can be subtler, and the generator is frozen rather than tuned to look realistic.
+        </p>
       </section>
 
-      <section class="panel safe-panel" aria-labelledby="control-heading">
+      <section class="panel" aria-labelledby="control-heading">
         <div class="section-heading">
-          <div><p class="eyebrow">False-positive defense</p><h2 id="control-heading">Strong signal, still safe</h2></div>
-          <span class="finding safe">Clear</span>
+          <div>
+            <p class="eyebrow">False-positive defence</p>
+            <h2 id="control-heading">Strong signal, still safe</h2>
+          </div>
+          <span class="finding ok">Clear</span>
         </div>
-        <p>The legitimate <code>prior_delinquencies</code> feature remains predictive because it existed before the decision.</p>
-        <div class="metric-row compact">
-          <div class="metric-label"><span>Observed and reconstructed AUC</span><strong>{{ "%.6f"|format(safe.observed_auc) }}</strong></div>
-          <div class="bar"><i class="safe-bar" style="width: {{ safe_width }}%"></i></div>
+        <p style="color: var(--text-muted);">
+          The legitimate <code>prior_delinquencies</code> feature remains predictive because it existed
+          before the decision. It must come back clear on every run.
+        </p>
+        <div class="metric" style="margin-top: var(--sp-4);">
+          <div class="metric-head"><span>Observed and reconstructed AUC</span><strong>{{ "%.6f"|format(safe.observed_auc) }}</strong></div>
+          <div class="meter good"><i style="width: {{ safe_width }}%"></i></div>
         </div>
-        <dl class="control-stats">
-          <div><dt>Ablation delta</dt><dd>{{ "%.6f"|format(safe.observed_advantage) }}</dd></div>
-          <div><dt>Advantage retained</dt><dd>{{ "%.0f"|format(safe.advantage_retained * 100) }}%</dd></div>
-          <div><dt>Verdict</dt><dd>clear_for_release</dd></div>
-        </dl>
+        <div class="pairs">
+          <div class="pair"><span>Ablation delta</span><strong>{{ "%.6f"|format(safe.observed_advantage) }}</strong></div>
+          <div class="pair"><span>Advantage retained</span><strong>{{ safe_retained }}%</strong></div>
+          <div class="pair"><span>Verdict</span><strong>clear_for_release</strong></div>
+        </div>
       </section>
     </div>
 
-    <div class="two-column lower-grid">
-      <section class="panel trace-panel" aria-labelledby="trace-heading">
-        <div class="section-heading"><div><p class="eyebrow">Inspectable execution</p><h2 id="trace-heading">Evidence trace</h2></div></div>
+    <!-- ── 7. Trace + remediation ───────────────────────────────────────── -->
+    <div class="grid-2">
+      <section class="panel" aria-labelledby="trace-heading">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Inspectable execution</p>
+            <h2 id="trace-heading">Evidence trace</h2>
+          </div>
+        </div>
         <ol class="trace">
-          {% for event in bundle.trace %}
+          {% for step in bundle.trace %}
           <li>
-            <span class="trace-index">{{ "%02d"|format(loop.index) }}</span>
-            <div><strong>{{ event.step | replace('_', ' ') | title }}</strong><small>{{ event.status | replace('_', ' ') }}</small></div>
+            <span class="n">{{ "%02d"|format(loop.index) }}</span>
+            <span>
+              <strong>{{ step.step | replace("_", " ") | title }}</strong>
+              <em>{{ step.status | replace("_", " ") }}</em>
+            </span>
           </li>
           {% endfor %}
         </ol>
       </section>
 
-      <section class="panel remediation-panel" aria-labelledby="remediation-heading">
+      <section class="panel" aria-labelledby="fix-heading">
         <div class="section-heading">
-          <div><p class="eyebrow">Smallest safe repair</p><h2 id="remediation-heading">Cut off future knowledge</h2></div>
-          <span class="finding safe">SQL verified</span>
+          <div>
+            <p class="eyebrow">Smallest safe repair</p>
+            <h2 id="fix-heading">Cut off future knowledge</h2>
+          </div>
+          <span class="finding ok">SQL verified</span>
         </div>
-        <pre><code>{{ bundle.remediation.verification.cutoff_predicates[0] }}</code></pre>
-        <p>The proposal is verified independently. Hindsight never merges or applies pipeline code automatically.</p>
+        <pre class="sql"><code>{{ bundle.remediation.verification.cutoff_predicates | join("\n") }}</code></pre>
+        <p style="margin-top: var(--sp-4); color: var(--text-muted);">
+          The proposal is verified independently. Hindsight never merges or applies pipeline code
+          automatically.
+        </p>
       </section>
     </div>
 
-    <section class="panel approval-panel" aria-labelledby="approval-heading">
-      <div class="approval-copy">
-        <p class="eyebrow">Human approval boundary</p>
-        <h2 id="approval-heading">Publish evidence to DataHub</h2>
-        <p>Dry-run is the default. Explicit approval writes the field tag, structured verdict, linked audit Document, and active incident—then rereads every one.</p>
+    <!-- ── 8. Publish ───────────────────────────────────────────────────── -->
+    <section class="panel" aria-labelledby="publish-heading">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Human approval boundary</p>
+          <h2 id="publish-heading">Publish evidence to DataHub{{ info('writeback-types') }}</h2>
+        </div>
       </div>
-      <form method="post" action="/publish" id="publish-form">
-        <label for="target-urn">Synthetic target dataset URN</label>
-        <input id="target-urn" name="target_urn" required value="{{ target_urn }}" placeholder="urn:li:dataset:(urn:li:dataPlatform:duckdb,…,PROD)">
-        <label for="server">DataHub GMS</label>
-        <input id="server" name="server" required value="{{ server }}">
-        <label class="approval-check">
-          <input type="checkbox" name="approve_writeback" value="true" id="approve-writeback">
-          <span>I approve these four catalog mutations against this synthetic asset.</span>
-        </label>
-        <button type="submit" id="publish-button">Preview write-back</button>
-        <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
-      </form>
-      {% if publication %}
-      <div class="publication-result {{ 'success' if publication.status == 'published' else 'neutral' }}" role="status">
-        <strong>{{ publication.status | replace('_', ' ') | title }}</strong>
-        <span>Mutation performed: {{ publication.mutation_performed | string | lower }}</span>
-        {% if publication.checks %}<span>{{ publication.checks.values() | select | list | length }}/{{ publication.checks | length }} reread checks passed</span>{% endif %}
-        {% if publication.message %}<small>{{ publication.message }}</small>{% endif %}
+      <div class="publish">
+        <div>
+          <p style="color: var(--text-muted);">
+            Dry-run is the default{{ info('approval-gate') }}. Explicit approval writes the field tag,
+            structured verdict, linked audit Document and active incident &mdash; then re-reads every
+            one{{ info('reread') }} to prove it persisted.
+          </p>
+          {% if publication %}
+          <div class="result {% if publication.status == 'error' %}err{% elif publication.mutation_performed %}ok{% endif %}">
+            <strong>{{ publication.status | replace("_", " ") }}</strong>
+            {% if publication.message %}<br>{{ publication.message }}{% endif %}
+            {% if publication.entities %}
+              {% for key, urn in publication.entities.items() %}<br>{{ key }}: {{ urn }}{% endfor %}
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+        <form method="post" action="/publish">
+          <div class="field">
+            <label for="target_urn">Synthetic target dataset URN</label>
+            <input type="text" id="target_urn" name="target_urn" value="{{ target_urn }}"
+                   placeholder="urn:li:dataset:(urn:li:dataPlatform:duckdb,...,PROD)" required>
+          </div>
+          <div class="field">
+            <label for="server">DataHub GMS</label>
+            <input type="url" id="server" name="server" value="{{ server }}">
+          </div>
+          <div class="consent">
+            <input type="checkbox" id="approve_writeback" name="approve_writeback" value="true">
+            <label for="approve_writeback">
+              I approve these four catalog mutations against this synthetic asset.
+            </label>
+          </div>
+          <button class="btn" type="submit">Preview write-back</button>
+        </form>
       </div>
-      {% endif %}
     </section>
   </main>
 
-  <footer><span>Hindsight 0.1</span><span>Evidence, not intuition.</span></footer>
+  <footer class="footer">
+    <span>Hindsight 0.1</span>
+    <span>Evidence, not intuition.</span>
+  </footer>
 </body>
 </html>
