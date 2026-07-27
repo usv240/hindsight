@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Hindsight - evidence{% endblock %}
+{% block crumbs %}<a href="/">Overview</a> <span class="sep">/</span> <span>Evidence</span>{% endblock %}
+
+{% block content %}
+
+<section class="page-head">
+  <div>
+    <p class="eyebrow">Artifacts</p>
+    <h1>Evidence</h1>
+    <p class="lede">
+      What Hindsight writes back, and what it can prove about its own claims.
+    </p>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-heading">
+    <div><p class="eyebrow">Catalog contributions</p><h2>Written to DataHub on approval</h2></div>
+  </div>
+  <ul class="checks">
+    <li><code>hindsight:leakage-confirmed</code> field tag on the offending column</li>
+    <li><code>hindsight.auditVerdict</code> structured property on the asset</li>
+    <li>A linked audit <strong>Document</strong> containing the evidence path and safe-control results</li>
+    <li>An active <code>ML_LEAKAGE</code> incident, reused on retry rather than duplicated</li>
+  </ul>
+  <p class="fine">Each is re-read after writing to prove it persisted.</p>
+</section>
+
+<section class="panel">
+  <div class="section-heading">
+    <div><p class="eyebrow">Self-verification</p><h2>How this project checks itself</h2></div>
+  </div>
+  <ul class="checks">
+    <li>A high-correlation <strong>safe control</strong> must come back clear on every run, despite having a larger ablation delta than the planted leak.</li>
+    <li>The generator is <strong>frozen</strong>; measured results are published rather than tuned.</li>
+    <li>The collapse threshold and its measured margin are disclosed, not hidden.</li>
+    <li>Recorded fixtures are hashed, and <code>verify-fixture-live</code> re-proves them against a real instance.</li>
+  </ul>
+</section>
+
+{% if runs %}
+<section class="panel table-wrap">
+  <div class="section-heading">
+    <div><p class="eyebrow">Recorded</p><h2>Recent runs</h2></div>
+    <a class="btn ghost" href="/audits">All runs</a>
+  </div>
+  <table class="table">
+    <thead>
+      <tr><th scope="col">Run</th><th scope="col">Decision</th><th scope="col">Verdict</th><th scope="col">Published</th></tr>
+    </thead>
+    <tbody>
+      {% for run in runs[:10] %}
+      <tr>
+        <th scope="row"><a href="/audits/{{ run.run_id }}"><code>{{ run.run_id }}</code></a></th>
+        <td><span class="finding {{ 'danger' if run.release_decision == 'block' else 'ok' }}">{{ run.release_decision | upper }}</span></td>
+        <td><code>{{ run.verdict }}</code></td>
+        <td>{{ "yes" if run.published else "no" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
+{% endblock %}

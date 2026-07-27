@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Hindsight - runs{% endblock %}
+{% block crumbs %}<a href="/">Overview</a> <span class="sep">/</span> <span>Runs</span>{% endblock %}
+
+{% block content %}
+
+<section class="page-head">
+  <div>
+    <p class="eyebrow">History</p>
+    <h1>Audit runs</h1>
+    <p class="lede">Every audit is an event. Compare verdicts over time rather than trusting one.</p>
+  </div>
+  <form method="post" action="/audits/run">
+    <button class="btn" type="submit">Run an audit</button>
+  </form>
+</section>
+
+{% if runs %}
+<div class="panel table-wrap">
+  <table class="table">
+    <caption class="visually-hidden">Recorded audit runs, newest first</caption>
+    <thead>
+      <tr>
+        <th scope="col">Run</th>
+        <th scope="col">Audit</th>
+        <th scope="col">Decision</th>
+        <th scope="col">Verdict</th>
+        <th scope="col">Records</th>
+        <th scope="col">Runtime</th>
+        <th scope="col">Published</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for run in runs %}
+      <tr>
+        <th scope="row"><a href="/audits/{{ run.run_id }}"><code>{{ run.run_id }}</code></a></th>
+        <td>{{ run.audit }}</td>
+        <td>
+          <span class="finding {{ 'danger' if run.release_decision == 'block' else 'ok' }}">
+            {{ run.release_decision | upper }}
+          </span>
+        </td>
+        <td><code>{{ run.verdict }}</code></td>
+        <td class="num">{{ "{:,}".format(run.rows or 0) }}</td>
+        <td class="num">{{ "%.3f"|format(run.runtime_seconds or 0) }}s</td>
+        <td>{{ "yes" if run.published else "no" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<section class="empty">
+  <h2>No runs recorded yet</h2>
+  <p>
+    Audits are written to <code>evidence/runs/</code> as they happen. Run one to start the
+    history &mdash; it needs no DataHub and no network.
+  </p>
+  <form method="post" action="/audits/run">
+    <button class="btn" type="submit">Run an audit now</button>
+  </form>
+</section>
+{% endif %}
+
+{% endblock %}

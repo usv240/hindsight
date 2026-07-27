@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from "base.html" import info with context %}
+{% block title %}Hindsight - settings{% endblock %}
+{% block crumbs %}<a href="/">Overview</a> <span class="sep">/</span> <span>Settings</span>{% endblock %}
+
+{% block content %}
+
+<section class="page-head">
+  <div>
+    <p class="eyebrow">Configure</p>
+    <h1>Settings</h1>
+    <p class="lede">Connection state and the audit target this console reports on.</p>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-heading">
+    <div><p class="eyebrow">Connection</p><h2>DataHub</h2></div>
+    <span class="finding {{ 'ok' if health.state == 'connected' else 'danger' if health.state == 'offline' else 'warn' }}">
+      {{ health.label }}
+    </span>
+  </div>
+  <dl class="kv">
+    <div><dt>State</dt><dd><code>{{ health.state }}</code></dd></div>
+    <div><dt>Server</dt><dd><code>{{ health.server or "not set" }}</code></dd></div>
+    <div><dt>Detail</dt><dd>{{ health.detail }}</dd></div>
+    <div><dt>Latency</dt><dd>{{ health.latency_ms ~ " ms" if health.latency_ms else "-" }}</dd></div>
+    <div><dt>Write-back</dt><dd>{{ "available" if health.can_write else "unavailable" }}</dd></div>
+  </dl>
+  <p class="fine">
+    Set <code>DATAHUB_GMS_URL</code> and <code>DATAHUB_GMS_TOKEN</code> to connect. Use a service
+    account rather than a personal token, ideally scoped with a Default View.
+  </p>
+</section>
+
+<section class="panel">
+  <div class="section-heading">
+    <div><p class="eyebrow">Audit target</p><h2>What this console audits</h2></div>
+  </div>
+  <dl class="kv">
+    <div><dt>Name</dt><dd><code>{{ audit_config.name }}</code></dd></div>
+    <div><dt>Scenario</dt><dd><code>{{ audit_config.scenario }}</code></dd></div>
+    <div><dt>Transformation</dt><dd><code>{{ audit_config.transformation_sql }}</code></dd></div>
+    <div><dt>Remediation</dt><dd><code>{{ audit_config.remediation_sql }}</code></dd></div>
+    <div><dt>Post-outcome table</dt><dd><code>{{ audit_config.post_outcome_table }}</code></dd></div>
+    <div>
+      <dt>Target URN</dt>
+      <dd>
+        {% if audit_config.target_urn %}<code>{{ audit_config.target_urn }}</code>
+        {% else %}<em>not bound</em>{% endif %}
+      </dd>
+    </div>
+    <div><dt>Synthetic data</dt><dd>{{ "yes" if audit_config.synthetic else "no" }}</dd></div>
+  </dl>
+  <p class="fine">
+    Change the target with <code>hindsight serve --audit path/to/audit.json</code>, or set
+    <code>HINDSIGHT_AUDIT</code>. When <strong>Target URN</strong> is bound, Hindsight refuses to
+    publish this verdict to any other asset &mdash; writing evidence onto something it does not
+    describe would put false findings in your catalog.
+  </p>
+</section>
+
+<section class="panel">
+  <div class="section-heading">
+    <div><p class="eyebrow">Safety</p><h2>Operating boundaries</h2></div>
+  </div>
+  <ul class="checks">
+    <li><strong>Dry-run by default.</strong> Nothing is written to the catalog without explicit approval{{ info('approval-gate') }}.</li>
+    <li><strong>Every write is re-read.</strong> A write that cannot be read back is treated as a failure{{ info('reread') }}.</li>
+    <li><strong>No authentication.</strong> This console can write to your catalog. It binds to loopback by default; put it behind an authenticating proxy before exposing it.</li>
+    <li><strong>An LLM cannot promote a verdict.</strong> Only deterministic evidence reaches <code>confirmed</code>{{ info('verdict-lattice') }}.</li>
+  </ul>
+</section>
+
+{% endblock %}

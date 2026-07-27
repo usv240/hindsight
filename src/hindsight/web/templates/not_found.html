@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Hindsight - run not found{% endblock %}
+{% block crumbs %}<a href="/">Overview</a> <span class="sep">/</span> <a href="/audits">Runs</a>{% endblock %}
+
+{% block content %}
+<section class="empty">
+  <h2>That run does not exist</h2>
+  <p>
+    No recorded run matches <code>{{ run_id }}</code>. It may have been removed from
+    <code>evidence/runs/</code>, or the link may be stale.
+  </p>
+  <div class="log-controls" style="justify-content: center;">
+    <a class="btn" href="/audits">Back to runs</a>
+    <form method="post" action="/audits/run">
+      <button class="btn ghost" type="submit">Run a new audit</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% from "base.html" import info with context %}
+{% block title %}Hindsight - overview{% endblock %}
+{% block crumbs %}<span>Overview</span>{% endblock %}
+
+{% block content %}
+
+<section class="page-head">
+  <div>
+    <p class="eyebrow">Pre-production release audit</p>
+    <h1>Catch leakage before the model ships.</h1>
+    <p class="lede">
+      Hindsight reads DataHub column lineage to prove whether a feature was built from
+      information that did not exist when the prediction had to be made.
+    </p>
+  </div>
+  <a class="btn" href="/audits/latest">View latest evidence</a>
+</section>
+
+{% if health.state != "connected" %}
+<div class="banner" data-state="{{ health.state }}">
+  <strong>{{ health.label }}.</strong> {{ health.detail }}
+  {% if health.state == "not_configured" %}
+    Analysis still runs on recorded metadata; catalog write-back is unavailable.
+  {% endif %}
+  <a href="/settings">Open settings</a>
+</div>
+{% endif %}
+
+{% if latest %}
+<section class="cards">
+  <article class="card {{ 'is-block' if latest.release_decision == 'block' else 'is-clear' }}">
+    <p class="card-label">Latest decision</p>
+    <p class="card-value">{{ latest.release_decision | upper }}</p>
+    <p class="card-note">verdict: {{ latest.verdict }}{{ info('verdict-lattice') }}</p>
+  </article>
+  <article class="card">
+    <p class="card-label">Audited</p>
+    <p class="card-value small">{{ latest.audit }}</p>
+    <p class="card-note">{{ latest.case_id }}</p>
+  </article>
+  <article class="card">
+    <p class="card-label">Records tested</p>
+    <p class="card-value">{{ "{:,}".format(latest.rows or 0) }}</p>
+    <p class="card-note">{{ "%.3f"|format(latest.runtime_seconds or 0) }}s runtime</p>
+  </article>
+  <article class="card">
+    <p class="card-label">Total runs</p>
+    <p class="card-value">{{ run_count }}</p>
+    <p class="card-note"><a href="/audits">See history</a></p>
+  </article>
+</section>
+{% else %}
+<section class="empty">
+  <h2>No audits recorded yet</h2>
+  <p>Run one to produce evidence. It works offline, with no DataHub required.</p>
+  <pre class="sql"><code>uv run hindsight demo-audit</code></pre>
+  <form method="post" action="/audits/run">
+    <button class="btn" type="submit">Run an audit now</button>
+  </form>
+</section>
+{% endif %}
+
+<section class="panel explainer" id="what-is-this" aria-labelledby="what-heading">
+  <div>
+    <p class="eyebrow">New here</p>
+    <h2 id="what-heading">What is this?</h2>
+  </div>
+
+  <p class="lede">A credit model scores beautifully in testing. It ships. It fails.</p>
+  <p class="prose">
+    The model was never good. One of its features quietly contained the answer &mdash; built from
+    events that only exist <em>after</em> the decision it is supposed to predict. That is
+    <strong>target leakage</strong>{{ info('target-leakage') }}, one of the most expensive silent
+    failures in production machine learning.
+  </p>
+
+  <div class="callout">
+    <p>
+      <strong>Why this needs DataHub{{ info('datahub') }}.</strong>
+      Leakage is a cross-system, column-level defect. The training notebook cannot see it &mdash;
+      the leak happened upstream in the warehouse. The feature store sees features, not their
+      ancestry. Model monitoring fires months later, after the money is gone. The question only
+      becomes answerable with a column-level lineage graph{{ info('column-lineage') }} spanning
+      all of them.
+    </p>
+  </div>
+
+  <div class="explainer-steps">
+    <article class="step">
+      <h3>Read the ancestry</h3>
+      <p>Walk DataHub&rsquo;s ML lineage{{ info('ml-lineage') }} backwards from the candidate model
+         to find where each feature&rsquo;s information originated.</p>
+    </article>
+    <article class="step">
+      <h3>Check the clock</h3>
+      <p>Compare availability against the prediction cutoff{{ info('prediction-cutoff') }}, and
+         parse the transformation SQL{{ info('transformation-check') }} for a guard.</p>
+    </article>
+    <article class="step">
+      <h3>Prove the consequence</h3>
+      <p>Rebuild the feature point-in-time{{ info('point-in-time') }} and retrain. Real skill
+         survives. Borrowed hindsight collapses.</p>
+    </article>
+    <article class="step">
+      <h3>Write it back</h3>
+      <p>On human approval{{ info('approval-gate') }}, publish the verdict into DataHub so the
+         next engineer or agent inherits the finding.</p>
+    </article>
+  </div>
+</section>
+
+{% endblock %}

@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -13,6 +13,8 @@ from hindsight.config import AuditConfig
 from hindsight.demo import run_judge_demo
 from hindsight.web.activity import build_activity
 from hindsight.web.glossary import GLOSSARY
+from hindsight.web.health import datahub_health
+from hindsight.web.runs import get_run, list_runs, record_run
 from hindsight.workflow import run_demo_audit
 from hindsight.writeback import publish_audit
 
@@ -33,9 +35,16 @@ def create_app(project_root: Path | None = None) -> FastAPI:
     templates = Jinja2Templates(directory=WEB_ROOT / "templates")
     app.mount("/static", StaticFiles(directory=WEB_ROOT / "static"), name="static")
 
+    # ---- API ------------------------------------------------------------
+
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.get("/api/health/datahub")
+    def datahub_health_api() -> dict[str, Any]:
+        """Probed, never asserted. The status pill polls this."""
+        return datahub_health()
 
     @app.get("/api/audit")
     def audit_api() -> dict[str, Any]:
@@ -43,16 +52,81 @@ def create_app(project_root: Path | None = None) -> FastAPI:
 
     @app.get("/api/activity")
     def activity_api() -> dict[str, Any]:
-        """The backend log the console replays, so visitors can watch the work."""
         return {"activity": build_activity(root, _audit(root))}
 
     @app.get("/api/glossary")
     def glossary_api() -> dict[str, Any]:
         return {"glossary": GLOSSARY}
 
+    @app.get("/api/runs")
+    def runs_api() -> dict[str, Any]:
+        return {"runs": list_runs(root)}
+
+    # ---- Pages ----------------------------------------------------------
+
     @app.get("/", response_class=HTMLResponse)
-    def console(request: Request) -> HTMLResponse:
-        return _render(templates, request, _audit(root))
+    def overview(request: Request) -> HTMLResponse:
+        runs = list_runs(root)
+        return templates.TemplateResponse(
+            request=request,
+            name="overview.html",
+            context=_shell(root, "overview", runs) | {"latest": runs[0] if runs else None},
+        )
+
+    @app.get("/audits", response_class=HTMLResponse)
+    def audits(request: Request) -> HTMLResponse:
+        runs = list_runs(root)
+        return templates.TemplateResponse(
+            request=request,
+            name="audits.html",
+            context=_shell(root, "audits", runs) | {"runs": runs},
+        )
+
+    @app.post("/audits/run")
+    def run_audit(request: Request) -> RedirectResponse:
+        bundle = _audit(root)
+        run = record_run(root, bundle)
+        return RedirectResponse(url=f"/audits/{run['run_id']}", status_code=303)
+
+    @app.get("/audits/latest", response_class=HTMLResponse)
+    def latest_audit(request: Request) -> Any:
+        runs = list_runs(root)
+        if runs:
+            return RedirectResponse(url=f"/audits/{runs[0]['run_id']}", status_code=303)
+        bundle = _audit(root)
+        run = record_run(root, bundle)
+        return RedirectResponse(url=f"/audits/{run['run_id']}", status_code=303)
+
+    @app.get("/audits/{run_id}", response_class=HTMLResponse)
+    def audit_detail(request: Request, run_id: str) -> HTMLResponse:
+        run = get_run(root, run_id)
+        if run is None:
+            return templates.TemplateResponse(
+                request=request,
+                name="not_found.html",
+                context=_shell(root, "audits", list_runs(root)) | {"run_id": run_id},
+                status_code=404,
+            )
+        return _render_detail(templates, request, root, run=run)
+
+    @app.get("/evidence", response_class=HTMLResponse)
+    def evidence(request: Request) -> HTMLResponse:
+        runs = list_runs(root)
+        return templates.TemplateResponse(
+            request=request,
+            name="evidence.html",
+            context=_shell(root, "evidence", runs) | {"runs": runs},
+        )
+
+    @app.get("/settings", response_class=HTMLResponse)
+    def settings(request: Request) -> HTMLResponse:
+        runs = list_runs(root)
+        return templates.TemplateResponse(
+            request=request,
+            name="settings.html",
+            context=_shell(root, "settings", runs)
+            | {"audit_config": _audit_config(root).to_dict()},
+        )
 
     @app.post("/publish", response_class=HTMLResponse)
     def publish(
@@ -61,7 +135,6 @@ def create_app(project_root: Path | None = None) -> FastAPI:
         server: Annotated[str, Form()] = "http://localhost:8080",
         approve_writeback: Annotated[bool, Form()] = False,
     ) -> HTMLResponse:
-        bundle = _audit(root)
         config = _audit_config(root)
         if not config.describes(target_urn):
             publication = {
@@ -73,17 +146,17 @@ def create_app(project_root: Path | None = None) -> FastAPI:
                 ),
                 "mutation_performed": False,
             }
-            return _render(
+            return _render_detail(
                 templates,
                 request,
-                bundle,
+                root,
                 publication=publication,
                 target_urn=target_urn,
                 server=server,
             )
         try:
             publication = publish_audit(
-                bundle,
+                _audit(root),
                 target_urn=target_urn,
                 server=server,
                 token=os.getenv("DATAHUB_GMS_TOKEN"),
@@ -95,10 +168,11 @@ def create_app(project_root: Path | None = None) -> FastAPI:
                 "message": str(error),
                 "mutation_performed": False,
             }
-        return _render(
+        record_run(root, _audit(root), publication=publication)
+        return _render_detail(
             templates,
             request,
-            bundle,
+            root,
             publication=publication,
             target_urn=target_urn,
             server=server,
@@ -107,29 +181,45 @@ def create_app(project_root: Path | None = None) -> FastAPI:
     return app
 
 
-def _render(
+# ---- Rendering ----------------------------------------------------------
+
+
+def _shell(root: Path, active: str, runs: list[dict[str, Any]]) -> dict[str, Any]:
+    """Context every page needs: nav state, glossary, and honest connection state."""
+    return {
+        "active": active,
+        "glossary": GLOSSARY,
+        "health": datahub_health(),
+        "run_count": len(runs),
+    }
+
+
+def _render_detail(
     templates: Jinja2Templates,
     request: Request,
-    bundle: dict[str, Any],
+    root: Path,
     *,
+    run: dict[str, Any] | None = None,
     publication: dict[str, Any] | None = None,
     target_urn: str = "",
     server: str = "http://localhost:8080",
 ) -> HTMLResponse:
+    bundle = _audit(root)
     leakage = bundle["validation"]["leakage_case"]
     safe = bundle["validation"]["safe_control"]
-    root = Path(request.app.state.project_root)
+    runs = list_runs(root)
     return templates.TemplateResponse(
         request=request,
-        name="index.html",
-        context={
+        name="audit_detail.html",
+        context=_shell(root, "audits", runs)
+        | {
             "bundle": bundle,
+            "run": run,
             "leakage": leakage,
             "safe": safe,
             "publication": publication,
             "target_urn": target_urn,
             "server": server,
-            "glossary": GLOSSARY,
             "activity": build_activity(root, bundle, publication),
             "advantage_lost": round((1 - leakage["advantage_retained"]) * 100, 1),
             "safe_retained": round(safe["advantage_retained"] * 100),
@@ -138,6 +228,9 @@ def _render(
             "safe_width": round(safe["observed_auc"] * 100, 1),
         },
     )
+
+
+# ---- Audit --------------------------------------------------------------
 
 
 def _audit_config(root: Path) -> AuditConfig:

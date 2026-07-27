@@ -1,96 +1,177 @@
+import re
+import shutil
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from hindsight.web import create_app
 from hindsight.web.glossary import GLOSSARY
+from hindsight.web.health import datahub_health, reset_cache
+from hindsight.web.runs import list_runs, record_run, runs_dir
 
 
-def _client() -> TestClient:
+@pytest.fixture
+def client() -> TestClient:
+    reset_cache()
     return TestClient(create_app(Path.cwd()))
 
 
-def test_console_renders_real_evidence() -> None:
-    response = _client().get("/")
-    assert response.status_code == 200
-    assert "Your model is not smarter" in response.text
-    assert "1.000000" in response.text
-    assert "0.833630" in response.text
-    assert "0.924842" in response.text
-    assert "0.21" in response.text
-    assert "0.24" in response.text
-    assert "Importance gets this exactly backwards" in response.text
-    assert "total by construction" in response.text
-    assert "payment.available_at &lt;= application.prediction_time" in response.text
+@pytest.fixture
+def clean_runs():
+    """Keep real evidence out of the way while exercising empty/populated states."""
+    directory = runs_dir(Path.cwd())
+    backup = directory.with_name("runs.testbackup")
+    if directory.exists():
+        shutil.move(str(directory), str(backup))
+    yield directory
+    if directory.exists():
+        shutil.rmtree(directory)
+    if backup.exists():
+        shutil.move(str(backup), str(directory))
 
 
-def test_console_explains_itself_to_a_newcomer() -> None:
-    """A visitor who has never seen this project must be able to follow it."""
-    text = _client().get("/").text
-    assert "What is this?" in text
-    assert "target leakage" in text.lower()
-    # The originality argument must be on the page, not only in the README.
-    assert "Why this needs DataHub" in text
-    assert "column-level lineage" in text
+# -- Shell ------------------------------------------------------------------
 
 
-def test_console_exposes_theme_toggle_and_both_themes() -> None:
-    text = _client().get("/").text
-    assert 'id="theme-toggle"' in text
-    assert "hindsight-theme" in text  # pre-paint theme restore, avoids a flash
+def test_every_page_renders_the_app_shell(client: TestClient) -> None:
+    for path in ("/", "/audits", "/evidence", "/settings"):
+        text = client.get(path).text
+        assert 'class="sidebar"' in text, path
+        assert 'href="/audits"' in text, path
+        assert 'id="theme-toggle"' in text, path
 
 
-def test_console_shows_backend_activity_log() -> None:
-    text = _client().get("/").text
+def test_navigation_marks_the_current_page(client: TestClient) -> None:
+    assert client.get("/audits").text.count("is-active") == 1
+    assert client.get("/settings").text.count("is-active") == 1
+
+
+# -- Honest connection state ------------------------------------------------
+
+
+def test_status_is_probed_not_hardcoded(client: TestClient, monkeypatch) -> None:
+    """The old console asserted 'connected' unconditionally. It must not."""
+    monkeypatch.delenv("DATAHUB_GMS_URL", raising=False)
+    reset_cache()
+    text = client.get("/").text
+    assert 'data-state="not_configured"' in text
+    assert "DataHub evidence connected" not in text
+
+
+def test_unreachable_datahub_reports_offline(monkeypatch) -> None:
+    monkeypatch.setenv("DATAHUB_GMS_URL", "http://127.0.0.1:9")
+    reset_cache()
+    health = datahub_health(force=True)
+    assert health["state"] == "offline"
+    assert health["can_write"] is False
+
+
+def test_health_api_exposes_state(client: TestClient) -> None:
+    payload = client.get("/api/health/datahub").json()
+    assert payload["state"] in {"connected", "degraded", "offline", "not_configured"}
+    assert "can_write" in payload
+
+
+def test_publish_controls_disabled_when_datahub_cannot_be_written(
+    client: TestClient, monkeypatch
+) -> None:
+    monkeypatch.delenv("DATAHUB_GMS_URL", raising=False)
+    reset_cache()
+    text = client.post("/audits/run", follow_redirects=True).text
+    assert "disabled" in text
+
+
+# -- Runs -------------------------------------------------------------------
+
+
+def test_audits_index_shows_an_empty_state_before_any_run(client: TestClient, clean_runs) -> None:
+    text = client.get("/audits").text
+    assert "No runs recorded yet" in text
+
+
+def test_running_an_audit_records_history_and_redirects(client: TestClient, clean_runs) -> None:
+    response = client.post("/audits/run", follow_redirects=False)
+    assert response.status_code == 303
+    assert response.headers["location"].startswith("/audits/")
+
+    runs = list_runs(Path.cwd())
+    assert len(runs) == 1
+    assert runs[0]["release_decision"] == "block"
+
+    listing = client.get("/audits").text
+    assert runs[0]["run_id"] in listing
+    assert "No runs recorded yet" not in listing
+
+
+def test_unknown_run_returns_a_real_404_page(client: TestClient) -> None:
+    response = client.get("/audits/does-not-exist")
+    assert response.status_code == 404
+    assert "That run does not exist" in response.text
+
+
+def test_run_id_traversal_is_rejected(client: TestClient) -> None:
+    assert client.get("/audits/..%2F..%2Fsecrets").status_code == 404
+
+
+# -- Evidence detail --------------------------------------------------------
+
+
+def test_audit_detail_renders_the_full_evidence(client: TestClient, clean_runs) -> None:
+    run = record_run(Path.cwd(), client.get("/api/audit").json())
+    text = client.get(f"/audits/{run['run_id']}").text
+    assert "Your model is not smarter" in text
+    assert "1.000000" in text
+    assert "0.833630" in text
+    assert "0.21" in text and "0.24" in text
+    assert "Importance gets this exactly backwards" in text
     assert 'id="activity-log"' in text
-    assert "Backend activity" in text
-    # Static fallback for visitors without JavaScript.
     assert "<noscript>" in text
 
 
-def test_every_info_control_resolves_to_a_glossary_entry() -> None:
-    """No info button may point at a term that does not exist."""
-    import re
-
-    text = _client().get("/").text
-    referenced = set(re.findall(r'data-info="([^"]+)"', text))
-    assert referenced, "expected the console to expose info controls"
-    missing = referenced - set(GLOSSARY)
-    assert not missing, f"info controls without glossary entries: {sorted(missing)}"
+def test_overview_explains_itself_to_a_newcomer(client: TestClient) -> None:
+    text = client.get("/").text
+    assert "What is this?" in text
+    assert "target leakage" in text.lower()
+    assert "Why this needs DataHub" in text
 
 
-def test_activity_api_reports_datahub_operations() -> None:
-    response = _client().get("/api/activity")
-    assert response.status_code == 200
-    activity = response.json()["activity"]
-    assert activity, "expected a non-empty activity feed"
+def test_every_info_control_resolves_to_a_glossary_entry(client: TestClient) -> None:
+    for path in ("/", "/settings", "/evidence"):
+        referenced = set(re.findall(r'data-info="([^"]+)"', client.get(path).text))
+        missing = referenced - set(GLOSSARY)
+        assert not missing, f"{path} references unknown glossary keys: {sorted(missing)}"
+
+
+# -- APIs -------------------------------------------------------------------
+
+
+def test_activity_api_reports_datahub_operations(client: TestClient) -> None:
+    activity = client.get("/api/activity").json()["activity"]
+    assert activity
     channels = {entry["channel"] for entry in activity}
-    assert "datahub" in channels
-    assert "mcp" in channels
+    assert {"datahub", "mcp"} <= channels
     for entry in activity:
         assert entry["source"] in {"recorded", "computed", "live"}
 
 
-def test_glossary_api_is_complete_and_plain_language() -> None:
-    glossary = _client().get("/api/glossary").json()["glossary"]
+def test_glossary_api_is_complete_and_plain_language(client: TestClient) -> None:
+    glossary = client.get("/api/glossary").json()["glossary"]
     assert "target-leakage" in glossary
     for key, entry in glossary.items():
-        assert entry["term"], key
-        assert entry["short"], key
+        assert entry["term"] and entry["short"], key
         assert len(entry["body"]) > 80, f"{key} needs a real explanation"
 
 
-def test_audit_api_uses_deterministic_workflow() -> None:
-    response = _client().get("/api/audit")
-    assert response.status_code == 200
-    report = response.json()
+def test_audit_api_uses_deterministic_workflow(client: TestClient) -> None:
+    report = client.get("/api/audit").json()
     assert report["release_decision"] == "block"
     assert report["verdict"] == "confirmed"
     assert report["validation"]["verdicts"]["safe_control"]["verdict"] == "clear_for_release"
 
 
-def test_console_publish_form_is_dry_run_without_checkbox() -> None:
-    response = _client().post(
+def test_publish_is_dry_run_without_approval(client: TestClient, clean_runs) -> None:
+    response = client.post(
         "/publish",
         data={
             "target_urn": "urn:li:dataset:dry-run",
@@ -101,5 +182,5 @@ def test_console_publish_form_is_dry_run_without_checkbox() -> None:
     assert "awaiting human approval" in response.text.lower()
 
 
-def test_health_endpoint() -> None:
-    assert _client().get("/health").json() == {"status": "ok"}
+def test_health_endpoint(client: TestClient) -> None:
+    assert client.get("/health").json() == {"status": "ok"}

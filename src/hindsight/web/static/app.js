@@ -274,11 +274,44 @@
     });
   }
 
+  /* -- 5. Live DataHub status --------------------------------------------- */
+
+  function initStatusPolling() {
+    var pill = document.getElementById("datahub-status");
+    if (!pill || !window.fetch) return;
+
+    var label = pill.querySelector(".connection-label");
+
+    function refresh() {
+      fetch("/api/health/datahub", { headers: { Accept: "application/json" } })
+        .then(function (response) {
+          return response.ok ? response.json() : null;
+        })
+        .then(function (health) {
+          if (!health) return;
+          pill.setAttribute("data-state", health.state);
+          pill.setAttribute("title", health.detail || "");
+          if (label) label.textContent = health.label;
+        })
+        .catch(function () {
+          // The console itself is unreachable; leave the last known state.
+        });
+    }
+
+    // The server already rendered a probed state, so wait a full interval
+    // before asking again rather than duplicating work on load.
+    setInterval(refresh, 15000);
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) refresh();
+    });
+  }
+
   function boot() {
     initTheme();
     initPopovers();
     initActivityLog();
     initPublishForm();
+    initStatusPolling();
   }
 
   if (document.readyState === "loading") {
