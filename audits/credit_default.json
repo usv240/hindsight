@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "name": "credit_default",
+  "description": "Seeded synthetic credit-risk scenario with one planted post-outcome leak and one legitimate high-correlation safe control.",
+  "scenario": "scenarios/credit_default/scenario.json",
+  "transformation_sql": "examples/leaky_feature.sql",
+  "remediation_sql": "examples/remediation.sql",
+  "post_outcome_table": "payment_events_after_decision",
+  "available_column": "available_at",
+  "prediction_column": "prediction_time",
+  "synthetic": true,
+  "target_urn": null
+}

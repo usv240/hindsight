@@ -139,15 +139,51 @@ Publication is **dry-run by default** and requires explicit `--approve-writeback
 
 ---
 
-## Point this at your own model
+## Point this at your own pipeline
 
-1. Configure DataHub — `DATAHUB_GMS_URL` and `DATAHUB_GMS_TOKEN`. Use a **service account**, ideally scoped with a Default View.
-2. Ensure your feature datasets carry fine-grained column lineage and a time semantic (`event_time` / `available_at`). Hindsight returns `insufficient_metadata` rather than guessing when these are missing — a low-evidence answer is the honest one.
-3. Audit a model version:
-   ```powershell
-   uv run hindsight demo-audit --output evidence/my-audit.local.json
-   ```
-4. Wire it into CI with **[examples/ci/hindsight-gate.yml](examples/ci/hindsight-gate.yml)** — a copyable workflow that blocks a pull request on `confirmed` leakage.
+**Read this before assuming what works.** Hindsight is four components, and they are at
+different levels of maturity. The honest breakdown:
+
+| Component | Works on your own assets today? |
+|---|---|
+| SQL / temporal verification | **Yes.** `verify-sql` runs standalone against any transformation. |
+| Verdict lattice and evidence grading | **Yes.** Generic over any `AuditCase`. |
+| DataHub write-back, approval gate, re-read | **Yes.** Works against any URN in your catalog. |
+| Point-in-time reconstruction | **Not yet.** Expects the scenario-data shape used by the seeded scenario. |
+
+So you can check your own SQL and publish governed evidence today. Reconstructing *your*
+features point-in-time still requires producing a scenario config the validation runner
+understands. That is the honest boundary between this and a shipped product.
+
+**Check your own transformation right now:**
+
+```powershell
+uv run hindsight verify-sql path/to/your_feature.sql --post-outcome-table your_events_table
+```
+
+**Define an audit target** — see [audits/](audits/) for the schema:
+
+```powershell
+uv run hindsight demo-audit --audit audits/my_pipeline.json
+uv run hindsight serve --audit audits/my_pipeline.json
+```
+
+Set `target_urn` in that config. Hindsight then **refuses** to publish the verdict to any
+other asset unless you pass `--allow-urn-mismatch`, because writing evidence onto an asset
+it does not describe puts false findings in your catalog.
+
+**Wire it into CI** with [examples/ci/hindsight-gate.yml](examples/ci/hindsight-gate.yml) —
+a copyable workflow that blocks a pull request on `confirmed` leakage.
+
+### Operational notes
+
+- Use a DataHub **service account**, ideally scoped with a Default View. `--token` lands in
+  shell history; prefer `DATAHUB_GMS_TOKEN`.
+- The console **has no authentication** and can write to your catalog. It binds to
+  `127.0.0.1` by default and warns if you bind it anywhere else. Put it behind an
+  authenticating proxy before exposing it.
+- Missing lineage or time metadata yields `insufficient_metadata` rather than a guess. A
+  low-evidence answer is the honest one.
 
 ---
 
