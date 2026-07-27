@@ -78,6 +78,10 @@ The live path uses DataHub Core, the Python SDK, and the official MCP server to:
 
 Publication is dry-run by default and requires explicit `--approve-writeback`. Evidence is recorded under [evidence](evidence/).
 
+## Reusable DataHub Skill
+
+The upstream-shaped [DataHub ML Release Audit Skill](skills/datahub-ml-release-audit/SKILL.md) turns Hindsight's calibrated evidence protocol into a reusable Agent Skill. It includes the verdict contract, MCP/CLI workflow, human-approved writeback rules, and a deterministic evidence-bundle validator. The local contribution is tested; an upstream pull request remains external work and is not claimed as complete.
+
 ## Useful commands
 
 ```powershell
@@ -94,7 +98,7 @@ uv run pytest
 
 ## Reproducibility
 
-- 26 tests pass, including the single-command judge regression.
+- 29 tests pass, including the single-command judge regression and Skill contract tests.
 - Offline recorded-fixture replay: approximately `0.023s`, target `<60s`.
 - Point-in-time reconstruction: approximately `0.159s` for 4,000 applications.
 - Apache License 2.0.
