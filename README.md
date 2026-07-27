@@ -2,65 +2,103 @@
 
 > Your model is not smarter. It has hindsight.
 
-Hindsight is an evidence-based ML release gate that uses DataHub lineage and time semantics to catch target and temporal leakage before a model is promoted. Its deterministic core decides verdicts; an LLM may explain evidence, but cannot promote a verdict.
+Hindsight is an evidence-based ML release gate that uses DataHub column lineage and time semantics to catch target and temporal leakage before a model is promoted. Deterministic evidence decides the verdict; an LLM may explain evidence but cannot promote it.
 
-## Current status
-
-The core Phase 0 feasibility gates pass. Hindsight now has a deterministic verdict engine, live DataHub lineage/write-back proof, official MCP read/mutation proof, bounded DuckDB point-in-time reconstruction, and a server-rendered evidence console. The frozen credit scenario confirms the planted leak while clearing a legitimately predictive safe control.
-
-## Quick start
+## Judge quick start
 
 ```powershell
 uv sync --extra dev
-uv run hindsight serve
-uv run hindsight replay-fixture
-uv run hindsight preflight --output evidence/phase0/preflight.local.json
-uv sync --extra dev
-uv run hindsight serve
-uv run hindsight replay-fixture --extra datahub
-uv run python -m hindsight.phase0.datahub_probe
-uv run python -m hindsight.phase0.writeback_probe
-uv run python -m hindsight.phase0.mcp_probe
-uv run hindsight validate-credit --output evaluations/results.local.json
-uv run hindsight verify-sql examples/leaky_feature.sql --post-outcome-table payment_events_after_decision
-uv run hindsight demo-audit --output evidence/demo-audit.local.json
-uv run hindsight publish-audit --target-urn "<dataset-urn>"
-uv run hindsight publish-audit --target-urn "<dataset-urn>" --approve-writeback
-uv run hindsight audit-fixture examples/confirmed_leakage.case.json
-uv run pytest
+uv run hindsight demo
 ```
 
-The audit command exits `0` only for `clear_for_release`, `2` for incomplete/review evidence, and `3` for a blocking leakage verdict.
+That single command runs the unsafe case, the high-correlation safe control, both independent confirmation routes, fixture integrity checks, and the central regression argument. It requires no Docker, DataHub, network, warehouse, or LLM and returns in well under a minute.
 
-Open `http://127.0.0.1:8100` after `hindsight serve`. The console and CLI consume the same deterministic bundle. See [QUICKSTART.md](QUICKSTART.md) for offline and full DataHub paths.
+To open the evidence console:
 
-For the fastest judge path, `hindsight replay-fixture` verifies the committed recording and reproduces the leakage verdict, safe control, SQL finding, and remediation in 0.023 seconds without Docker, DataHub, an LLM, or network access. The fixture also passes a live semantic-equivalence check against local DataHub. See [fixtures/credit_default/README.md](fixtures/credit_default/README.md) and [evaluations/fixture_replay.json](evaluations/fixture_replay.json).
+```powershell
+uv run hindsight serve
+```
+
+Then visit `http://127.0.0.1:8100`. See [QUICKSTART.md](QUICKSTART.md) for the full live DataHub path.
+
+## The result an ablation detector gets backwards
+
+| Feature | Ablation delta | Hindsight verdict |
+|---|---:|---|
+| Planted post-outcome feature | 0.21 | `confirmed` |
+| Legitimate pre-cutoff control | **0.24** | `clear_for_release` |
+
+The safe feature matters more by ablation, yet Hindsight clears it. Feature importance is not evidence that information was legally available at prediction time.
+
+## Two independent confirmation routes
+
+Hindsight deliberately keeps two artifacts separate:
+
+1. [confirmed_leakage.case.json](examples/confirmed_leakage.case.json) isolates the deterministic SQL/time route. Its `point_in_time_advantage_collapsed` flag is intentionally `false` because deterministic cutoff proof alone confirms that case.
+2. The [recorded fixture](fixtures/credit_default/README.md) exercises the independent point-in-time route for the same planted defect mechanism. It removes post-cutoff records, reruns the evidence comparison, and confirms the collapse.
+
+They are complementary proofs, not conflicting measurements.
+
+## Honest synthetic-demo disclosures
+
+The planted synthetic leak is **total by construction**, so its observed AUC of `1.000000` is expected. Real leakage can be subtler. The generator is frozen; Hindsight reports the measured result rather than retuning it to look realistic.
+
+The point-in-time demo defines collapse as a strict majority of the apparent advantage disappearing. The `50%` boundary is a visible, configurable demo policy—not a universal scientific constant. It cannot confirm leakage by itself: the deterministic engine also requires directional post-outcome lineage and an authoritative availability-time violation.
+
+Measured reconstruction:
+
+| Measure | Observed | Point-in-time |
+|---|---:|---:|
+| Planted case AUC | 1.000000 | 0.833630 |
+| Advantage over baseline | 0.301712 | 0.135342 |
+| Advantage retained | — | 44.858% |
+| Legitimate control AUC | 0.924842 | 0.924842 |
+
+See [evaluations/results.json](evaluations/results.json).
 
 ## Evidence contract
 
-Hindsight distinguishes five states:
-
 - `insufficient_metadata`: required lineage or time evidence is absent.
-- `needs_review`: ancestry looks suspicious, but direction or time is unproven.
-- `high_confidence`: an outcome-derived path and availability-time violation are established.
-- `confirmed`: deterministic cutoff proof or point-in-time reconstruction confirms the violation.
-- `clear_for_release`: the configured checks pass.
+- `needs_review`: ancestry is suspicious, but direction or time is unproven.
+- `high_confidence`: directional outcome lineage and an availability violation are established.
+- `confirmed`: deterministic cutoff proof or qualified point-in-time reconstruction confirms the violation.
+- `clear_for_release`: configured checks and planted safe controls pass.
 
-Feature ablation is recorded only as explanatory importance evidence. It cannot confirm leakage.
+Plain ablation is explanatory context only. It is unreachable as a confirmation branch in the verdict engine.
 
-## Measured validation result
+## DataHub execution
 
-The frozen 4,000-row credit scenario completed in 0.159 seconds. Its planted leakage case fell from AUC 1.000000 to 0.833630 under point-in-time reconstruction and reached `confirmed`. A legitimate pre-cutoff control retained AUC 0.924842 and remained `clear_for_release` despite a 0.226554 ablation delta. See [evaluations/results.json](evaluations/results.json).
+The live path uses DataHub Core, the Python SDK, and the official MCP server to:
 
-The SQL verifier parses transformations with `sqlglot`. It blocks the leaky example because no cutoff on the configured post-outcome source exists, while [examples/remediation.sql](examples/remediation.sql) clears with the exact `payment.available_at <= application.prediction_time` predicate.
+- retrieve fine-grained column lineage and transformation context;
+- verify field tags and governed metadata through MCP;
+- publish an approved confirmed tag, structured verdict, linked audit Document, and active incident;
+- reread every mutation;
+- reuse the same active incident on retry.
 
-`hindsight demo-audit` combines transformation verification, point-in-time reconstruction, deterministic verdicting, the safe control, and remediation verification into one evidence bundle. It returns blocking exit code `3` and leaves DataHub write-back at `awaiting_human_approval`. A judge-readable example is available at [examples/audit_document.md](examples/audit_document.md).
+Publication is dry-run by default and requires explicit `--approve-writeback`. Evidence is recorded under [evidence](evidence/).
 
-`hindsight publish-audit` is dry-run by default and does not contact DataHub. The explicit `--approve-writeback` flag publishes the confirmed field tag, structured verdict, linked audit Document, and active incident, then rereads all four. Repeating an approved publication reuses the existing case incident. See [evidence/writeback/2026-07-27.md](evidence/writeback/2026-07-27.md).
+## Useful commands
 
-## DataHub integration target
+```powershell
+uv run hindsight demo --json
+uv run hindsight replay-fixture
+uv run hindsight demo-audit --output evidence/demo-audit.local.json
+uv run hindsight verify-sql examples/leaky_feature.sql --post-outcome-table payment_events_after_decision
+uv run hindsight publish-audit --target-urn "<synthetic-dataset-urn>"
+uv run hindsight publish-audit --target-urn "<synthetic-dataset-urn>" --approve-writeback
+uv run pytest
+```
 
-The live gate uses DataHub Core plus the Python SDK/MCP server to add and retrieve column-level lineage, then write approved audit evidence back to the graph. The official SDK supports custom downstream-to-upstream column mappings and retrieving column-level lineage paths.
+`demo` returns `0` when the demonstration reproduces all expected outcomes. Release-gate commands retain separate CI semantics: `0` clear, `2` incomplete/review, and `3` block.
+
+## Reproducibility
+
+- 26 tests pass, including the single-command judge regression.
+- Offline recorded-fixture replay: approximately `0.023s`, target `<60s`.
+- Point-in-time reconstruction: approximately `0.159s` for 4,000 applications.
+- Apache License 2.0.
+- Raw `*.local.json`, environments, caches, and build outputs are ignored.
 
 ## License
 

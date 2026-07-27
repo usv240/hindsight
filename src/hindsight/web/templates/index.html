@@ -61,6 +61,18 @@
       <p class="finding-copy">{{ bundle.sql_verification.reason }}</p>
     </section>
 
+    <section class="panel contrast-panel" aria-labelledby="contrast-heading">
+      <div class="section-heading">
+        <div><p class="eyebrow">The ablation trap</p><h2 id="contrast-heading">Importance gets this exactly backwards</h2></div>
+      </div>
+      <div class="contrast-grid">
+        <article class="contrast-item danger-card"><span>Planted leaked feature</span><strong>{{ "%.2f"|format(bundle.ablation_contrast.leaked_feature) }}</strong><small>ablation delta</small><b>confirmed</b></article>
+        <div class="contrast-vs" aria-hidden="true">&lt;</div>
+        <article class="contrast-item safe-card"><span>Legitimate safe feature</span><strong>{{ "%.2f"|format(bundle.ablation_contrast.safe_feature) }}</strong><small>ablation delta</small><b>clear_for_release</b></article>
+      </div>
+      <p>The safe feature has the larger ablation delta. Hindsight clears it because it existed before prediction; importance alone cannot prove leakage.</p>
+    </section>
+
     <div class="two-column">
       <section class="panel" aria-labelledby="reconstruction-heading">
         <div class="section-heading">
@@ -76,6 +88,7 @@
           <div class="bar"><i class="honest" style="width: {{ reconstructed_width }}%"></i></div>
         </div>
         <div class="delta-callout"><strong>{{ "%.1f"|format((1 - leakage.advantage_retained) * 100) }}%</strong><span>of the apparent feature advantage disappeared</span></div>
+        <p class="disclosure">AUC 1.000000 is expected: this synthetic planted leak is total by construction. Real leakage can be subtler.</p>
       </section>
 
       <section class="panel safe-panel" aria-labelledby="control-heading">

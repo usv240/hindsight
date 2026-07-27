@@ -6,6 +6,7 @@ import os
 from collections.abc import Sequence
 from pathlib import Path
 
+from hindsight.demo import render_judge_demo, run_judge_demo
 from hindsight.detectors import verify_temporal_cutoff
 from hindsight.engine import audit_case
 from hindsight.fixtures import run_fixture_replay
@@ -19,6 +20,10 @@ from hindsight.writeback import publish_audit
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="hindsight")
     commands = parser.add_subparsers(dest="command", required=True)
+
+    golden = commands.add_parser("demo", help="Start here: run the complete judge demo")
+    golden.add_argument("--json", action="store_true")
+    golden.add_argument("--output", type=Path)
 
     audit = commands.add_parser("audit-fixture", help="Audit one deterministic JSON case")
     audit.add_argument("case", type=Path)
@@ -85,6 +90,15 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.command == "demo":
+        report = run_judge_demo(Path.cwd())
+        rendered = json.dumps(report, indent=2) + "\n" if args.json else render_judge_demo(report)
+        if args.output:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        print(rendered, end="")
+        return report["exit_code"]
+
     if args.command == "preflight":
         report = write_preflight(args.output)
         print(json.dumps(report, indent=2))

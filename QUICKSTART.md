@@ -1,11 +1,28 @@
 # Hindsight quickstart
 
-## Evidence console without DataHub
+Run commands from the `hindsight` directory.
 
-From the `hindsight` directory:
+## One-command judge path
 
 ```powershell
 uv sync --extra dev
+uv run hindsight demo
+```
+
+This is the command to run first. It shows the planted case, the safe control,
+the `0.21` versus `0.24` ablation reversal, the independent point-in-time proof,
+and the synthetic-demo disclosures. It uses no external service and returns `0`
+when every expected outcome is reproduced.
+
+For machine-readable output:
+
+```powershell
+uv run hindsight demo --json --output evaluations/demo.local.json
+```
+
+## Evidence console without DataHub
+
+```powershell
 uv run hindsight serve
 ```
 
@@ -16,9 +33,9 @@ required.
 
 Useful endpoints:
 
-- `/` — server-rendered evidence console
-- `/api/audit` — machine-readable audit bundle
-- `/health` — process health
+- `/` - server-rendered evidence console
+- `/api/audit` - machine-readable audit bundle
+- `/health` - process health
 
 ## Full DataHub path
 
@@ -31,21 +48,21 @@ uv run python -m hindsight.phase0.mcp_probe
 uv run hindsight serve
 ```
 
-The console's publication form is dry-run by default. To publish, paste the
+The console publication form is dry-run by default. To publish, paste the
 synthetic leaky dataset URN returned by the probe and explicitly select the
 approval checkbox. The server writes the confirmed field tag, structured
 property, linked audit Document, and active incident, then rereads all four.
 
 Never enable approved mutation against a production catalog for the demo.
 
-## CLI-only golden path
+## CI release-gate path
 
 ```powershell
 uv run hindsight demo-audit --output evidence/demo-audit.local.json
 ```
 
-Exit code `3` is expected: the release is correctly blocked. Raw `*.local.json`
-reports are ignored by Git.
+Exit code `3` is expected because this command models the release gate and the
+candidate is correctly blocked. Raw `*.local.json` reports are ignored by Git.
 
 ## Verification
 

@@ -16,6 +16,10 @@ def test_console_renders_real_evidence() -> None:
     assert "1.000000" in response.text
     assert "0.833630" in response.text
     assert "0.924842" in response.text
+    assert "0.21" in response.text
+    assert "0.24" in response.text
+    assert "Importance gets this exactly backwards" in response.text
+    assert "total by construction" in response.text
     assert "payment.available_at &lt;= application.prediction_time" in response.text
     assert "awaiting_human_approval" not in response.text
 

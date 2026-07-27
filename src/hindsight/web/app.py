@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from hindsight.demo import run_judge_demo
 from hindsight.workflow import run_demo_audit
 from hindsight.writeback import publish_audit
 
@@ -101,12 +102,16 @@ def _render(
 
 
 def _audit(root: Path) -> dict[str, Any]:
-    return run_demo_audit(
+    bundle = run_demo_audit(
         scenario_path=root / "scenarios/credit_default/scenario.json",
         transformation_path=root / "examples/leaky_feature.sql",
         remediation_path=root / "examples/remediation.sql",
         post_outcome_table="payment_events_after_decision",
     )
+    judge_demo = run_judge_demo(root)
+    bundle["ablation_contrast"] = judge_demo["ablation_contrast"]
+    bundle["demo_disclosures"] = judge_demo["disclosures"]
+    return bundle
 
 
 def _find_project_root() -> Path:

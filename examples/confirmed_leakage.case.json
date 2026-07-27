@@ -13,5 +13,9 @@
   "deterministic_cutoff_proof": true,
   "point_in_time_advantage_collapsed": false,
   "ablation_delta": 0.21,
-  "notes": ["Frozen synthetic scenario; score was not preselected."]
+  "notes": [
+    "This fixture isolates the deterministic SQL/time confirmation route, so point_in_time_advantage_collapsed is intentionally false.",
+    "The independent recorded fixture exercises point-in-time confirmation for the same planted defect mechanism.",
+    "The synthetic planted leak is total by construction; real-world leakage can be subtler."
+  ]
 }
