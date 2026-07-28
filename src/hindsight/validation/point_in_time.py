@@ -212,11 +212,24 @@ def _generate(config: dict[str, Any]) -> dict[str, Any]:
     label = (label_score >= np.quantile(label_score, 0.70)).astype(int)
 
     historical_days = np.clip(18 + 9 * prior_delinquencies + rng.normal(0, 10, rows), 0, None)
-    post_outcome_days = np.where(
+    leaked_days = np.where(
         label == 1,
         150 + rng.normal(0, 12, rows),
         4 + rng.normal(0, 2, rows),
     )
+
+    # How far the defect actually reaches. In a real pipeline a post-cutoff join
+    # rarely matches every row - only some records have a later event to attach -
+    # so the leak contaminates a fraction of the training set rather than all of
+    # it. This describes the defect's *reach*, not a target score: whatever AUC
+    # falls out of a given coverage is what gets published.
+    coverage = float(config.get("post_cutoff_coverage", 1.0))
+    coverage = min(max(coverage, 0.0), 1.0)
+    if coverage >= 1.0:
+        post_outcome_days = leaked_days
+    else:
+        contaminated = rng.random(rows) < coverage
+        post_outcome_days = np.where(contaminated, leaked_days, historical_days)
     return {
         "base_features": np.column_stack((debt_to_income, np.log1p(monthly_income))),
         "safe_feature": prior_delinquencies.astype(float),

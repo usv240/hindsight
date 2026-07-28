@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "scenario": "credit_default_subtle_at_origination",
+  "seed": 20260730,
+  "train_rows": 2800,
+  "test_rows": 1200,
+  "prediction_time": "2026-01-10T09:00:00Z",
+  "suspect_feature": "days_since_last_payment",
+  "ground_truth": {
+    "defect": "Only about 15 percent of applications have a post-origination payment attached, so the leak contaminates a minority of the training set.",
+    "safe_reconstruction": "Retain only records with available_at <= prediction_time.",
+    "safe_control": "prior_delinquencies is strongly predictive and entirely pre-cutoff."
+  },
+  "collapse_rule": {
+    "minimum_observed_advantage": 0.05,
+    "maximum_advantage_retained": 0.5,
+    "rationale": "A collapse means a strict majority of the observed advantage disappears."
+  },
+  "safe_control_rule": {
+    "minimum_ablation_delta": 0.05
+  },
+  "post_cutoff_coverage": 0.15
+}

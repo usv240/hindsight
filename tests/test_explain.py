@@ -223,3 +223,56 @@ def test_the_story_names_the_post_outcome_source_not_the_feature() -> None:
     block = text[start : start + 1400]
     assert "payment_events_after_decision" in block
     assert "feature_pipeline_leaky" not in block
+
+
+def test_the_hard_case_is_genuinely_subtle() -> None:
+    """A total leak (AUC 1.000) is a toy. The realistic defect reaches only a
+    minority of records, so the statistical signal is small - and that is
+    precisely where the deterministic route has to carry the verdict."""
+    from hindsight.workflow import run_demo_audit
+
+    config = AuditConfig.load(Path.cwd() / "audits/credit_default_subtle.json", Path.cwd())
+    bundle = run_demo_audit(
+        scenario_path=config.scenario_path,
+        transformation_path=config.transformation_path,
+        remediation_path=config.remediation_path,
+        post_outcome_table=config.post_outcome_table,
+        subject=config.subject,
+    )
+    case = bundle["validation"]["leakage_case"]
+
+    # Subtle by construction: nowhere near a perfect score, small delta.
+    assert case["observed_auc"] < 0.95, "the hard case must not look like a toy"
+    delta = case["observed_auc"] - case["point_in_time_auc"]
+    assert 0.005 < delta < 0.15, f"expected a realistic delta, got {delta:.4f}"
+
+    # The statistical test is too weak here - that is the point of the scenario.
+    assert not case["collapsed"], "if this collapses, the scenario is not the hard case"
+
+    # And it is still caught, by the other route.
+    assert bundle["verdict"] == "confirmed"
+    assert bundle["confirmation_route"] == "deterministic_sql_time_proof"
+    assert bundle["release_decision"] == "block"
+
+
+def test_coverage_is_a_mechanism_not_a_score_knob() -> None:
+    """Coverage describes how far the defect reaches. Lower reach must mean a
+    smaller observed advantage - monotonic, not tuned to hit a target."""
+    import json
+    import tempfile
+
+    from hindsight.validation import run_credit_validation
+
+    base = json.loads(
+        (Path.cwd() / "scenarios/credit_default/scenario.json").read_text(encoding="utf-8")
+    )
+    advantages = []
+    with tempfile.TemporaryDirectory() as tmp:
+        for coverage in (0.1, 0.5, 1.0):
+            config = dict(base)
+            config["post_cutoff_coverage"] = coverage
+            path = Path(tmp) / f"c{coverage}.json"
+            path.write_text(json.dumps(config), encoding="utf-8")
+            advantages.append(run_credit_validation(path)["leakage_case"]["observed_advantage"])
+
+    assert advantages == sorted(advantages), f"advantage should grow with reach: {advantages}"

@@ -44,6 +44,23 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("scenarios/credit_default/scenario.json"),
     )
     validate.add_argument("--output", type=Path, default=Path("evaluations/results.local.json"))
+    scan = commands.add_parser(
+        "scan-sql", help="Scan a directory of SQL (e.g. a dbt project) for missing time guards"
+    )
+    scan.add_argument("path", type=Path)
+    scan.add_argument(
+        "--post-outcome-table",
+        action="append",
+        required=True,
+        dest="post_outcome_tables",
+        help="A table whose rows only exist after the decision. Repeatable.",
+    )
+    scan.add_argument("--available-column", default="available_at")
+    scan.add_argument("--prediction-column", default="prediction_time")
+    scan.add_argument("--dialect")
+    scan.add_argument("--json", action="store_true")
+    scan.add_argument("--output", type=Path)
+
     verify = commands.add_parser("verify-sql", help="Verify a temporal cutoff in SQL")
     verify.add_argument("sql", type=Path)
     verify.add_argument("--post-outcome-table", required=True)
@@ -154,6 +171,26 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.output.write_text(rendered, encoding="utf-8")
         print(rendered, end="")
         return 0 if report["status"] == "passed" else 2
+
+    if args.command == "scan-sql":
+        from hindsight.scan import render, scan_directory
+
+        if not args.path.exists():
+            print(f"error: {args.path} does not exist")
+            return 2
+        result = scan_directory(
+            args.path,
+            post_outcome_tables=args.post_outcome_tables,
+            available_column=args.available_column,
+            prediction_column=args.prediction_column,
+            dialect=args.dialect,
+        )
+        payload = result.to_dict()
+        if args.output:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps(payload, indent=2) if args.json else render(result, args.path), end="")
+        return result.exit_code
 
     if args.command == "verify-sql":
         result = verify_temporal_cutoff(

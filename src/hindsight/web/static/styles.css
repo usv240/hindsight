@@ -1650,3 +1650,37 @@ pre.artifact.is-good { border-left: 3px solid var(--ok); }
 
 details.table-view.panel { padding: var(--sp-4) var(--sp-5); }
 details.table-view.panel summary { font-weight: 600; }
+
+/* -- Trust panel -----------------------------------------------------------
+   The strongest signals (a control that must clear, a frozen generator, a
+   disclosed margin) all require reflection to notice. Under three minutes
+   nobody reflects, so they are stated as objections and answers.
+------------------------------------------------------------------------- */
+
+.trust {
+  padding: var(--sp-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.trust .section-heading { margin-bottom: var(--sp-4); }
+.trust h3 { font-size: var(--step-2); }
+.trust-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: var(--sp-4); }
+.trust-item {
+  padding: var(--sp-4);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--ok);
+}
+.trust-q {
+  font-size: var(--step-0);
+  font-weight: 650;
+  color: var(--text-faint);
+  font-style: italic;
+  margin-bottom: var(--sp-2);
+}
+.trust-a { font-size: var(--step--1); color: var(--text-muted); }
+.trust-a strong { color: var(--text); }
+
+@media (max-width: 640px) { .trust-grid { grid-template-columns: 1fr; } }

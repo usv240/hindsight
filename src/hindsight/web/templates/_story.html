@@ -132,6 +132,50 @@
     </p>
   </div>
 
+  {#- The differentiators that matter most - the control, the frozen generator,
+      the disclosed margin - are all things a reader has to stop and think about.
+      Under three minutes nobody does. State them as claims, up front. -#}
+  <section class="trust" aria-labelledby="trust-heading">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Why you can believe this</p>
+        <h3 id="trust-heading">Four ways this tool could be fooling you, and what stops each</h3>
+      </div>
+    </div>
+    <div class="trust-grid">
+      <article class="trust-item">
+        <p class="trust-q">&ldquo;It probably flags everything.&rdquo;</p>
+        <p class="trust-a">
+          A legitimate feature with a <strong>larger</strong> importance score than the leaked
+          one is audited on every run, and must come back clear. It does.
+          {{ info('safe-control') }}
+        </p>
+      </article>
+      <article class="trust-item">
+        <p class="trust-q">&ldquo;It can only ever say no.&rdquo;</p>
+        <p class="trust-a">
+          One scenario is expected to <strong>pass</strong>, and does &mdash; the same model after
+          the repair. A gate with no &ldquo;yes&rdquo; is not a gate.
+        </p>
+      </article>
+      <article class="trust-item">
+        <p class="trust-q">&ldquo;The numbers were tuned to look good.&rdquo;</p>
+        <p class="trust-a">
+          The data generator is <strong>frozen</strong> and its seed committed. Whatever it
+          produces is published &mdash; including a threshold that was missed by
+          <strong>5.1 points</strong>, disclosed rather than hidden.
+        </p>
+      </article>
+      <article class="trust-item">
+        <p class="trust-q">&ldquo;An LLM decided this.&rdquo;</p>
+        <p class="trust-a">
+          It cannot. A language model may explain the evidence; reaching a verdict runs through
+          deterministic code with no model in the path.{{ info('verdict-lattice') }}
+        </p>
+      </article>
+    </div>
+  </section>
+
   <div class="story-grid">
     <div class="story-card">
       <p class="eyebrow">Why nobody noticed</p>

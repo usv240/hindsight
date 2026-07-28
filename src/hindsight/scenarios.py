@@ -156,6 +156,55 @@ SCENARIOS: dict[str, Scenario] = {
             },
         ],
     ),
+    "credit_default_subtle": Scenario(
+        slug="credit_default_subtle",
+        name="The hard case",
+        domain="Lending",
+        icon="hard",
+        situation=(
+            "The same bank, but the defect is realistic: only about one application in seven "
+            "has post-decision data attached, so the model barely looks suspicious."
+        ),
+        question="Will this applicant repay the loan?",
+        cutoff_moment="the moment the loan is approved or declined",
+        leak_plain=(
+            "The same payment history problem - but it only reaches a minority of records, so "
+            "the model's score barely moves. It looks like an ordinary, slightly-good model."
+        ),
+        leak_why_hidden=(
+            "This is what leakage actually looks like in the wild. Nobody notices a model that "
+            "scores a little better than expected; they ship it. The statistical test alone is "
+            "too weak here - it is the query itself that gives the defect away."
+        ),
+        fix_plain=("The same one-line repair. The size of the leak does not change the fix."),
+        stakes=(
+            "Obvious leaks get caught eventually. This is the kind that reaches production and "
+            "quietly underperforms for a year."
+        ),
+        audit_config="audits/credit_default_subtle.json",
+        story=[
+            {
+                "when": "Day 0",
+                "what": "Thousands of applications are decided.",
+                "note": "Everything the model may know stops here.",
+            },
+            {
+                "when": "Later",
+                "what": "Only some customers make a payment that gets joined back in.",
+                "note": "Roughly one record in seven is contaminated - not all of them.",
+            },
+            {
+                "when": "Testing",
+                "what": "The model scores 0.88 instead of 0.83.",
+                "note": "A small, plausible improvement. Nobody questions it.",
+            },
+            {
+                "when": "Audit",
+                "what": "The statistical test does not fire, but the query proves it anyway.",
+                "note": "This is why there are two independent routes to a verdict.",
+            },
+        ],
+    ),
     "hospital_readmission": Scenario(
         slug="hospital_readmission",
         name="Hospital readmission",

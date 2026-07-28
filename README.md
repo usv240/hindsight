@@ -167,7 +167,7 @@ different levels of maturity. The honest breakdown:
 
 | Component | Works on your own assets today? |
 |---|---|
-| SQL / temporal verification | **Yes.** `verify-sql` runs standalone against any transformation. |
+| SQL / temporal verification | **Yes.** `scan-sql` walks a whole dbt project; `verify-sql` checks one file. Neither needs DataHub or the seeded data. |
 | Verdict lattice and evidence grading | **Yes.** Generic over any `AuditCase`. |
 | DataHub write-back, approval gate, re-read | **Yes, for an exact bound dataset URN whose offending field exists in schema metadata.** |
 | Point-in-time reconstruction | **Not yet.** Expects the scenario-data shape used by the seeded scenario. |
@@ -176,7 +176,27 @@ So you can check your own SQL and publish governed evidence today after binding 
 features point-in-time still requires producing a scenario config the validation runner
 understands. That is the honest boundary between this and a shipped product.
 
-**Check your own transformation right now:**
+**Scan your own dbt project right now** — no DataHub, no seeded data, no setup:
+
+```powershell
+uv run hindsight scan-sql path/to/dbt/models   --post-outcome-table payments_after_decision   --post-outcome-table disputes
+```
+
+```text
+Scanned 214 SQL file(s) under models
+
+VIOLATIONS (2) - post-outcome data with no cutoff:
+  models/marts/fct_applications.sql
+    reads payments_after_decision without an availability guard
+
+clean: 11   violations: 2   unchecked: 0   no post-outcome source: 201
+```
+
+Exit codes match the release gate: `3` blocks a pull request, `0` lets it through.
+Files it could not parse are reported as **unchecked**, never as clean — a file that was
+never examined has not passed.
+
+**Or a single transformation:**
 
 ```powershell
 uv run hindsight verify-sql path/to/your_feature.sql --post-outcome-table your_events_table

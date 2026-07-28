@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "name": "credit_default_subtle",
+  "description": "A realistic partial leak: only ~15% of records carry post-cutoff data, so the statistical signal is small and the deterministic SQL proof does the work.",
+  "scenario": "scenarios/credit_default_subtle/scenario.json",
+  "transformation_sql": "examples/leaky_feature.sql",
+  "remediation_sql": "examples/remediation.sql",
+  "post_outcome_table": "payment_events_after_decision",
+  "available_column": "available_at",
+  "prediction_column": "prediction_time",
+  "synthetic": true,
+  "target_urn": null
+}
