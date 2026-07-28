@@ -112,9 +112,11 @@
     <span class="finding danger">Temporal violation</span>
   </div>
 
-  {% include "_timeline.html" %}
-
-  <p class="prose" style="margin-top: var(--sp-5);">{{ bundle.sql_verification.reason }}</p>
+  <p class="prose">
+    The timeline above the fold shows this on a calendar. Here is the exact finding from the
+    transformation itself:
+  </p>
+  <p class="prose" style="margin-top: var(--sp-4);"><code>{{ bundle.sql_verification.reason }}</code></p>
 </section>
 
 <section class="panel" aria-labelledby="trap-heading">

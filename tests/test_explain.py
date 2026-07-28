@@ -111,14 +111,56 @@ def test_scenarios_are_told_without_jargon() -> None:
             assert word not in blurb, f"{scenario.slug} leaks jargon: {word}"
 
 
-def test_scenarios_use_distinct_data_so_results_differ() -> None:
+def test_each_scenario_is_a_genuinely_different_audit() -> None:
+    """Not distinct *data* necessarily - the fixed loan case reuses its dataset
+    on purpose, because it is the same model after repair. What must differ is
+    the audit: seed, transformation, or subject."""
     import json
 
-    seeds = set()
+    fingerprints = set()
     for scenario in list_scenarios():
         config = AuditConfig.load(Path.cwd() / scenario.audit_config, Path.cwd())
-        seeds.add(json.loads(config.scenario_path.read_text(encoding="utf-8"))["seed"])
-    assert len(seeds) == len(SCENARIOS), "each scenario needs its own seed"
+        seed = json.loads(config.scenario_path.read_text(encoding="utf-8"))["seed"]
+        fingerprints.add((seed, config.transformation_path.name, config.subject))
+    assert len(fingerprints) == len(SCENARIOS), "two scenarios run an identical audit"
+
+
+def test_at_least_one_scenario_can_pass() -> None:
+    """A gate that can only ever say no is indistinguishable from one that is
+    not looking. A reviewer must be able to see the tool clear a model."""
+    from hindsight.workflow import run_demo_audit
+
+    passing = [s for s in list_scenarios() if s.slug == "credit_default_fixed"]
+    assert passing, "expected a scenario that clears"
+
+    config = AuditConfig.load(Path.cwd() / passing[0].audit_config, Path.cwd())
+    bundle = run_demo_audit(
+        scenario_path=config.scenario_path,
+        transformation_path=config.transformation_path,
+        remediation_path=config.remediation_path,
+        post_outcome_table=config.post_outcome_table,
+        subject=config.subject,
+    )
+    assert bundle["verdict"] == "clear_for_release"
+    assert bundle["release_decision"] == "allow"
+    assert bundle["exit_code"] == 0
+
+
+def test_blocking_scenarios_still_block() -> None:
+    """The passing case must not have weakened the detector."""
+    from hindsight.workflow import run_demo_audit
+
+    for slug in ("credit_default", "hospital_readmission", "fraud_screening"):
+        config = AuditConfig.load(Path.cwd() / f"audits/{slug}.json", Path.cwd())
+        bundle = run_demo_audit(
+            scenario_path=config.scenario_path,
+            transformation_path=config.transformation_path,
+            remediation_path=config.remediation_path,
+            post_outcome_table=config.post_outcome_table,
+            subject=config.subject,
+        )
+        assert bundle["release_decision"] == "block", slug
+        assert bundle["exit_code"] == 3, slug
 
 
 def test_an_unknown_scenario_falls_back_rather_than_failing() -> None:

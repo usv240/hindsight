@@ -323,6 +323,7 @@ def _audit(root: Path, scenario_slug: str | None = None) -> dict[str, Any]:
         post_outcome_table=config.post_outcome_table,
         available_column=config.available_column,
         prediction_column=config.prediction_column,
+        subject=config.subject,
     )
     judge_demo = run_judge_demo(root)
     bundle["ablation_contrast"] = judge_demo["ablation_contrast"]

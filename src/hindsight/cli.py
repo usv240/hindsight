@@ -182,6 +182,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             post_outcome_table=config.post_outcome_table,
             available_column=config.available_column,
             prediction_column=config.prediction_column,
+            subject=config.subject,
         )
         report["audit_config"] = config.to_dict()
         rendered = json.dumps(report, indent=2) + "\n"
@@ -220,6 +221,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             post_outcome_table=config.post_outcome_table,
             available_column=config.available_column,
             prediction_column=config.prediction_column,
+            subject=config.subject,
         )
         bundle["audit_config"] = config.to_dict()
         report = publish_audit(

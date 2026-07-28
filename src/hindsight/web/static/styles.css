@@ -1534,3 +1534,63 @@ body:not([data-mode]) .tech-only { display: none; }
 @media (max-width: 900px) {
   .hero-explain { grid-template-columns: 1fr; gap: var(--sp-5); }
 }
+
+/* -- Mobile ----------------------------------------------------------------
+   Measured at 390px: the page overflowed by 44px and clipped text mid-word.
+   The causes were a fixed 250px timeline label column, non-wrapping display
+   type, and side-by-side exam cards. Nothing may exceed the viewport.
+------------------------------------------------------------------------- */
+
+@media (max-width: 640px) {
+  html, body { overflow-x: hidden; }
+
+  h1, h2, h3 { overflow-wrap: anywhere; hyphens: auto; }
+  .hero-copy h1 { font-size: clamp(2.1rem, 10vw, 3rem); }
+  .hero-copy .lede { font-size: var(--step-1); }
+
+  /* Exam cards stack rather than overflow. */
+  .analogy-visual { flex-direction: column; width: 100%; }
+  .hero-visual { padding: var(--sp-4); width: 100%; }
+  .hero-visual .exam, .exam { width: 100%; min-width: 0; }
+  .exam-arrow { transform: rotate(90deg); }
+
+  .hero-cta { width: 100%; }
+  .hero-cta .btn { flex: 1 1 auto; justify-content: center; }
+
+  /* The timeline's fixed label column is the main overflow source. */
+  .tl-track { grid-template-columns: 1fr; }
+  .tl-axis { margin-left: 0; }
+  .tl-cutoff { left: 50% !important; }
+  .tl-name strong { font-size: 11px; }
+
+  /* Long identifiers must wrap, not push the page wide. */
+  code, .mono, .log-line .detail, .kv dd { overflow-wrap: anywhere; }
+  pre.sql { font-size: 11px; }
+
+  .compare-row, .trap { grid-template-columns: 1fr; }
+  .cards, .scenarios, .beats, .story-grid { grid-template-columns: 1fr; }
+  .content { padding: var(--sp-4) var(--sp-3); }
+  .panel { padding: var(--sp-4) var(--sp-3); border-radius: var(--radius); }
+
+  /* Tables scroll inside their own container, never the page. */
+  .table-wrap { max-width: 100%; }
+}
+
+/* -- Action feedback ------------------------------------------------------- */
+
+.story-timeline { display: grid; gap: var(--sp-2); padding: var(--sp-5); border-radius: var(--radius-lg); border: 1px solid var(--border); background: var(--surface); }
+.story-timeline h3 { font-size: var(--step-2); }
+
+.is-running { position: relative; opacity: 0.75; cursor: progress; }
+.is-running::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  background-size: 40% 100%;
+  animation: runningBar 900ms linear infinite;
+}
+@keyframes runningBar { from { background-position: -40% 0; } to { background-position: 140% 0; } }

@@ -17,6 +17,7 @@ def run_demo_audit(
     post_outcome_table: str,
     available_column: str = "available_at",
     prediction_column: str = "prediction_time",
+    subject: str = "leaked",
 ) -> dict[str, Any]:
     """Produce a deterministic evidence bundle without performing a mutation."""
     transformation = transformation_path.read_text(encoding="utf-8")
@@ -27,7 +28,14 @@ def run_demo_audit(
         prediction_column=prediction_column,
     )
     validation = run_credit_validation(scenario_path)
-    leakage_verdict = validation["verdicts"]["leakage_case"]
+    # The subject is the feature under audit. Auditing a legitimate feature is a
+    # first-class case, not an afterthought: a gate that can only ever say "no"
+    # is indistinguishable from a gate that is not looking.
+    auditing_safe_feature = subject == "safe_control"
+    subject_verdict = validation["verdicts"][
+        "safe_control" if auditing_safe_feature else "leakage_case"
+    ]
+    leakage_verdict = subject_verdict
     safe_verdict = validation["verdicts"]["safe_control"]
 
     # Two independent routes reach `confirmed`, and the audit takes whichever
@@ -36,7 +44,7 @@ def run_demo_audit(
     # transformation that joins a post-outcome table with no availability guard
     # proves post-cutoff information entered the feature, with no retraining and
     # no dependence on where a statistical threshold happens to sit.
-    deterministic_proof = sql_verification.status == "violation"
+    deterministic_proof = sql_verification.status == "violation" and not auditing_safe_feature
     verdict, confirmation_route = _resolve_verdict(
         leakage_verdict["verdict"], deterministic_proof=deterministic_proof
     )
@@ -46,6 +54,13 @@ def run_demo_audit(
     # produce an incoherent confirmed/review state, even though deterministic
     # proof is independently sufficient.
     should_block = verdict in {v.value for v in BLOCKING_VERDICTS}
+    # Three outcomes, not two. A gate that can only block or defer is not a gate -
+    # `allow` has to be reachable, and reachable for a real reason.
+    release_decision = (
+        "block"
+        if should_block
+        else ("allow" if verdict == Verdict.CLEAR_FOR_RELEASE.value else "review")
+    )
     remediation = remediation_path.read_text(encoding="utf-8")
     remediation_verification = verify_temporal_cutoff(
         remediation,
@@ -63,7 +78,7 @@ def run_demo_audit(
     return {
         "schema_version": 1,
         "case_id": leakage_verdict["case_id"],
-        "release_decision": "block" if should_block else "review",
+        "release_decision": release_decision,
         "verdict": verdict,
         "confirmation_route": confirmation_route,
         "point_in_time_verdict": leakage_verdict["verdict"],
@@ -113,7 +128,7 @@ def run_demo_audit(
             ],
             "mutation_performed": False,
         },
-        "exit_code": 3 if should_block else 2,
+        "exit_code": 3 if should_block else (0 if release_decision == "allow" else 2),
     }
 
 

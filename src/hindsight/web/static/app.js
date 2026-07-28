@@ -349,6 +349,32 @@
     apply(mode);
   }
 
+  /* -- 7. Action feedback --------------------------------------------------
+     Running an audit posts and redirects. Without feedback the click appears to
+     do nothing, then the page changes - which reads as a glitch. */
+
+  function initActionFeedback() {
+    var forms = document.querySelectorAll('form[action="/audits/run"]');
+    Array.prototype.forEach.call(forms, function (form) {
+      form.addEventListener("submit", function () {
+        var control = form.querySelector("button");
+        if (!control) return;
+        control.setAttribute("aria-busy", "true");
+        control.classList.add("is-running");
+        if (!control.classList.contains("scenario-card")) {
+          control.textContent = "Running audit...";
+        }
+        control.disabled = true;
+        // Re-enable if the browser restores this page from cache.
+        window.addEventListener("pageshow", function () {
+          control.disabled = false;
+          control.classList.remove("is-running");
+          control.removeAttribute("aria-busy");
+        });
+      });
+    });
+  }
+
   function boot() {
     initTheme();
     initModeSwitch();
@@ -356,6 +382,7 @@
     initActivityLog();
     initPublishForm();
     initStatusPolling();
+    initActionFeedback();
   }
 
   if (document.readyState === "loading") {

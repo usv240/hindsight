@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "name": "credit_default_fixed",
+  "description": "The same loan model after the remediation Hindsight proposed. The guarded transformation is audited and the legitimate feature is the subject, so this run is expected to clear.",
+  "scenario": "scenarios/credit_default/scenario.json",
+  "transformation_sql": "examples/remediation.sql",
+  "remediation_sql": "examples/remediation.sql",
+  "post_outcome_table": "payment_events_after_decision",
+  "available_column": "available_at",
+  "prediction_column": "prediction_time",
+  "synthetic": true,
+  "subject": "safe_control",
+  "target_urn": null
+}

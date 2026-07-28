@@ -36,6 +36,10 @@ class AuditConfig:
     available_column: str = "available_at"
     prediction_column: str = "prediction_time"
     synthetic: bool = True
+    # Which feature this audit is about. "leaked" audits the suspect feature;
+    # "safe_control" audits a legitimate one - the case where a reviewer asks
+    # about a feature that turns out to be fine, and the tool must say so.
+    subject: str = "leaked"
     source_path: Path | None = None
 
     @classmethod
@@ -64,6 +68,7 @@ class AuditConfig:
             available_column=payload.get("available_column", "available_at"),
             prediction_column=payload.get("prediction_column", "prediction_time"),
             synthetic=bool(payload.get("synthetic", True)),
+            subject=payload.get("subject", "leaked"),
             source_path=path,
         )
         config.validate()
@@ -115,6 +120,7 @@ class AuditConfig:
             "prediction_column": self.prediction_column,
             "target_urn": self.target_urn,
             "synthetic": self.synthetic,
+            "subject": self.subject,
         }
 
 

@@ -108,6 +108,54 @@ SCENARIOS: dict[str, Scenario] = {
             },
         ],
     ),
+    "credit_default_fixed": Scenario(
+        slug="credit_default_fixed",
+        name="The same loan model, fixed",
+        domain="Lending",
+        icon="check",
+        situation=(
+            "The same bank, after applying the one-line repair Hindsight proposed. This is "
+            "what a clean audit looks like."
+        ),
+        question="Will this applicant repay the loan?",
+        cutoff_moment="the moment the loan is approved or declined",
+        leak_plain=(
+            "Nothing. The feature under audit only uses information that existed before the "
+            "decision, and the query that builds it says so explicitly."
+        ),
+        leak_why_hidden=(
+            "There is nothing hidden here. This scenario exists so you can see the tool clear "
+            "a model as well as block one - a gate that only ever says no is not a gate."
+        ),
+        fix_plain="No action needed. This version is safe to release.",
+        stakes=(
+            "A reviewer can trust a block only if a clear is also possible. This is the "
+            "control on the whole product."
+        ),
+        audit_config="audits/credit_default_fixed.json",
+        story=[
+            {
+                "when": "Day 0",
+                "what": "Maya applies for a loan. The bank must decide today.",
+                "note": "Everything the model is allowed to know stops here.",
+            },
+            {
+                "when": "Day 31",
+                "what": "Maya makes her first payment.",
+                "note": "The repaired query explicitly refuses to look at this.",
+            },
+            {
+                "when": "Later",
+                "what": "The training set is rebuilt with the availability guard in place.",
+                "note": "Only pre-decision facts survive the join.",
+            },
+            {
+                "when": "Testing",
+                "what": "The model scores well - and keeps that score honestly.",
+                "note": "Its advantage survives the rebuild, so it is real.",
+            },
+        ],
+    ),
     "hospital_readmission": Scenario(
         slug="hospital_readmission",
         name="Hospital readmission",

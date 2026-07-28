@@ -170,7 +170,7 @@ def test_overview_explains_itself_before_it_shows_status() -> None:
 def test_overview_headline_avoids_jargon() -> None:
     """The first thing on screen must not assume ML vocabulary."""
     text = TestClient(create_app(Path.cwd())).get("/").text
-    headline = text[text.find("<h1"): text.find("</h1>")]
+    headline = text[text.find("<h1") : text.find("</h1>")]
     for word in ("leakage", "lineage", "AUC", "ablation", "feature", "cutoff"):
         assert word.lower() not in headline.lower(), f"headline uses jargon: {word}"
 
