@@ -121,3 +121,70 @@ def test_schema_qualified_names_still_match(
     (tmp_path / "q.sql").write_text(f"SELECT * FROM {sql_table};", encoding="utf-8")
     result = scan_directory(tmp_path, post_outcome_tables=[configured])
     assert result.violations, f"{sql_table} vs {configured} should have matched"
+
+
+# -- dbt templating ---------------------------------------------------------
+# Found by running against dbt-labs/jaffle-shop: every model parsed to zero
+# tables, and the scanner reported them as "no post-outcome source" - a false
+# negative wearing a pass.
+
+
+def test_dbt_ref_resolves_to_a_table_name() -> None:
+    from hindsight.scan import resolve_templating
+
+    assert "stg_orders" in resolve_templating("select * from {{ ref('stg_orders') }}")
+    assert "stg_orders" in resolve_templating('select * from {{ref("stg_orders")}}')
+    # Cross-project refs name the model in the second argument.
+    assert "stg_orders" in resolve_templating("select * from {{ ref('proj', 'stg_orders') }}")
+
+
+def test_dbt_source_resolves_to_a_qualified_name() -> None:
+    from hindsight.scan import resolve_templating
+
+    assert "raw.events" in resolve_templating("select * from {{ source('raw', 'events') }}")
+
+
+def test_config_blocks_and_comments_are_removed() -> None:
+    from hindsight.scan import resolve_templating
+
+    resolved = resolve_templating(
+        "{{ config(materialized='table') }}\n{# a comment #}\nselect * from {{ ref('x') }}"
+    )
+    assert "config" not in resolved
+    assert "comment" not in resolved
+    assert "x" in resolved
+
+
+def test_a_leak_hidden_behind_dbt_templating_is_still_caught(tmp_path: Path) -> None:
+    (tmp_path / "model.sql").write_text(
+        """{{ config(materialized='table') }}
+        select a.id, count(e.id) as n
+        from {{ ref('applications') }} as a
+        left join {{ ref('events_after') }} as e on e.k = a.k
+        group by a.id""",
+        encoding="utf-8",
+    )
+    result = scan_directory(tmp_path, post_outcome_tables=["events_after"])
+    assert result.violations, "a dbt ref must not hide a missing guard"
+
+
+def test_a_guarded_dbt_model_is_clean(tmp_path: Path) -> None:
+    (tmp_path / "model.sql").write_text(
+        """select a.id, count(e.id) as n
+        from {{ ref('applications') }} as a
+        left join {{ ref('events_after') }} as e
+          on e.k = a.k and e.available_at <= a.prediction_time
+        group by a.id""",
+        encoding="utf-8",
+    )
+    result = scan_directory(tmp_path, post_outcome_tables=["events_after"])
+    assert not result.violations
+    assert result.safe
+
+
+def test_an_unparseable_query_is_unchecked_never_clean(tmp_path: Path) -> None:
+    """The jaffle-shop bug: indeterminate must not fall through to a pass."""
+    (tmp_path / "weird.sql").write_text("this is not sql at all !!! ((", encoding="utf-8")
+    result = scan_directory(tmp_path, post_outcome_tables=["events_after"])
+    assert not result.safe
+    assert not result.not_applicable or result.unparseable

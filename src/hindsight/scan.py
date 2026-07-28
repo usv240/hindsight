@@ -15,11 +15,50 @@ never checked is not a file that passed.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from hindsight.detectors import verify_temporal_cutoff
+
+# dbt models are Jinja templates, not SQL. Running this against dbt-labs/jaffle-shop
+# showed every model parsing to zero tables, which the scanner then reported as
+# "no post-outcome source" - a false negative dressed as a pass. Resolve the two
+# constructs that name a table, and drop the rest of the templating.
+_REF = re.compile(r"\{\{\s*ref\s*\(\s*['\"]([^'\"]+)['\"]\s*\)\s*\}\}")
+_REF_PROJECT = re.compile(
+    r"\{\{\s*ref\s*\(\s*['\"][^'\"]+['\"]\s*,\s*['\"]([^'\"]+)['\"]\s*\)\s*\}\}"
+)
+_SOURCE = re.compile(
+    r"\{\{\s*source\s*\(\s*['\"]([^'\"]+)['\"]\s*,\s*['\"]([^'\"]+)['\"]\s*\)\s*\}\}"
+)
+_JINJA_BLOCK = re.compile(r"\{%.*?%\}", re.DOTALL)
+_JINJA_EXPR = re.compile(r"\{\{.*?\}\}", re.DOTALL)
+_JINJA_COMMENT = re.compile(r"\{#.*?#\}", re.DOTALL)
+# Statement-level macros carry no value into the query and must be deleted, not
+# substituted: an identifier left before SELECT makes the whole file unparseable.
+_STATEMENT_MACROS = re.compile(
+    r"\{\{\s*(config|docs|snapshot|materialization)\s*\(.*?\)\s*\}\}", re.DOTALL | re.IGNORECASE
+)
+
+
+def resolve_templating(sql: str) -> str:
+    """Turn a dbt model into something a SQL parser can read.
+
+    `{{ ref('stg_orders') }}` becomes `stg_orders`; `{{ source('raw', 'events') }}`
+    becomes `raw.events`. Remaining Jinja is replaced with a placeholder rather
+    than deleted, so surrounding syntax stays intact.
+    """
+    resolved = _JINJA_COMMENT.sub(" ", sql)
+    resolved = _STATEMENT_MACROS.sub(" ", resolved)
+    resolved = _JINJA_BLOCK.sub(" ", resolved)
+    resolved = _SOURCE.sub(r"\1.\2", resolved)
+    resolved = _REF_PROJECT.sub(r"\1", resolved)
+    resolved = _REF.sub(r"\1", resolved)
+    # Anything left is a macro or variable, not a table name.
+    return _JINJA_EXPR.sub("_hindsight_jinja", resolved)
+
 
 SQL_SUFFIXES = (".sql",)
 # Directories that never contain first-party transformations.
@@ -72,17 +111,24 @@ def scan_directory(
     if not post_outcome_tables:
         raise ValueError("At least one post-outcome table is required.")
 
-    for path in sorted(_sql_files(Path(root))):
+    base = Path(root)
+    for path in sorted(_sql_files(base)):
         result.scanned += 1
-        relative = path.as_posix()
+        # Report paths relative to what was scanned; absolute temp paths are noise.
+        try:
+            relative = path.relative_to(base).as_posix()
+        except ValueError:
+            relative = path.name
         try:
             sql = path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError) as error:
             result.unparseable.append({"path": relative, "reason": str(error)})
             continue
 
+        sql = resolve_templating(sql)
         worst: dict[str, Any] | None = None
         referenced = False
+        indeterminate = False
         for table in post_outcome_tables:
             try:
                 check = verify_temporal_cutoff(
@@ -97,6 +143,13 @@ def scan_directory(
                 worst = None
                 referenced = True
                 break
+
+            # A query the parser could not understand has not been checked. It
+            # must never fall through to "clean" - that is a false negative
+            # wearing a pass, which is the failure this whole tool exists to stop.
+            if check.status == "indeterminate":
+                indeterminate = True
+                continue
 
             # The single-file detector returns "safe" when the table is simply
             # absent, which is true but useless in a report: a repo of 500 models
@@ -113,11 +166,18 @@ def scan_directory(
                 }
                 break
 
+        already_unparseable = any(u["path"] == relative for u in result.unparseable)
         if worst:
             result.violations.append(worst)
-        elif referenced and not any(u["path"] == relative for u in result.unparseable):
+        elif already_unparseable:
+            pass
+        elif indeterminate and not referenced:
+            result.unparseable.append(
+                {"path": relative, "reason": "the parser could not read this query"}
+            )
+        elif referenced:
             result.safe.append(relative)
-        elif not referenced:
+        else:
             result.not_applicable.append(relative)
 
     return result

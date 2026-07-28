@@ -44,6 +44,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("scenarios/credit_default/scenario.json"),
     )
     validate.add_argument("--output", type=Path, default=Path("evaluations/results.local.json"))
+    bench = commands.add_parser(
+        "benchmark", help="Measure detection precision/recall across the defect's full range"
+    )
+    bench.add_argument("--json", action="store_true")
+    bench.add_argument("--output", type=Path, default=Path("evaluations/benchmark.json"))
+
     scan = commands.add_parser(
         "scan-sql", help="Scan a directory of SQL (e.g. a dbt project) for missing time guards"
     )
@@ -171,6 +177,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.output.write_text(rendered, encoding="utf-8")
         print(rendered, end="")
         return 0 if report["status"] == "passed" else 2
+
+    if args.command == "benchmark":
+        from hindsight.benchmark import render, run_benchmark
+
+        result = run_benchmark(Path.cwd())
+        payload = result.to_dict()
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps(payload, indent=2) if args.json else render(result), end="")
+        # A false positive or a missed leak is a failure worth a non-zero exit.
+        counts = payload["counts"]
+        return 0 if not counts["false_positive"] and not counts["false_negative"] else 2
 
     if args.command == "scan-sql":
         from hindsight.scan import render, scan_directory

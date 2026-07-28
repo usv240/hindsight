@@ -90,6 +90,44 @@ This is the whole argument. Feature importance tells you a feature is *useful*; 
 
 ---
 
+## Measured, not asserted
+
+`uv run hindsight benchmark` sweeps the defect from total reach to almost none,
+against a matched clean control for every case. **42 cases, 0 false positives,
+0 false negatives.** The headline is less interesting than the breakdown:
+
+| Reach of the defect | Mean AUC delta | Statistical route | Overall |
+|---:|---:|---:|---:|
+| 100% | 0.1768 | 100% | 100% |
+| 70% | 0.1578 | 100% | 100% |
+| 40% | 0.1086 | **0%** | 100% |
+| 15% | 0.0451 | **0%** | 100% |
+| 2% | **0.0066** | **0%** | 100% |
+
+**The statistical route stops firing below 40% reach.** At 2% the performance
+difference is 0.0066 of AUC — invisible to any threshold anyone would set — and the
+deterministic SQL/time proof still catches it. That is the argument for two routes,
+measured instead of claimed.
+
+**Read the perfect score with care.** Ground truth is structural — "leaked" means the
+query joins a post-outcome source with no guard, and the deterministic route reads
+that same query — so its score is close to true by construction. What is measured
+honestly is the statistical route's collapse, the absence of false positives across
+21 guarded queries, and the vanishing AUC delta. Full caveats in
+[evidence/benchmark/2026-07-28.md](evidence/benchmark/2026-07-28.md).
+
+## Validated against a real dbt project
+
+Run against [dbt-labs/jaffle-shop](https://github.com/dbt-labs/jaffle-shop) — a public
+project written by someone else, with no knowledge of this tool. It parsed all 13
+models, resolved `ref()` templating, and correctly reported which model reads a
+nominated source without a guard.
+
+**It also found two bugs in Hindsight.** Every dbt model was being reported as clean,
+because Jinja templating made them unparseable and unparseable was falling through to
+"no post-outcome source" — a false negative wearing a pass, which is precisely the
+failure this project exists to prevent. Both are fixed and covered by tests.
+
 ## Two independent confirmation routes
 
 Hindsight deliberately keeps two artifacts separate:
