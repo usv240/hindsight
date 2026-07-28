@@ -61,6 +61,35 @@
 </section>
 {% endif %}
 
+<section aria-labelledby="pick-heading">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Try it</p>
+      <h2 id="pick-heading">Pick a situation you recognise</h2>
+      <p class="lede">
+        The same defect, in three different industries. Each one is a real audit against real
+        synthetic data &mdash; pick whichever is closest to your world.
+      </p>
+    </div>
+  </div>
+  <div class="scenarios">
+    {% for s in scenarios %}
+    <form method="post" action="/audits/run" class="scenario-form">
+      <input type="hidden" name="scenario" value="{{ s.slug }}">
+      <button class="scenario-card" type="submit">
+        <span class="scenario-icon" aria-hidden="true">
+          {%- if s.icon == "bank" %}&#9974;{% elif s.icon == "pulse" %}&#9829;{% else %}&#9873;{% endif -%}
+        </span>
+        <span class="scenario-domain">{{ s.domain }}</span>
+        <h3>{{ s.name }}</h3>
+        <p>{{ s.situation }}</p>
+        <p class="scenario-q">&ldquo;{{ s.question }}&rdquo;</p>
+      </button>
+    </form>
+    {% endfor %}
+  </div>
+</section>
+
 <section class="panel explainer" id="what-is-this" aria-labelledby="what-heading">
   <div>
     <p class="eyebrow">New here</p>

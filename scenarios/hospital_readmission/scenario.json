@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "scenario": "readmission_at_discharge",
+  "seed": 20260728,
+  "train_rows": 2800,
+  "test_rows": 1200,
+  "prediction_time": "2026-01-10T09:00:00Z",
+  "suspect_feature": "followup_appointments_booked",
+  "ground_truth": {
+    "defect": "The observed feature counts follow-up appointments booked after discharge.",
+    "safe_reconstruction": "Retain only appointments with available_at <= prediction_time.",
+    "safe_control": "prior_admissions_12m is strongly predictive and entirely pre-discharge."
+  },
+  "collapse_rule": {
+    "minimum_observed_advantage": 0.05,
+    "maximum_advantage_retained": 0.5,
+    "rationale": "A collapse means a strict majority of the observed advantage disappears."
+  },
+  "safe_control_rule": {
+    "minimum_ablation_delta": 0.05
+  }
+}

@@ -1202,3 +1202,207 @@ pre.sql {
   .compare-punch { grid-column: 1; }
   .stat { border-right: 0; border-bottom: 1px solid var(--border); padding-right: 0; }
 }
+
+/* -- Plain-English story ---------------------------------------------------
+   Someone with no ML background must be able to follow the whole argument.
+   This block carries the explanation; the technical evidence sits below it and
+   can be hidden entirely.
+------------------------------------------------------------------------- */
+
+.story { display: grid; gap: var(--sp-5); }
+
+.story-verdict {
+  padding: var(--sp-6);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(120% 140% at 0% 0%, var(--accent-soft) 0%, transparent 60%),
+    var(--surface);
+}
+.story-verdict.is-block {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+  background:
+    radial-gradient(120% 140% at 0% 0%, var(--danger-soft) 0%, transparent 62%),
+    var(--surface);
+}
+.story-verdict h2 { font-size: var(--step-4); letter-spacing: -0.03em; }
+.story-verdict.is-block h2 { color: var(--danger); }
+.story-verdict.is-clear h2 { color: var(--ok); }
+.story-sub { margin-top: var(--sp-3); font-size: var(--step-1); color: var(--text-muted); max-width: 62ch; }
+
+/* The exam analogy, drawn. Two scores side by side is the whole idea. */
+.analogy {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--sp-6);
+  align-items: center;
+  padding: var(--sp-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.analogy-visual { display: flex; align-items: center; gap: var(--sp-4); }
+
+.exam {
+  display: grid;
+  justify-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-4) var(--sp-5);
+  min-width: 132px;
+  border-radius: var(--radius);
+  border: 1px solid var(--danger);
+  background: var(--danger-soft);
+  position: relative;
+}
+.exam.is-honest { border-color: var(--ok); background: var(--ok-soft); }
+.exam-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); font-weight: 700; }
+.exam-score { font-size: var(--step-4); font-weight: 800; line-height: 1; color: var(--danger); }
+.exam-score em { font-style: normal; font-size: 0.45em; font-weight: 600; }
+.exam.is-honest .exam-score { color: var(--ok); }
+.exam-cheat { font-size: 10px; color: var(--text-faint); text-align: center; }
+.exam-arrow { font-size: var(--step-3); color: var(--text-faint); }
+
+.analogy-text h3 { font-size: var(--step-1); margin-bottom: var(--sp-2); }
+.analogy-text p { color: var(--text-muted); max-width: var(--measure); }
+
+.mapping { display: grid; gap: 0; margin: var(--sp-4) 0 0; }
+.mapping > div {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: var(--sp-4);
+  padding: var(--sp-2) 0;
+  border-top: 1px solid var(--border);
+  font-size: var(--step--1);
+}
+.mapping dt { color: var(--text-faint); }
+.mapping dd { margin: 0; color: var(--text); }
+
+/* The story as beats on a day-by-day sequence. */
+.story-steps { display: grid; gap: var(--sp-3); }
+.beats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--sp-4);
+  counter-reset: beat;
+}
+.beat {
+  position: relative;
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  padding-top: var(--sp-5);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.beat::before {
+  content: "";
+  position: absolute;
+  top: 0; left: var(--sp-4); right: var(--sp-4);
+  height: 2px;
+  background: var(--border-strong);
+  border-radius: 0 0 2px 2px;
+}
+.beat.is-violation { border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); }
+.beat.is-violation::before { background: var(--danger); }
+.beat-when {
+  font: 700 10px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.beat.is-violation .beat-when { color: var(--danger); }
+.beat strong { font-size: var(--step-0); font-weight: 600; line-height: 1.35; }
+.beat-note { font-size: var(--step--1); color: var(--text-muted); }
+
+.story-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--sp-4); }
+.story-card {
+  padding: var(--sp-5);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.story-card p { color: var(--text-muted); }
+.story-card.is-stakes { border-left: 3px solid var(--warn); }
+.story-card.is-action { border-left: 3px solid var(--accent); }
+.do-list { margin: 0; padding-left: var(--sp-5); color: var(--text-muted); display: grid; gap: var(--sp-2); }
+
+/* -- Plain / technical toggle ---------------------------------------------- */
+
+.mode-switch {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  gap: 2px;
+}
+.mode-switch button {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: 600 var(--step--1) var(--font-sans);
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.mode-switch button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+
+/* Technical sections collapse away in plain mode. */
+body[data-mode="plain"] .tech-only { display: none; }
+body[data-mode="technical"] .plain-only { display: none; }
+
+/* -- Scenario picker ------------------------------------------------------- */
+
+.scenarios { display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: var(--sp-4); }
+.scenario-card {
+  display: grid;
+  gap: var(--sp-3);
+  align-content: start;
+  padding: var(--sp-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color var(--transition), transform var(--transition);
+}
+.scenario-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.scenario-card.is-active { border-color: var(--accent); background: var(--accent-soft); }
+.scenario-icon {
+  display: grid; place-items: center;
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 17px;
+}
+.scenario-card.is-active .scenario-icon { background: var(--accent); color: var(--accent-ink); }
+.scenario-domain { font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-faint); font-weight: 700; }
+.scenario-card h3 { font-size: var(--step-1); }
+.scenario-card p { font-size: var(--step--1); color: var(--text-muted); }
+.scenario-q {
+  font-size: var(--step--1);
+  font-style: italic;
+  color: var(--text);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 860px) {
+  .analogy { grid-template-columns: 1fr; }
+  .analogy-visual { justify-content: center; }
+  .mapping > div { grid-template-columns: 1fr; gap: var(--sp-1); }
+}
+
+/* Scenario cards are submit buttons, so reset button chrome. */
+.scenario-form { display: contents; }
+button.scenario-card { font: inherit; text-align: left; cursor: pointer; width: 100%; }
+
+/* Plain mode is the default before JS runs, so the beginner view never flashes
+   the technical one. */
+body:not([data-mode]) .tech-only { display: none; }

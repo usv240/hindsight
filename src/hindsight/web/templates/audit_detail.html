@@ -14,11 +14,26 @@
 
 <section class="page-head">
   <div>
+    <p class="eyebrow">{{ scenario.domain }} &middot; {{ scenario.name }}</p>
+    <h1>{{ scenario.question }}</h1>
+    <p class="lede">{{ scenario.situation }}</p>
+  </div>
+  <div class="mode-switch" role="group" aria-label="Reading level">
+    <button type="button" data-mode="plain" aria-pressed="true">Plain English</button>
+    <button type="button" data-mode="technical" aria-pressed="false">Technical</button>
+  </div>
+</section>
+
+{% include "_story.html" %}
+
+<div class="tech-only">
+<section class="page-head" style="margin-top: var(--sp-6);">
+  <div>
     <p class="eyebrow">Pre-production release audit</p>
-    <h1>Your model is not smarter.<br><span class="accent">It has hindsight.</span></h1>
+    <h2>The evidence behind that conclusion</h2>
     <p class="lede">
-      Hindsight found outcome data that became available after the model&rsquo;s prediction cutoff,
-      and proved the advantage disappears when time is reconstructed honestly.
+      Every claim above traces to a measurement below. Nothing here is inferred by a
+      language model.
     </p>
   </div>
   <div class="decision-card {{ 'is-block' if bundle.release_decision == 'block' else 'is-clear' }}">
@@ -306,4 +321,5 @@
   </div>
 </section>
 
+</div>
 {% endblock %}

@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "name": "fraud_screening",
+  "description": "Synthetic fraud screening scenario with one planted post-cutoff leak and one legitimate control.",
+  "scenario": "scenarios/fraud_screening/scenario.json",
+  "transformation_sql": "examples/fraud_screening_leaky.sql",
+  "remediation_sql": "examples/fraud_screening_remediation.sql",
+  "post_outcome_table": "disputes_after_authorisation",
+  "available_column": "available_at",
+  "prediction_column": "prediction_time",
+  "synthetic": true,
+  "target_urn": null
+}

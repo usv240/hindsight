@@ -306,8 +306,52 @@
     });
   }
 
+  /* -- 6. Plain / technical reading level ---------------------------------
+     Defaults to plain, because a first-time visitor has no reason to know what
+     an AUC is. The choice persists so a returning reviewer is not sent back to
+     the beginner view every time. */
+
+  function initModeSwitch() {
+    var MODE_KEY = "hindsight-mode";
+    var stored = null;
+    try {
+      stored = localStorage.getItem(MODE_KEY);
+    } catch (err) {
+      /* private mode */
+    }
+    var mode = stored === "technical" ? "technical" : "plain";
+    document.body.setAttribute("data-mode", mode);
+
+    var buttons = document.querySelectorAll(".mode-switch [data-mode]");
+    if (!buttons.length) return;
+
+    function apply(next) {
+      document.body.setAttribute("data-mode", next);
+      Array.prototype.forEach.call(buttons, function (button) {
+        button.setAttribute(
+          "aria-pressed",
+          button.getAttribute("data-mode") === next ? "true" : "false"
+        );
+      });
+      try {
+        localStorage.setItem(MODE_KEY, next);
+      } catch (err) {
+        /* private mode */
+      }
+    }
+
+    Array.prototype.forEach.call(buttons, function (button) {
+      button.addEventListener("click", function () {
+        apply(button.getAttribute("data-mode"));
+      });
+    });
+
+    apply(mode);
+  }
+
   function boot() {
     initTheme();
+    initModeSwitch();
     initPopovers();
     initActivityLog();
     initPublishForm();

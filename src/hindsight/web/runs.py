@@ -26,6 +26,7 @@ def record_run(
     bundle: dict[str, Any],
     *,
     publication: dict[str, Any] | None = None,
+    scenario: str | None = None,
 ) -> dict[str, Any]:
     """Write a compact summary of one audit run and return it."""
     directory = runs_dir(project_root)
@@ -37,6 +38,7 @@ def record_run(
         "run_id": f"{now.strftime('%Y%m%dT%H%M%S')}-{uuid.uuid4().hex[:6]}",
         "started_at": now.isoformat(),
         "audit": bundle.get("audit_config", {}).get("name", "unknown"),
+        "scenario": scenario or bundle.get("audit_config", {}).get("name"),
         "case_id": bundle.get("case_id"),
         "verdict": bundle.get("verdict"),
         "release_decision": bundle.get("release_decision"),

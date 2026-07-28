@@ -120,7 +120,10 @@ def test_run_id_traversal_is_rejected(client: TestClient) -> None:
 def test_audit_detail_renders_the_full_evidence(client: TestClient, clean_runs) -> None:
     run = record_run(Path.cwd(), client.get("/api/audit").json())
     text = client.get(f"/audits/{run['run_id']}").text
-    assert "Your model is not smarter" in text
+    # Plain-English layer: a newcomer must meet the conclusion before any jargon.
+    assert "This model was cheating" in text
+    assert "answer sheet" in text
+    # ...and the exact evidence is still on the page for a reviewer.
     assert "1.000000" in text
     assert "0.833630" in text
     assert "0.21" in text and "0.24" in text

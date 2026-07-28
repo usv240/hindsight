@@ -1,0 +1,69 @@
+{#- The plain-language explanation. Everything here is readable with zero
+    machine-learning background; exact figures stay visible beside each claim. -#}
+
+<section class="story" aria-labelledby="story-heading">
+
+  <div class="story-verdict {{ 'is-block' if bundle.release_decision == 'block' else 'is-clear' }}">
+    <p class="eyebrow">In plain English</p>
+    <h2 id="story-heading">{{ plain.headline }}</h2>
+    <p class="story-sub">{{ plain.subhead }}</p>
+  </div>
+
+  {#- The analogy. One idea, no jargon, mapped onto this scenario. -#}
+  <div class="analogy">
+    <div class="analogy-visual" aria-hidden="true">
+      <div class="exam">
+        <span class="exam-label">Practice exam</span>
+        <span class="exam-score">{{ "%.0f"|format(plain.scores.observed.value * 100) }}<em>%</em></span>
+        <span class="exam-cheat">answer sheet on the desk</span>
+      </div>
+      <div class="exam-arrow">&rarr;</div>
+      <div class="exam is-honest">
+        <span class="exam-label">Retaken fairly</span>
+        <span class="exam-score">{{ "%.0f"|format(plain.scores.honest.value * 100) }}<em>%</em></span>
+        <span class="exam-cheat">answers removed</span>
+      </div>
+    </div>
+
+    <div class="analogy-text">
+      <h3>{{ plain.analogy.title }}</h3>
+      <p>{{ plain.analogy.body }}</p>
+      <dl class="mapping">
+        {% for term, meaning in plain.analogy.mapping %}
+        <div><dt>{{ term }}</dt><dd>{{ meaning }}</dd></div>
+        {% endfor %}
+      </dl>
+    </div>
+  </div>
+
+  {#- The scenario as a sequence of days, so the violation is a story not a stat. -#}
+  <div class="story-steps">
+    <p class="eyebrow">What actually happened</p>
+    <ol class="beats">
+      {% for beat in scenario.story %}
+      <li class="beat{% if loop.index == 2 %} is-violation{% endif %}">
+        <span class="beat-when">{{ beat.when }}</span>
+        <strong>{{ beat.what }}</strong>
+        <span class="beat-note">{{ beat.note }}</span>
+      </li>
+      {% endfor %}
+    </ol>
+  </div>
+
+  <div class="story-grid">
+    <div class="story-card">
+      <p class="eyebrow">Why nobody noticed</p>
+      <p>{{ scenario.leak_why_hidden }}</p>
+    </div>
+    <div class="story-card is-stakes">
+      <p class="eyebrow">What it costs</p>
+      <p>{{ plain.why_it_matters }}</p>
+    </div>
+    <div class="story-card is-action">
+      <p class="eyebrow">What to do now</p>
+      <ol class="do-list">
+        {% for item in plain.what_now %}<li>{{ item }}</li>{% endfor %}
+      </ol>
+    </div>
+  </div>
+</section>

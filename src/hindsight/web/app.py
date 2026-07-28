@@ -12,7 +12,9 @@ from fastapi.templating import Jinja2Templates
 
 from hindsight.config import AuditConfig
 from hindsight.demo import run_judge_demo
+from hindsight.scenarios import get_scenario, list_scenarios
 from hindsight.web.activity import build_activity
+from hindsight.web.explain import explain
 from hindsight.web.glossary import GLOSSARY
 from hindsight.web.health import datahub_health
 from hindsight.web.runs import get_run, list_runs, record_run
@@ -72,7 +74,11 @@ def create_app(project_root: Path | None = None) -> FastAPI:
         return templates.TemplateResponse(
             request=request,
             name="overview.html",
-            context=_shell(root, "overview", runs) | {"latest": runs[0] if runs else None},
+            context=_shell(root, "overview", runs)
+            | {
+                "latest": runs[0] if runs else None,
+                "scenarios": [s.to_dict() for s in list_scenarios()],
+            },
         )
 
     @app.get("/audits", response_class=HTMLResponse)
@@ -85,10 +91,11 @@ def create_app(project_root: Path | None = None) -> FastAPI:
         )
 
     @app.post("/audits/run")
-    def run_audit(request: Request) -> RedirectResponse:
-        bundle = _audit(root)
-        run = record_run(root, bundle)
-        return RedirectResponse(url=f"/audits/{run['run_id']}", status_code=303)
+    def run_audit(request: Request, scenario: Annotated[str, Form()] = "") -> RedirectResponse:
+        bundle = _audit(root, scenario or None)
+        run = record_run(root, bundle, scenario=scenario or None)
+        suffix = f"?scenario={scenario}" if scenario else ""
+        return RedirectResponse(url=f"/audits/{run['run_id']}{suffix}", status_code=303)
 
     @app.get("/audits/latest", response_class=HTMLResponse)
     def latest_audit(request: Request) -> Any:
@@ -100,7 +107,7 @@ def create_app(project_root: Path | None = None) -> FastAPI:
         return RedirectResponse(url=f"/audits/{run['run_id']}", status_code=303)
 
     @app.get("/audits/{run_id}", response_class=HTMLResponse)
-    def audit_detail(request: Request, run_id: str) -> HTMLResponse:
+    def audit_detail(request: Request, run_id: str, scenario: str = "") -> HTMLResponse:
         run = get_run(root, run_id)
         if run is None:
             return templates.TemplateResponse(
@@ -109,7 +116,8 @@ def create_app(project_root: Path | None = None) -> FastAPI:
                 context=_shell(root, "audits", list_runs(root)) | {"run_id": run_id},
                 status_code=404,
             )
-        return _render_detail(templates, request, root, run=run)
+        slug = scenario or run.get("scenario")
+        return _render_detail(templates, request, root, run=run, scenario_slug=slug)
 
     @app.get("/evidence", response_class=HTMLResponse)
     def evidence(request: Request) -> HTMLResponse:
@@ -202,16 +210,18 @@ def _render_detail(
     root: Path,
     *,
     run: dict[str, Any] | None = None,
+    scenario_slug: str | None = None,
     publication: dict[str, Any] | None = None,
     target_urn: str = "",
     server: str = "http://localhost:8080",
 ) -> HTMLResponse:
-    bundle = _audit(root)
+    bundle = _audit(root, scenario_slug)
     leakage = bundle["validation"]["leakage_case"]
     safe = bundle["validation"]["safe_control"]
     runs = list_runs(root)
-    config = _audit_config(root)
-    scenario = _read_json(config.scenario_path)
+    scenario = get_scenario(scenario_slug)
+    config = _audit_config(root, scenario_slug)
+    scenario_data = _read_json(config.scenario_path)
     return templates.TemplateResponse(
         request=request,
         name="audit_detail.html",
@@ -219,7 +229,10 @@ def _render_detail(
         | {
             "bundle": bundle,
             "run": run,
-            "timeline": build_timeline(bundle, scenario),
+            "scenario": scenario.to_dict(),
+            "scenarios": [s.to_dict() for s in list_scenarios()],
+            "plain": explain(bundle, scenario.to_dict()),
+            "timeline": build_timeline(bundle, scenario_data),
             "leakage": leakage,
             "safe": safe,
             "publication": publication,
@@ -245,21 +258,27 @@ def _read_json(path: Path) -> dict[str, Any]:
         return {}
 
 
-def _audit_config(root: Path) -> AuditConfig:
+def _audit_config(root: Path, scenario_slug: str | None = None) -> AuditConfig:
+    """Resolve which audit to run, honouring an explicit scenario choice."""
+    if scenario_slug:
+        scenario = get_scenario(scenario_slug)
+        candidate = root / scenario.audit_config
+        if candidate.exists():
+            return AuditConfig.load(candidate, root)
     configured = os.getenv("HINDSIGHT_AUDIT")
     if configured:
         return AuditConfig.load(Path(configured), root)
     return AuditConfig.default(root)
 
 
-def _audit(root: Path) -> dict[str, Any]:
+def _audit(root: Path, scenario_slug: str | None = None) -> dict[str, Any]:
     """Run the audit, reusing the last result while its inputs are unchanged.
 
     The audit trains models and runs a DuckDB reconstruction. Recomputing that on
     every page load, and again for each API call the page makes, is wasteful and
     makes the console feel broken under any real traffic.
     """
-    config = _audit_config(root)
+    config = _audit_config(root, scenario_slug)
     fingerprint = _fingerprint(config)
     cached = _AUDIT_CACHE.get(fingerprint)
     if cached is not None:
@@ -276,7 +295,6 @@ def _audit(root: Path) -> dict[str, Any]:
     bundle["demo_disclosures"] = judge_demo["disclosures"]
     bundle["audit_config"] = config.to_dict()
 
-    _AUDIT_CACHE.clear()
     _AUDIT_CACHE[fingerprint] = bundle
     return bundle
 

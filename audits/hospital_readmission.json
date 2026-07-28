@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "name": "hospital_readmission",
+  "description": "Synthetic hospital readmission scenario with one planted post-cutoff leak and one legitimate control.",
+  "scenario": "scenarios/hospital_readmission/scenario.json",
+  "transformation_sql": "examples/hospital_readmission_leaky.sql",
+  "remediation_sql": "examples/hospital_readmission_remediation.sql",
+  "post_outcome_table": "followup_appointments_after_discharge",
+  "available_column": "available_at",
+  "prediction_column": "prediction_time",
+  "synthetic": true,
+  "target_urn": null
+}
