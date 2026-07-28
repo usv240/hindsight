@@ -1594,3 +1594,59 @@ body:not([data-mode]) .tech-only { display: none; }
   animation: runningBar 900ms linear infinite;
 }
 @keyframes runningBar { from { background-position: -40% 0; } to { background-position: 140% 0; } }
+
+/* -- In-page navigation ---------------------------------------------------- */
+
+.jumpnav {
+  position: sticky;
+  top: 52px;
+  z-index: 15;
+  display: flex;
+  gap: var(--sp-1);
+  flex-wrap: wrap;
+  padding: var(--sp-2);
+  margin-bottom: calc(-1 * var(--sp-2));
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(12px);
+  width: fit-content;
+  max-width: 100%;
+}
+.jumpnav a {
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: 999px;
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition);
+}
+.jumpnav a:hover { background: var(--surface-2); color: var(--text); }
+/* Links to technical sections are pointless while those sections are hidden. */
+body[data-mode="plain"] .jumpnav .tech-link { display: none; }
+
+html { scroll-behavior: smooth; scroll-padding-top: 108px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* -- Artifact blocks ------------------------------------------------------- */
+
+pre.artifact {
+  margin: 0;
+  padding: var(--sp-4);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow-x: auto;
+  font-size: var(--step--1);
+  line-height: 1.6;
+  color: var(--text-muted);
+  max-height: 420px;
+  overflow-y: auto;
+}
+pre.artifact.is-bad { border-left: 3px solid var(--danger); }
+pre.artifact.is-good { border-left: 3px solid var(--ok); }
+
+details.table-view.panel { padding: var(--sp-4) var(--sp-5); }
+details.table-view.panel summary { font-weight: 600; }

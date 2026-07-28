@@ -1,0 +1,40 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+  *{box-sizing:border-box;margin:0}
+  body{width:1200px;height:630px;display:flex;flex-direction:column;padding:60px 68px;
+       background:#0b0f17;color:#e8ecf5;
+       font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+       background-image:linear-gradient(rgba(124,134,255,.05) 1px,transparent 1px);
+       background-size:100% 56px}
+  .brand{display:flex;align-items:center;gap:13px;font-weight:700;font-size:24px}
+  .mark{width:40px;height:40px;border-radius:11px;background:#7c86ff;color:#070a12;
+        display:grid;place-items:center;font-weight:800;font-size:24px}
+  .body{flex:1;display:flex;align-items:center;gap:56px;margin:34px 0 0}
+  .copy{flex:1}
+  h1{font-size:70px;line-height:1.03;letter-spacing:-.035em;font-weight:800}
+  h1 span{color:#7c86ff}
+  p{font-size:24px;color:#9aa5bd;line-height:1.45;margin-top:20px;max-width:26ch}
+  .scores{display:flex;align-items:center;gap:18px;flex:none}
+  .card{padding:20px 26px;border-radius:16px;text-align:center;min-width:168px}
+  .bad{border:1px solid #ff6b6b;background:#2a1216}
+  .good{border:1px solid #3ddc97;background:#10281f}
+  .lbl{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:#9aa5bd;font-weight:700}
+  .val{font-size:56px;font-weight:800;line-height:1.15;margin-top:4px}
+  .bad .val{color:#ff6b6b} .good .val{color:#3ddc97}
+  .arrow{font-size:30px;color:#6b768f}
+  .foot{display:flex;justify-content:space-between;font-size:18px;color:#6b768f;
+        padding-top:26px;border-top:1px solid #232b3d;margin-top:34px}
+</style></head><body>
+  <div class="brand"><span class="mark">H</span> Hindsight</div>
+  <div class="body">
+    <div class="copy">
+      <h1>Some AI models cheat.<br><span>This one did.</span></h1>
+      <p>Proving whether a model saw the answer before the decision &mdash; using DataHub column lineage.</p>
+    </div>
+    <div class="scores">
+      <div class="card bad"><div class="lbl">In testing</div><div class="val">100%</div></div>
+      <div class="arrow">&rarr;</div>
+      <div class="card good"><div class="lbl">Honestly</div><div class="val">83%</div></div>
+    </div>
+  </div>
+  <div class="foot"><span>Built on DataHub</span><span>Evidence, not intuition.</span></div>
+</body></html>

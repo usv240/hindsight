@@ -16,10 +16,11 @@ from hindsight.config import AuditConfig
 from hindsight.demo import run_judge_demo
 from hindsight.scenarios import SCENARIOS, get_scenario, list_scenarios
 from hindsight.web.activity import build_activity
+from hindsight.web.artifacts import collect as collect_artifacts
 from hindsight.web.explain import explain
 from hindsight.web.glossary import GLOSSARY
 from hindsight.web.health import datahub_health
-from hindsight.web.runs import get_run, list_runs, record_run
+from hindsight.web.runs import get_run, group_by_scenario, list_runs, record_run
 from hindsight.web.timeline import build_timeline
 from hindsight.workflow import run_demo_audit
 from hindsight.writeback import publish_audit
@@ -92,7 +93,8 @@ def create_app(project_root: Path | None = None) -> FastAPI:
         return templates.TemplateResponse(
             request=request,
             name="audits.html",
-            context=_shell(root, "audits", runs) | {"runs": runs},
+            context=_shell(root, "audits", runs)
+            | {"runs": runs, "groups": group_by_scenario(runs)},
         )
 
     @app.post("/audits/run")
@@ -135,7 +137,8 @@ def create_app(project_root: Path | None = None) -> FastAPI:
         return templates.TemplateResponse(
             request=request,
             name="evidence.html",
-            context=_shell(root, "evidence", runs) | {"runs": runs},
+            context=_shell(root, "evidence", runs)
+            | {"runs": runs, "artifacts": collect_artifacts(root)},
         )
 
     @app.get("/settings", response_class=HTMLResponse)

@@ -89,3 +89,52 @@ def get_run(project_root: Path, run_id: str) -> dict[str, Any] | None:
         return json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return None
+
+
+def group_by_scenario(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Collapse run history into one row per scenario.
+
+    Fifty near-identical rows is not history, it is noise. What a reviewer wants
+    to know is: which scenarios have been audited, what did each conclude, and
+    has any of them ever disagreed with itself.
+    """
+    groups: dict[str, dict[str, Any]] = {}
+    for run in runs:
+        key = run.get("scenario") or run.get("audit") or "unknown"
+        group = groups.setdefault(
+            key,
+            {
+                "scenario": key,
+                "runs": [],
+                "decisions": set(),
+                "latest": run,
+                "blocked": 0,
+                "allowed": 0,
+            },
+        )
+        group["runs"].append(run)
+        decision = run.get("release_decision")
+        group["decisions"].add(decision)
+        if decision == "block":
+            group["blocked"] += 1
+        elif decision == "allow":
+            group["allowed"] += 1
+
+    result = []
+    for group in groups.values():
+        runtimes = [r["runtime_seconds"] for r in group["runs"] if r.get("runtime_seconds")]
+        result.append(
+            {
+                "scenario": group["scenario"],
+                "count": len(group["runs"]),
+                "latest": group["latest"],
+                "blocked": group["blocked"],
+                "allowed": group["allowed"],
+                # A scenario that has ever disagreed with itself is worth seeing.
+                "consistent": len(group["decisions"]) == 1,
+                "median_runtime": sorted(runtimes)[len(runtimes) // 2] if runtimes else None,
+                "recent": group["runs"][:12],
+            }
+        )
+    result.sort(key=lambda g: g["latest"].get("started_at", ""), reverse=True)
+    return result

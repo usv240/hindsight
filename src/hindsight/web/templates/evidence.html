@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "base.html" import info with context %}
 {% block title %}Hindsight - evidence{% endblock %}
 {% block crumbs %}<a href="/">Overview</a> <span class="sep">/</span> <span>Evidence</span>{% endblock %}
 
@@ -7,35 +8,165 @@
 <section class="page-head">
   <div>
     <p class="eyebrow">Artifacts</p>
-    <h1>Evidence</h1>
+    <h1>What Hindsight actually produces</h1>
     <p class="lede">
-      What Hindsight writes back, and what it can prove about its own claims.
+      Not a description of what it would write &mdash; the real files, read from disk. Anyone can
+      claim a tool writes evidence. This is the evidence.
     </p>
   </div>
 </section>
 
+<!-- What lands in the catalog --------------------------------------------- -->
 <section class="panel">
   <div class="section-heading">
-    <div><p class="eyebrow">Catalog contributions</p><h2>Written to DataHub on approval</h2></div>
+    <div>
+      <p class="eyebrow">Written to DataHub</p>
+      <h2>Four things, after a person approves{{ info('approval-gate') }}</h2>
+    </div>
+    <span class="finding ok">each re-read{{ info('reread') }}</span>
   </div>
-  <ul class="checks">
-    <li><code>hindsight:leakage-confirmed</code> field tag on the offending column</li>
-    <li><code>hindsight.auditVerdict</code> structured property on the asset</li>
-    <li>A linked audit <strong>Document</strong> containing the evidence path and safe-control results</li>
-    <li>An active <code>ML_LEAKAGE</code> incident, reused on retry rather than duplicated</li>
-  </ul>
-  <p class="fine">Each is re-read after writing to prove it persisted.</p>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr><th scope="col">Kind</th><th scope="col">Identifier</th><th scope="col">Why it matters</th></tr>
+      </thead>
+      <tbody>
+        {% for item in artifacts.writeback_types %}
+        <tr>
+          <th scope="row">{{ item.kind }}</th>
+          <td><code>{{ item.urn }}</code></td>
+          <td>{{ item.what }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="fine">
+    A write that reports success but cannot be read back afterwards is treated as a failure.
+  </p>
 </section>
 
+<!-- The document itself ---------------------------------------------------- -->
+{% if artifacts.audit_document %}
 <section class="panel">
   <div class="section-heading">
-    <div><p class="eyebrow">Self-verification</p><h2>How this project checks itself</h2></div>
+    <div>
+      <p class="eyebrow">Sample output</p>
+      <h2>The audit document published to the catalog</h2>
+    </div>
+    <span class="finding">examples/audit_document.md</span>
+  </div>
+  <p class="prose">
+    This is what the next engineer or agent finds attached to the asset, instead of
+    rediscovering the problem themselves.
+  </p>
+  <pre class="artifact"><code>{{ artifacts.audit_document }}</code></pre>
+</section>
+{% endif %}
+
+<!-- The repair ------------------------------------------------------------- -->
+{% if artifacts.remediation_sql %}
+<section class="panel">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Proposed repair</p>
+      <h2>One line, verified independently</h2>
+    </div>
+    <span class="finding ok">SQL verified</span>
+  </div>
+  <div class="grid-2">
+    <div>
+      <p class="card-label" style="margin-bottom: var(--sp-2);">Before &mdash; blocked</p>
+      <pre class="artifact is-bad"><code>{{ artifacts.leaky_sql }}</code></pre>
+    </div>
+    <div>
+      <p class="card-label" style="margin-bottom: var(--sp-2);">After &mdash; clears</p>
+      <pre class="artifact is-good"><code>{{ artifacts.remediation_sql }}</code></pre>
+    </div>
+  </div>
+  <p class="fine">
+    The difference is the <code>available_at &lt;= prediction_time</code> guard. Hindsight
+    proposes it and checks it, but never merges or applies pipeline code itself.
+  </p>
+</section>
+{% endif %}
+
+<!-- Fixture integrity ------------------------------------------------------ -->
+{% if artifacts.fixture.available %}
+<section class="panel">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Recorded metadata{{ info('recorded-replay') }}</p>
+      <h2>Hashed, so replay cannot drift from the capture</h2>
+    </div>
+    <span class="finding">{{ artifacts.fixture.fixture_id }}</span>
+  </div>
+  <p class="prose">
+    Captured from DataHub Core <code>{{ artifacts.fixture.captured_from.datahub_core }}</code>
+    via MCP server <code>{{ artifacts.fixture.captured_from.mcp_server_datahub }}</code>
+    on {{ artifacts.fixture.captured_at }}. Re-prove it against your own instance with
+    <code>hindsight verify-fixture-live</code>.
+  </p>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr><th scope="col">File</th><th scope="col">SHA-256</th><th scope="col">Present</th></tr>
+      </thead>
+      <tbody>
+        {% for file in artifacts.fixture.files %}
+        <tr>
+          <th scope="row"><code>{{ file.path }}</code></th>
+          <td><code>{{ file.short }}&hellip;</code></td>
+          <td>
+            {% if file.exists %}<span class="finding ok">yes</span>
+            {% else %}<span class="finding danger">missing</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+<!-- Committed proofs ------------------------------------------------------- -->
+{% if artifacts.proofs %}
+<section class="panel">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Committed to the repository</p>
+      <h2>Records of real runs</h2>
+    </div>
+  </div>
+  <div class="cards">
+    {% for proof in artifacts.proofs %}
+    <article class="card">
+      <p class="card-label">{{ proof.title }}</p>
+      <p class="card-note" style="margin-bottom: var(--sp-2);">{{ proof.blurb }}</p>
+      <p class="card-note"><code>{{ proof.path }}</code> &middot; {{ proof.lines }} lines</p>
+    </article>
+    {% endfor %}
+  </div>
+  <p class="fine">
+    Raw machine reports stay ignored as <code>*.local.json</code>; these are the sanitized
+    summaries, versioned with the code that produced them.
+  </p>
+</section>
+{% endif %}
+
+<!-- How the project checks itself ------------------------------------------ -->
+<section class="panel">
+  <div class="section-heading">
+    <div><p class="eyebrow">Self-verification</p><h2>How this project checks its own claims</h2></div>
   </div>
   <ul class="checks">
-    <li>A high-correlation <strong>safe control</strong> must come back clear on every run, despite having a larger ablation delta than the planted leak.</li>
+    <li>A high-correlation <strong>safe control</strong>{{ info('safe-control') }} must clear on
+        every run, despite having a <em>larger</em> ablation delta than the planted leak.</li>
+    <li>One scenario is expected to <strong>pass</strong>. A gate that can only say no is
+        indistinguishable from one that is not looking.</li>
     <li>The generator is <strong>frozen</strong>; measured results are published rather than tuned.</li>
     <li>The collapse threshold and its measured margin are disclosed, not hidden.</li>
-    <li>Recorded fixtures are hashed, and <code>verify-fixture-live</code> re-proves them against a real instance.</li>
+    <li>An LLM may explain evidence. It can never promote a verdict{{ info('verdict-lattice') }}.</li>
   </ul>
 </section>
 
@@ -50,7 +181,7 @@
       <tr><th scope="col">Run</th><th scope="col">Decision</th><th scope="col">Verdict</th><th scope="col">Published</th></tr>
     </thead>
     <tbody>
-      {% for run in runs[:10] %}
+      {% for run in runs[:8] %}
       <tr>
         <th scope="row"><a href="/audits/{{ run.run_id }}"><code>{{ run.run_id }}</code></a></th>
         <td><span class="finding {{ 'danger' if run.release_decision == 'block' else 'ok' }}">{{ run.release_decision | upper }}</span></td>

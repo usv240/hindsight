@@ -40,39 +40,81 @@
   </p>
 </section>
 
-<div class="panel table-wrap">
-  <table class="table">
-    <caption class="visually-hidden">Recorded audit runs, newest first</caption>
-    <thead>
-      <tr>
-        <th scope="col">Run</th>
-        <th scope="col">Audit</th>
-        <th scope="col">Decision</th>
-        <th scope="col">Verdict</th>
-        <th scope="col">Records</th>
-        <th scope="col">Runtime</th>
-        <th scope="col">Published</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for run in runs %}
-      <tr>
-        <th scope="row"><a href="/audits/{{ run.run_id }}"><code>{{ run.run_id }}</code></a></th>
-        <td>{{ run.audit }}</td>
-        <td>
-          <span class="finding {{ 'danger' if run.release_decision == 'block' else 'ok' }}">
-            {{ run.release_decision | upper }}
-          </span>
-        </td>
-        <td><code>{{ run.verdict }}</code></td>
-        <td class="num">{{ "{:,}".format(run.rows or 0) }}</td>
-        <td class="num">{{ "%.3f"|format(run.runtime_seconds or 0) }}s</td>
-        <td>{{ "yes" if run.published else "no" }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+<section class="panel">
+  <div class="section-heading">
+    <div><p class="eyebrow">By scenario</p><h2>What each scenario concludes</h2></div>
+    <span class="finding">{{ groups | length }} scenarios &middot; {{ runs | length }} runs</span>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <caption class="visually-hidden">Audit runs grouped by scenario, most recent first</caption>
+      <thead>
+        <tr>
+          <th scope="col">Scenario</th>
+          <th scope="col">Concludes</th>
+          <th scope="col">Runs</th>
+          <th scope="col">Consistent</th>
+          <th scope="col">Median runtime</th>
+          <th scope="col">Latest</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for group in groups %}
+        <tr>
+          <th scope="row">{{ group.scenario | replace("_", " ") | title }}</th>
+          <td>
+            <span class="finding {{ 'danger' if group.latest.release_decision == 'block' else 'ok' }}">
+              {{ group.latest.release_decision | upper }}
+            </span>
+          </td>
+          <td class="num">{{ group.count }}</td>
+          <td>
+            {% if group.consistent %}<span class="finding ok">always</span>
+            {% else %}<span class="finding warn">varies</span>{% endif %}
+          </td>
+          <td class="num">{{ "%.3f"|format(group.median_runtime or 0) }}s</td>
+          <td><a href="/audits/{{ group.latest.run_id }}"><code>{{ group.latest.run_id }}</code></a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="fine">
+    &ldquo;Consistent&rdquo; means every run of that scenario reached the same decision. A scenario
+    that <em>varies</em> would mean the audit is not deterministic, and is worth investigating.
+  </p>
+</section>
+
+<details class="table-view panel">
+  <summary>Every individual run ({{ runs | length }})</summary>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Run</th><th scope="col">Scenario</th><th scope="col">Decision</th>
+          <th scope="col">Verdict</th><th scope="col">Runtime</th><th scope="col">Published</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for run in runs %}
+        <tr>
+          <th scope="row"><a href="/audits/{{ run.run_id }}"><code>{{ run.run_id }}</code></a></th>
+          <td>{{ (run.scenario or run.audit) | replace("_", " ") | title }}</td>
+          <td>
+            <span class="finding {{ 'danger' if run.release_decision == 'block' else 'ok' }}">
+              {{ run.release_decision | upper }}
+            </span>
+          </td>
+          <td><code>{{ run.verdict }}</code></td>
+          <td class="num">{{ "%.3f"|format(run.runtime_seconds or 0) }}s</td>
+          <td>{{ "yes" if run.published else "no" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</details>
+
 {% else %}
 <section class="empty">
   <h2>No runs recorded yet</h2>

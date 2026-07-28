@@ -10,6 +10,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Hindsight proves whether an ML model was trained on information that did not exist at prediction time, using DataHub column-level lineage.">
   <meta name="color-scheme" content="dark light">
+  {#- Social preview. Generated from docs/og-card.html so it cannot go stale. -#}
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Hindsight - some AI models cheat">
+  <meta property="og:description" content="Proving whether a model saw the answer before the decision, using DataHub column lineage.">
+  <meta property="og:image" content="{{ url_for('static', path='/og-card.png') }}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Hindsight - some AI models cheat">
+  <meta name="twitter:description" content="Proving whether a model saw the answer before the decision, using DataHub column lineage.">
+  <meta name="twitter:image" content="{{ url_for('static', path='/og-card.png') }}">
   <title>{% block title %}Hindsight{% endblock %}</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%237c86ff'/><text x='16' y='23' font-size='20' font-family='sans-serif' font-weight='800' text-anchor='middle' fill='%23070a12'>H</text></svg>">
   <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">
