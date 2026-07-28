@@ -140,11 +140,39 @@ def test_audit_detail_renders_the_full_evidence(client: TestClient, clean_runs) 
     assert "<noscript>" in text
 
 
-def test_overview_explains_itself_to_a_newcomer(client: TestClient) -> None:
-    text = client.get("/").text
-    assert "What is this?" in text
-    assert "target leakage" in text.lower()
-    assert "Why this needs DataHub" in text
+def test_overview_explains_itself_before_it_shows_status() -> None:
+    """Order matters: a first-time visitor must meet the problem before the metrics.
+
+    The page previously opened with a jargon headline and four stat cards, and put
+    the explanation ~1000px down. Someone who had never heard of leakage had no way in.
+    """
+    text = TestClient(create_app(Path.cwd())).get("/").text
+
+    # The plain-language problem statement leads.
+    assert "Some AI models cheat" in text
+    assert "reading the answer" in text
+
+    # ...and it appears before any status card.
+    explanation_at = text.find("Some AI models cheat")
+    status_at = text.find("Most recent result")
+    if status_at != -1:
+        assert explanation_at < status_at, "status must not precede the explanation"
+
+    # The visual carrying the idea is on the landing page, not only the detail page.
+    assert "hero-visual" in text
+    assert "answer sheet on the desk" in text or "answer taken away" in text
+
+    # DataHub is named and justified, in ordinary words.
+    assert "DataHub" in text
+    assert "Why nothing else can catch this" in text
+
+
+def test_overview_headline_avoids_jargon() -> None:
+    """The first thing on screen must not assume ML vocabulary."""
+    text = TestClient(create_app(Path.cwd())).get("/").text
+    headline = text[text.find("<h1"): text.find("</h1>")]
+    for word in ("leakage", "lineage", "AUC", "ablation", "feature", "cutoff"):
+        assert word.lower() not in headline.lower(), f"headline uses jargon: {word}"
 
 
 def test_every_info_control_resolves_to_a_glossary_entry(client: TestClient) -> None:

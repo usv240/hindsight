@@ -5,16 +5,50 @@
 
 {% block content %}
 
-<section class="page-head">
-  <div>
-    <p class="eyebrow">Pre-production release audit</p>
-    <h1>Catch leakage before the model ships.</h1>
+{#- A first-time visitor gets the problem, then a picture of it, then something
+    to click. Status and history come after, for people who already know. -#}
+<section class="hero-explain">
+  <div class="hero-copy">
+    <p class="eyebrow">Before the model ships</p>
+    <h1>Some AI models cheat.<br><span class="accent">This one did.</span></h1>
     <p class="lede">
-      Hindsight reads DataHub column lineage to prove whether a feature was built from
-      information that did not exist when the prediction had to be made.
+      A bank builds a model to predict who will repay a loan. It scores almost perfectly in
+      testing, so they ship it &mdash; and it fails.
     </p>
+    <p class="prose">
+      The model was never good. One of the facts it was shown could only be known
+      <em>after</em> the loan decision had already been made. It wasn&rsquo;t predicting.
+      It was reading the answer.
+    </p>
+    <p class="prose">
+      <strong>Hindsight catches that before the model reaches anyone.</strong>
+    </p>
+    <div class="hero-cta">
+      <a class="btn" href="#pick-heading">See it on a real example</a>
+      <a class="btn ghost" href="#what-is-this">How does it work?</a>
+    </div>
   </div>
-  <a class="btn" href="/audits/latest">View latest evidence</a>
+
+  {#- The idea, drawn. Two scores is the entire concept. -#}
+  <figure class="hero-visual">
+    <div class="analogy-visual" aria-hidden="true">
+      <div class="exam">
+        <span class="exam-label">Scored in testing</span>
+        <span class="exam-score">100<em>%</em></span>
+        <span class="exam-cheat">could see the answer</span>
+      </div>
+      <div class="exam-arrow">&rarr;</div>
+      <div class="exam is-honest">
+        <span class="exam-label">Scored honestly</span>
+        <span class="exam-score">83<em>%</em></span>
+        <span class="exam-cheat">answer taken away</span>
+      </div>
+    </div>
+    <figcaption>
+      Like a student acing an exam with the answer sheet on the desk. Take the answers away
+      and you find out what they actually know.
+    </figcaption>
+  </figure>
 </section>
 
 {% if health.state != "connected" %}
@@ -25,41 +59,6 @@
   {% endif %}
   <a href="/settings">Open settings</a>
 </div>
-{% endif %}
-
-{% if latest %}
-<section class="cards">
-  <article class="card {{ 'is-block' if latest.release_decision == 'block' else 'is-clear' }}">
-    <p class="card-label">Latest decision</p>
-    <p class="card-value">{{ latest.release_decision | upper }}</p>
-    <p class="card-note">verdict: {{ latest.verdict }}{{ info('verdict-lattice') }}</p>
-  </article>
-  <article class="card">
-    <p class="card-label">Audited</p>
-    <p class="card-value small">{{ latest.audit }}</p>
-    <p class="card-note">{{ latest.case_id }}</p>
-  </article>
-  <article class="card">
-    <p class="card-label">Records tested</p>
-    <p class="card-value">{{ "{:,}".format(latest.rows or 0) }}</p>
-    <p class="card-note">{{ "%.3f"|format(latest.runtime_seconds or 0) }}s runtime</p>
-  </article>
-  <article class="card">
-    <p class="card-label">Total runs</p>
-    <p class="card-value">{{ run_count }}</p>
-    <p class="card-note"><a href="/audits">See history</a></p>
-  </article>
-</section>
-{% else %}
-<section class="empty">
-  <h2>No audits recorded yet</h2>
-  <p>Run one to produce evidence. It works offline, with no DataHub required.</p>
-  <pre class="sql"><code>uv run hindsight demo-audit</code></pre>
-  <form method="post" action="/audits/run">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <button class="btn" type="submit">Run an audit now</button>
-  </form>
-</section>
 {% endif %}
 
 <section aria-labelledby="pick-heading">
@@ -94,51 +93,95 @@
 
 <section class="panel explainer" id="what-is-this" aria-labelledby="what-heading">
   <div>
-    <p class="eyebrow">New here</p>
-    <h2 id="what-heading">What is this?</h2>
+    <p class="eyebrow">How it works</p>
+    <h2 id="what-heading">How can software know a model cheated?</h2>
   </div>
 
-  <p class="lede">A credit model scores beautifully in testing. It ships. It fails.</p>
   <p class="prose">
-    The model was never good. One of its features quietly contained the answer &mdash; built from
-    events that only exist <em>after</em> the decision it is supposed to predict. That is
-    <strong>target leakage</strong>{{ info('target-leakage') }}, one of the most expensive silent
-    failures in production machine learning.
+    It reads the company&rsquo;s <strong>data catalog</strong>{{ info('datahub') }} &mdash; a record
+    of every table and column in the business, and crucially <strong>which column was built from
+    which</strong>{{ info('column-lineage') }}. That map is the only place the answer exists.
   </p>
 
   <div class="callout">
     <p>
-      <strong>Why this needs DataHub{{ info('datahub') }}.</strong>
-      Leakage is a cross-system, column-level defect. The training notebook cannot see it &mdash;
-      the leak happened upstream in the warehouse. The feature store sees features, not their
-      ancestry. Model monitoring fires months later, after the money is gone. The question only
-      becomes answerable with a column-level lineage graph{{ info('column-lineage') }} spanning
-      all of them.
+      <strong>Why nothing else can catch this.</strong>
+      The notebook that trained the model can&rsquo;t see it &mdash; the problem was created far
+      upstream, in the warehouse. The feature store sees the finished features, not where they came
+      from. Monitoring only notices months later, once the losses show up. Only a map spanning all
+      of them can answer <em>&ldquo;could this have been known at the time?&rdquo;</em> &mdash; and
+      that map is <strong>DataHub</strong>.
     </p>
   </div>
 
   <div class="explainer-steps">
     <article class="step">
-      <h3>Read the ancestry</h3>
-      <p>Walk DataHub&rsquo;s ML lineage{{ info('ml-lineage') }} backwards from the candidate model
-         to find where each feature&rsquo;s information originated.</p>
+      <h3>Trace it back</h3>
+      <p>Follow the map backwards from the model to find where each fact it used actually
+         came from{{ info('ml-lineage') }}.</p>
     </article>
     <article class="step">
       <h3>Check the clock</h3>
-      <p>Compare availability against the prediction cutoff{{ info('prediction-cutoff') }}, and
-         parse the transformation SQL{{ info('transformation-check') }} for a guard.</p>
+      <p>Ask when each fact became known, and compare that to the moment the decision had to be
+         made{{ info('prediction-cutoff') }}.</p>
     </article>
     <article class="step">
-      <h3>Prove the consequence</h3>
-      <p>Rebuild the feature point-in-time{{ info('point-in-time') }} and retrain. Real skill
-         survives. Borrowed hindsight collapses.</p>
+      <h3>Take the answer away</h3>
+      <p>Rebuild the model using only what was knowable at the time{{ info('point-in-time') }}.
+         Real skill survives. Cheating collapses.</p>
     </article>
     <article class="step">
-      <h3>Write it back</h3>
-      <p>On human approval{{ info('approval-gate') }}, publish the verdict into DataHub so the
-         next engineer or agent inherits the finding.</p>
+      <h3>Record the finding</h3>
+      <p>Once a person approves{{ info('approval-gate') }}, write it into DataHub so the next
+         engineer inherits it instead of rediscovering it.</p>
     </article>
   </div>
 </section>
+
+{% if latest %}
+<section class="activity-strip" aria-labelledby="activity-heading">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Your activity</p>
+      <h2 id="activity-heading">Audits run on this machine</h2>
+    </div>
+    <a class="btn ghost" href="/audits">See history</a>
+  </div>
+  <div class="cards">
+    <article class="card {{ 'is-block' if latest.release_decision == 'block' else 'is-clear' }}">
+      <p class="card-label">Most recent result</p>
+      <p class="card-value">{{ latest.release_decision | upper }}</p>
+      <p class="card-note">
+        {% if latest.release_decision == 'block' %}leakage proven - do not release
+        {% else %}no violation found{% endif %}{{ info('verdict-lattice') }}
+      </p>
+    </article>
+    <article class="card">
+      <p class="card-label">Scenario</p>
+      <p class="card-value small">{{ latest.audit | replace("_", " ") | title }}</p>
+      <p class="card-note">{{ latest.case_id }}</p>
+    </article>
+    <article class="card">
+      <p class="card-label">Records re-tested</p>
+      <p class="card-value">{{ "{:,}".format(latest.rows or 0) }}</p>
+      <p class="card-note">in {{ "%.2f"|format(latest.runtime_seconds or 0) }} seconds</p>
+    </article>
+    <article class="card">
+      <p class="card-label">Audits run</p>
+      <p class="card-value">{{ run_count }}</p>
+      <p class="card-note">every one kept as evidence</p>
+    </article>
+  </div>
+</section>
+{% else %}
+<section class="empty">
+  <h2>No audits recorded yet</h2>
+  <p>Run one to produce evidence. It works offline, with no DataHub required.</p>
+  <form method="post" action="/audits/run">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button class="btn" type="submit">Run an audit now</button>
+  </form>
+</section>
+{% endif %}
 
 {% endblock %}

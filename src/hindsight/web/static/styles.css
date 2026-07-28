@@ -1488,3 +1488,49 @@ body:not([data-mode]) .tech-only { display: none; }
 .route.is-fired .route-mark { background: var(--ok); color: var(--bg); }
 .route strong { display: block; font-size: var(--step-0); font-weight: 650; margin-bottom: 2px; }
 .route span { font-size: var(--step--1); color: var(--text-muted); }
+
+/* -- Landing hero ----------------------------------------------------------
+   A first-time visitor gets the problem in ordinary words and a picture of it
+   before anything else. Status and history live further down, for people who
+   already know what they are looking at.
+------------------------------------------------------------------------- */
+
+.hero-explain {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: var(--sp-7);
+  align-items: center;
+  padding: var(--sp-6) 0 var(--sp-5);
+}
+.hero-copy { display: grid; gap: var(--sp-4); align-content: start; }
+.hero-copy h1 { font-size: var(--step-5); letter-spacing: -0.035em; }
+.hero-copy h1 .accent { color: var(--accent); }
+.hero-copy .lede { font-size: var(--step-2); color: var(--text); font-weight: 500; }
+.hero-cta { display: flex; gap: var(--sp-3); flex-wrap: wrap; margin-top: var(--sp-2); }
+
+.hero-visual {
+  margin: 0;
+  display: grid;
+  gap: var(--sp-4);
+  justify-items: center;
+  padding: var(--sp-6);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(120% 120% at 50% 0%, var(--accent-soft) 0%, transparent 65%),
+    var(--surface);
+}
+.hero-visual figcaption {
+  font-size: var(--step--1);
+  color: var(--text-muted);
+  text-align: center;
+  max-width: 46ch;
+}
+.hero-visual .exam { min-width: 148px; }
+.hero-visual .exam-score { font-size: var(--step-5); }
+
+.activity-strip { padding-top: var(--sp-4); border-top: 1px solid var(--border); }
+
+@media (max-width: 900px) {
+  .hero-explain { grid-template-columns: 1fr; gap: var(--sp-5); }
+}
