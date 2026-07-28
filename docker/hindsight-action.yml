@@ -1,0 +1,44 @@
+# Hindsight as a DataHub Action.
+#
+# Runs the release gate automatically whenever a new ML model appears in the
+# catalog, instead of waiting for someone to remember to check.
+#
+#   datahub actions -c docker/hindsight-action.yml
+#
+# The DataHub Core quickstart already provides Kafka and the actions runtime, so
+# there is nothing extra to stand up.
+
+name: hindsight_release_gate
+
+source:
+  type: kafka
+  config:
+    connection:
+      bootstrap: ${KAFKA_BOOTSTRAP_SERVER:-localhost:9092}
+      schema_registry_url: ${SCHEMA_REGISTRY_URL:-http://localhost:8081}
+
+# Only newly created models. Filtering here rather than in the action keeps the
+# pipeline cheap: irrelevant events are discarded before deserialization.
+filter:
+  event_type: "EntityChangeEvent_v1"
+  event:
+    category: "LIFECYCLE"
+    operation: "CREATE"
+    entityType: "mlModel"
+
+action:
+  type: "hindsight.actions.release_gate:HindsightReleaseGate"
+  config:
+    audit: audits/credit_default.json
+    entity_types: ["mlModel"]
+    # Raise an incident describing the finding. Never publishes the full
+    # evidence write-back on its own - a person still approves that.
+    raise_incident: true
+    server: ${DATAHUB_GMS_URL:-http://localhost:8080}
+
+datahub:
+  server: ${DATAHUB_GMS_URL:-http://localhost:8080}
+
+options:
+  retry_count: 1
+  failure_mode: CONTINUE

@@ -185,6 +185,25 @@ def _render_document(bundle: dict[str, Any]) -> str:
     )
 
 
+def raise_leakage_incident(
+    server: str,
+    token: str | None,
+    target_urn: str,
+    *,
+    case_id: str,
+    document_urn: str,
+) -> str:
+    """Raise (or reuse) the leakage incident for an asset.
+
+    Public because the DataHub Action needs to notify without performing the
+    full approval-gated write-back: an autonomous process may flag, but only a
+    person may publish the evidence record.
+    """
+    return _find_or_raise_incident(
+        server, token, target_urn, case_id=case_id, document_urn=document_urn
+    )
+
+
 def _find_or_raise_incident(
     server: str,
     token: str | None,

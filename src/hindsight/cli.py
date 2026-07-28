@@ -44,6 +44,16 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("scenarios/credit_default/scenario.json"),
     )
     validate.add_argument("--output", type=Path, default=Path("evaluations/results.local.json"))
+    trace = commands.add_parser(
+        "trace-lineage",
+        help="Ask DataHub for the column path between two assets (Agent Context Kit)",
+    )
+    trace.add_argument("--source-urn", required=True)
+    trace.add_argument("--source-column", required=True)
+    trace.add_argument("--target-urn", required=True)
+    trace.add_argument("--target-column", required=True)
+    trace.add_argument("--output", type=Path)
+
     bench = commands.add_parser(
         "benchmark", help="Measure detection precision/recall across the defect's full range"
     )
@@ -177,6 +187,26 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.output.write_text(rendered, encoding="utf-8")
         print(rendered, end="")
         return 0 if report["status"] == "passed" else 2
+
+    if args.command == "trace-lineage":
+        from hindsight.lineage import resolve_column_path
+
+        resolution = resolve_column_path(
+            source_urn=args.source_urn,
+            source_column=args.source_column,
+            target_urn=args.target_urn,
+            target_column=args.target_column,
+        )
+        payload = resolution.to_dict()
+        rendered = json.dumps(payload, indent=2) + "\n"
+        if args.output:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(rendered, encoding="utf-8")
+        print(rendered, end="")
+        if not resolution.available:
+            return 2
+        # A path that exists is the finding; no path is a clean answer.
+        return 3 if resolution.found else 0
 
     if args.command == "benchmark":
         from hindsight.benchmark import render, run_benchmark

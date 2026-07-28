@@ -185,6 +185,30 @@ cannot drift from what it actually renders.
 
 ---
 
+## Which DataHub surfaces this uses
+
+| Surface | Used | How |
+|---|:--:|---|
+| Context graph | ✅ | Column-level lineage, ML entities, schema, profiles |
+| MCP Server | ✅ | Discovery, lineage reads, governed mutations |
+| **Agent Context Kit** | ✅ | `get_lineage_paths_between` — the column-level directional path query this project is built on |
+| DataHub Skills | ✅ | `datahub-ml-release-audit` |
+| **DataHub Actions** | ✅ | Audits a model the moment it appears, without anyone triggering it |
+| Analytics Agent | — | Not applicable; this is not a text-to-SQL product |
+
+**Hindsight can watch instead of waiting.** `docker/hindsight-action.yml` subscribes to
+`EntityChangeEvent_v1`, filtered to model creation:
+
+```powershell
+datahub actions -c docker/hindsight-action.yml
+```
+
+The action may **raise an incident** to notify — it never publishes the evidence
+record itself. An autonomous process silently mutating governed metadata is the thing
+this project argues against, and a test pins that guarantee at the source level.
+
+Full detail and live output: [evidence/integrations/2026-07-28.md](evidence/integrations/2026-07-28.md).
+
 ## What Hindsight writes back to DataHub
 
 Strong submissions contribute to the graph rather than only reading it. After human approval, Hindsight publishes and then **re-reads every mutation** to prove persistence:

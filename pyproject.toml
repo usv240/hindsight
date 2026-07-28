@@ -28,8 +28,13 @@ dev = [
 ]
 datahub = [
     "acryl-datahub>=1.3,<2",
+    "datahub-agent-context>=1.5,<2",
     "mcp-server-datahub>=0.5,<1",
     "sqlparse>=0.5,<1",
+]
+
+actions = [
+    "acryl-datahub-actions>=0.1,<1",
 ]
 
 [project.scripts]
