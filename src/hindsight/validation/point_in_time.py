@@ -4,7 +4,7 @@ import hashlib
 import json
 import time
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -31,7 +31,12 @@ class Comparison:
 
 
 def run_credit_validation(config_path: Path) -> dict[str, Any]:
-    """Run the frozen credit scenario through a real DuckDB cutoff reconstruction."""
+    """Run one frozen scenario through a real DuckDB cutoff reconstruction.
+
+    The historical function name remains as a compatibility alias, but the
+    evidence identities and lineage paths are supplied by each scenario. This
+    prevents a fraud or healthcare audit from emitting credit-risk proof.
+    """
     started = time.perf_counter()
     raw_config = config_path.read_bytes()
     config = json.loads(raw_config)
@@ -95,17 +100,16 @@ def run_credit_validation(config_path: Path) -> dict[str, Any]:
         ),
     }
     prediction_time = datetime.fromisoformat(config["prediction_time"].replace("Z", "+00:00"))
+    evidence = _evidence_profile(config)
     leakage_verdict = audit_case(
         AuditCase(
-            case_id="credit-default-leaked-payment-event",
-            model_urn="urn:li:mlModel:hindsight.credit_default_v1_leaky",
-            feature_urn="urn:li:schemaField:(hindsight.feature_pipeline_leaky,days_since_last_payment)",
-            lineage_path=(
-                "payment_events_after_decision.payment_recorded_at",
-                "feature_pipeline_leaky.days_since_last_payment",
-            ),
+            case_id=evidence["leakage_case_id"],
+            model_urn=evidence["leakage_model_urn"],
+            feature_urn=evidence["leakage_feature_urn"],
+            lineage_path=tuple(evidence["leakage_lineage_path"]),
             source_kind="post_outcome",
-            source_available_at=datetime.fromisoformat("2026-02-10T09:00:00+00:00"),
+            source_available_at=prediction_time
+            + timedelta(days=float(evidence["leakage_available_offset_days"])),
             prediction_time=prediction_time,
             point_in_time_advantage_collapsed=leakage.collapsed,
             ablation_delta=leakage.observed_advantage,
@@ -113,15 +117,13 @@ def run_credit_validation(config_path: Path) -> dict[str, Any]:
     )
     safe_verdict = audit_case(
         AuditCase(
-            case_id="credit-default-prior-delinquencies-safe-control",
-            model_urn="urn:li:mlModel:hindsight.credit_default_v2_safe",
-            feature_urn="urn:li:schemaField:(hindsight.customer_history_point_in_time,prior_delinquencies)",
-            lineage_path=(
-                "customer_history_point_in_time.prior_delinquencies",
-                "feature_pipeline_safe.prior_delinquencies",
-            ),
+            case_id=evidence["safe_case_id"],
+            model_urn=evidence["safe_model_urn"],
+            feature_urn=evidence["safe_feature_urn"],
+            lineage_path=tuple(evidence["safe_lineage_path"]),
             source_kind="pre_outcome",
-            source_available_at=datetime.fromisoformat("2026-01-09T09:00:00+00:00"),
+            source_available_at=prediction_time
+            + timedelta(days=float(evidence["safe_available_offset_days"])),
             prediction_time=prediction_time,
             point_in_time_advantage_collapsed=safe_control.collapsed,
             ablation_delta=safe_control.observed_advantage,
@@ -141,6 +143,7 @@ def run_credit_validation(config_path: Path) -> dict[str, Any]:
             "cutoff_predicate": "available_at <= prediction_time",
             "excluded_post_cutoff_records": excluded_records,
         },
+        "evidence_context": evidence,
         "leakage_case": asdict(leakage),
         "safe_control": asdict(safe_control),
         "verdicts": {
@@ -148,6 +151,49 @@ def run_credit_validation(config_path: Path) -> dict[str, Any]:
             "safe_control": safe_verdict.to_dict(),
         },
     }
+
+
+def _evidence_profile(config: dict[str, Any]) -> dict[str, Any]:
+    """Return scenario-specific identities with legacy credit defaults."""
+
+    defaults: dict[str, Any] = {
+        "decision_node": "applications_at_decision_time.prediction_time",
+        "leakage_case_id": "credit-default-leaked-payment-event",
+        "safe_case_id": "credit-default-prior-delinquencies-safe-control",
+        "leakage_model_urn": "urn:li:mlModel:hindsight.credit_default_v1_leaky",
+        "safe_model_urn": "urn:li:mlModel:hindsight.credit_default_v2_safe",
+        "leakage_feature_urn": (
+            "urn:li:schemaField:(hindsight.feature_pipeline_leaky,days_since_last_payment)"
+        ),
+        "safe_feature_urn": (
+            "urn:li:schemaField:(hindsight.customer_history_point_in_time,prior_delinquencies)"
+        ),
+        "leakage_lineage_path": [
+            "payment_events_after_decision.payment_recorded_at",
+            "feature_pipeline_leaky.days_since_last_payment",
+        ],
+        "safe_lineage_path": [
+            "customer_history_point_in_time.prior_delinquencies",
+            "feature_pipeline_safe.prior_delinquencies",
+        ],
+        "leakage_available_offset_days": 31,
+        "safe_available_offset_days": -1,
+    }
+    supplied = config.get("audit_evidence", {})
+    if not isinstance(supplied, dict):
+        raise ValueError("audit_evidence must be a JSON object")
+    profile = defaults | supplied
+    for key in ("leakage_lineage_path", "safe_lineage_path"):
+        path = profile.get(key)
+        if (
+            not isinstance(path, list)
+            or len(path) < 2
+            or not all(isinstance(node, str) and node for node in path)
+        ):
+            raise ValueError(f"audit_evidence.{key} must contain at least two nodes")
+    profile["leakage_feature_name"] = profile["leakage_lineage_path"][-1].rsplit(".", 1)[-1]
+    profile["safe_feature_name"] = profile["safe_lineage_path"][-1].rsplit(".", 1)[-1]
+    return profile
 
 
 def _generate(config: dict[str, Any]) -> dict[str, Any]:

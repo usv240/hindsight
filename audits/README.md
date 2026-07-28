@@ -8,7 +8,7 @@ Pass one with `--audit`:
 ```powershell
 uv run hindsight demo-audit --audit audits/credit_default.json
 uv run hindsight publish-audit --audit audits/my_pipeline.json
-uv run hindsight serve --audit audits/my_pipeline.json
+uv run hindsight serve --audit audits/my_pipeline.json --target-urn "<exact-dataset-urn>"
 ```
 
 The console also reads `HINDSIGHT_AUDIT`.
@@ -29,12 +29,13 @@ The console also reads `HINDSIGHT_AUDIT`.
 
 ## Why `target_urn` matters
 
-Without it, `publish-audit --target-urn <anything>` will write *this* audit's verdict onto
-*any* asset you name, whether or not the evidence has anything to do with it. That is
-acceptable for a synthetic demo and wrong everywhere else.
+An unbound audit may be evaluated and previewed, but it cannot perform approved write-back.
+Bind the exact asset in the JSON config, set `HINDSIGHT_TARGET_URN`, or pass
+`--target-urn` to `hindsight serve`. The web console then refuses every other target.
 
-When `target_urn` is set, Hindsight refuses to publish to a different URN unless you pass
-`--allow-urn-mismatch`, and records that override in the evidence bundle.
+The CLI exposes `--allow-urn-mismatch` as a conspicuous emergency override for approved
+automation. Hindsight records use of that override. Do not use it for the demo or normal operation:
+writing a correct verdict onto the wrong asset creates false catalog evidence.
 
 ## Pointing this at your own pipeline
 

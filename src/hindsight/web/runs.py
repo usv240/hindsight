@@ -8,6 +8,7 @@ each under ``evidence/runs/`` and indexed newest first.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import uuid
 from datetime import UTC, datetime
@@ -33,8 +34,9 @@ def record_run(
     directory.mkdir(parents=True, exist_ok=True)
 
     now = datetime.now(UTC)
+    canonical_bundle = json.dumps(bundle, sort_keys=True, separators=(",", ":"))
     run = {
-        "schema_version": 1,
+        "schema_version": 2,
         "run_id": f"{now.strftime('%Y%m%dT%H%M%S')}-{uuid.uuid4().hex[:6]}",
         "started_at": now.isoformat(),
         "audit": bundle.get("audit_config", {}).get("name", "unknown"),
@@ -47,6 +49,9 @@ def record_run(
         "rows": bundle.get("validation", {}).get("rows"),
         "target_urn": bundle.get("audit_config", {}).get("target_urn"),
         "published": bool(publication and publication.get("mutation_performed")),
+        "evidence_sha256": hashlib.sha256(canonical_bundle.encode()).hexdigest(),
+        "evidence_bundle": bundle,
+        "publication": publication,
     }
     path = directory / f"{run['run_id']}.json"
     path.write_text(json.dumps(run, indent=2) + "\n", encoding="utf-8")
@@ -62,7 +67,10 @@ def list_runs(project_root: Path, limit: int = 50) -> list[dict[str, Any]]:
     runs: list[dict[str, Any]] = []
     for path in sorted(directory.glob("*.json"), reverse=True):
         try:
-            runs.append(json.loads(path.read_text(encoding="utf-8")))
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload.pop("evidence_bundle", None)
+            payload.pop("publication", None)
+            runs.append(payload)
         except (json.JSONDecodeError, OSError):
             continue
         if len(runs) >= limit:

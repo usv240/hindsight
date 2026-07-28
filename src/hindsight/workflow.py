@@ -15,12 +15,16 @@ def run_demo_audit(
     transformation_path: Path,
     remediation_path: Path,
     post_outcome_table: str,
+    available_column: str = "available_at",
+    prediction_column: str = "prediction_time",
 ) -> dict[str, Any]:
     """Produce a deterministic evidence bundle without performing a mutation."""
     transformation = transformation_path.read_text(encoding="utf-8")
     sql_verification = verify_temporal_cutoff(
         transformation,
         post_outcome_table=post_outcome_table,
+        available_column=available_column,
+        prediction_column=prediction_column,
     )
     validation = run_credit_validation(scenario_path)
     leakage_verdict = validation["verdicts"]["leakage_case"]
@@ -37,20 +41,17 @@ def run_demo_audit(
         leakage_verdict["verdict"], deterministic_proof=deterministic_proof
     )
 
-    # A blocking verdict must actually block. The aggregate validation status is
-    # not the right gate here: it also fails when the *statistical* collapse rule
-    # misses, which would let a case confirmed by deterministic proof through as
-    # "review". The two things that genuinely qualify a block are that the
-    # reconstruction really ran, and that the false-positive control stayed clear.
-    reconstruction_ran = bool(validation["checks"]["post_cutoff_records_were_excluded"])
-    control_clear = safe_verdict["verdict"] == "clear_for_release"
-    should_block = (
-        verdict in {v.value for v in BLOCKING_VERDICTS} and reconstruction_ran and control_clear
-    )
+    # The release action must be a pure function of the calibrated verdict.
+    # Requiring an unrelated safe-control or reconstruction check here can
+    # produce an incoherent confirmed/review state, even though deterministic
+    # proof is independently sufficient.
+    should_block = verdict in {v.value for v in BLOCKING_VERDICTS}
     remediation = remediation_path.read_text(encoding="utf-8")
     remediation_verification = verify_temporal_cutoff(
         remediation,
         post_outcome_table=post_outcome_table,
+        available_column=available_column,
+        prediction_column=prediction_column,
     )
     checks = {
         "transformation_violation_proven": sql_verification.status == "violation",

@@ -1,22 +1,41 @@
 {
-  "schema_version": 1,
-  "scenario": "fraud_at_authorisation",
-  "seed": 20260729,
-  "train_rows": 2800,
-  "test_rows": 1200,
-  "prediction_time": "2026-01-10T09:00:00Z",
-  "suspect_feature": "disputes_on_account",
-  "ground_truth": {
-    "defect": "The observed feature counts chargeback disputes filed after authorisation.",
-    "safe_reconstruction": "Retain only disputes with available_at <= prediction_time.",
-    "safe_control": "account_age_days is predictive and known at authorisation."
-  },
-  "collapse_rule": {
-    "minimum_observed_advantage": 0.05,
-    "maximum_advantage_retained": 0.5,
-    "rationale": "A collapse means a strict majority of the observed advantage disappears."
-  },
-  "safe_control_rule": {
-    "minimum_ablation_delta": 0.05
-  }
+    "schema_version":  1,
+    "scenario":  "fraud_at_authorisation",
+    "seed":  20260729,
+    "train_rows":  2800,
+    "test_rows":  1200,
+    "prediction_time":  "2026-01-10T09:00:00Z",
+    "suspect_feature":  "disputes_on_account",
+    "ground_truth":  {
+                         "defect":  "The observed feature counts chargeback disputes filed after authorisation.",
+                         "safe_reconstruction":  "Retain only disputes with available_at \u003c= prediction_time.",
+                         "safe_control":  "account_age_days is predictive and known at authorisation."
+                     },
+    "collapse_rule":  {
+                          "minimum_observed_advantage":  0.05,
+                          "maximum_advantage_retained":  0.5,
+                          "rationale":  "A collapse means a strict majority of the observed advantage disappears."
+                      },
+    "safe_control_rule":  {
+                              "minimum_ablation_delta":  0.05
+                          },
+    "audit_evidence":  {
+                           "decision_node":  "transactions_at_decision_time.prediction_time",
+                           "leakage_case_id":  "fraud-screening-post-authorisation-dispute",
+                           "safe_case_id":  "fraud-screening-account-age-safe-control",
+                           "leakage_model_urn":  "urn:li:mlModel:hindsight.fraud_screening_v1_leaky",
+                           "safe_model_urn":  "urn:li:mlModel:hindsight.fraud_screening_v2_safe",
+                           "leakage_feature_urn":  "urn:li:schemaField:(hindsight.fraud_feature_pipeline,disputes_on_account)",
+                           "safe_feature_urn":  "urn:li:schemaField:(hindsight.account_history_point_in_time,account_age_days)",
+                           "leakage_lineage_path":  [
+                                                        "disputes_after_authorisation.dispute_filed_at",
+                                                        "fraud_feature_pipeline.disputes_on_account"
+                                                    ],
+                           "safe_lineage_path":  [
+                                                     "account_history_point_in_time.account_age_days",
+                                                     "fraud_feature_pipeline_safe.account_age_days"
+                                                 ],
+                           "leakage_available_offset_days":  9,
+                           "safe_available_offset_days":  -1
+                       }
 }

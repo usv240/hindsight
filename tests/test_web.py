@@ -78,7 +78,11 @@ def test_publish_controls_disabled_when_datahub_cannot_be_written(
 ) -> None:
     monkeypatch.delenv("DATAHUB_GMS_URL", raising=False)
     reset_cache()
-    text = client.post("/audits/run", follow_redirects=True).text
+    text = client.post(
+        "/audits/run",
+        data={"csrf_token": client.app.state.csrf_token},
+        follow_redirects=True,
+    ).text
     assert "disabled" in text
 
 
@@ -91,7 +95,11 @@ def test_audits_index_shows_an_empty_state_before_any_run(client: TestClient, cl
 
 
 def test_running_an_audit_records_history_and_redirects(client: TestClient, clean_runs) -> None:
-    response = client.post("/audits/run", follow_redirects=False)
+    response = client.post(
+        "/audits/run",
+        data={"csrf_token": client.app.state.csrf_token},
+        follow_redirects=False,
+    )
     assert response.status_code == 303
     assert response.headers["location"].startswith("/audits/")
 
@@ -177,6 +185,7 @@ def test_publish_is_dry_run_without_approval(client: TestClient, clean_runs) -> 
     response = client.post(
         "/publish",
         data={
+            "csrf_token": client.app.state.csrf_token,
             "target_urn": "urn:li:dataset:dry-run",
             "server": "http://must-not-be-called.invalid",
         },

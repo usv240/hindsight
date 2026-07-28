@@ -70,7 +70,7 @@ One command. No Docker, DataHub, network, warehouse, or LLM required — it repl
 To re-prove those recordings against your own DataHub instance:
 
 ```powershell
-uv run hindsight verify-fixture-live
+uv run hindsight verify-fixture-live --target-urn "<synthetic-dataset-urn>"
 ```
 
 For the full live path — DataHub Core, MCP server, and approved write-back — see **[QUICKSTART.md](QUICKSTART.md)**.
@@ -169,10 +169,10 @@ different levels of maturity. The honest breakdown:
 |---|---|
 | SQL / temporal verification | **Yes.** `verify-sql` runs standalone against any transformation. |
 | Verdict lattice and evidence grading | **Yes.** Generic over any `AuditCase`. |
-| DataHub write-back, approval gate, re-read | **Yes.** Works against any URN in your catalog. |
+| DataHub write-back, approval gate, re-read | **Yes, for an exact bound dataset URN whose offending field exists in schema metadata.** |
 | Point-in-time reconstruction | **Not yet.** Expects the scenario-data shape used by the seeded scenario. |
 
-So you can check your own SQL and publish governed evidence today. Reconstructing *your*
+So you can check your own SQL and publish governed evidence today after binding the audit to the exact DataHub asset it describes. Reconstructing *your*
 features point-in-time still requires producing a scenario config the validation runner
 understands. That is the honest boundary between this and a shipped product.
 
@@ -186,11 +186,12 @@ uv run hindsight verify-sql path/to/your_feature.sql --post-outcome-table your_e
 
 ```powershell
 uv run hindsight demo-audit --audit audits/my_pipeline.json
-uv run hindsight serve --audit audits/my_pipeline.json
+uv run hindsight serve --audit audits/my_pipeline.json --target-urn "<exact-dataset-urn>"
 ```
 
-Set `target_urn` in that config. Hindsight then **refuses** to publish the verdict to any
-other asset unless you pass `--allow-urn-mismatch`, because writing evidence onto an asset
+Set `target_urn` in that config, pass `--target-urn` to `serve`, or set
+`HINDSIGHT_TARGET_URN`. Hindsight refuses approved write-back to any other asset unless
+the CLI receives the explicit emergency override `--allow-urn-mismatch`, because writing evidence onto an asset
 it does not describe puts false findings in your catalog.
 
 **Wire it into CI** with [examples/ci/hindsight-gate.yml](examples/ci/hindsight-gate.yml) —
@@ -200,9 +201,9 @@ a copyable workflow that blocks a pull request on `confirmed` leakage.
 
 - Use a DataHub **service account**, ideally scoped with a Default View. `--token` lands in
   shell history; prefer `DATAHUB_GMS_TOKEN`.
-- The console **has no authentication** and can write to your catalog. It binds to
-  `127.0.0.1` by default and warns if you bind it anywhere else. Put it behind an
-  authenticating proxy before exposing it.
+- The console **has no authentication**. It binds to `127.0.0.1`, uses per-process CSRF
+  tokens on state-changing forms, and requires an exact target binding before write-back.
+  Put it behind an authenticating proxy before exposing it beyond loopback.
 - Missing lineage or time metadata yields `insufficient_metadata` rather than a guess. A
   low-evidence answer is the honest one.
 
@@ -219,11 +220,11 @@ The [DataHub ML Release Audit Skill](skills/datahub-ml-release-audit/SKILL.md) t
 ```powershell
 uv run hindsight demo --json
 uv run hindsight replay-fixture
-uv run hindsight verify-fixture-live
+uv run hindsight verify-fixture-live --target-urn "<synthetic-dataset-urn>"
 uv run hindsight demo-audit --output evidence/demo-audit.local.json
 uv run hindsight verify-sql examples/leaky_feature.sql --post-outcome-table payment_events_after_decision
 uv run hindsight publish-audit --target-urn "<synthetic-dataset-urn>"
-uv run hindsight publish-audit --target-urn "<synthetic-dataset-urn>" --approve-writeback
+uv run hindsight publish-audit --audit audits/my_pipeline.json --target-urn "<exact-dataset-urn>" --approve-writeback
 uv run pytest
 ```
 
@@ -233,7 +234,7 @@ uv run pytest
 
 ## Reproducibility
 
-- **29 tests** pass, including the single-command judge regression and Skill contract tests.
+- **95 tests** pass, including the single-command judge regression and Skill contract tests.
 - CI runs lint, tests, the offline judge demo, an ASCII-console guard, and a JSON-deliverable guard on **Ubuntu and Windows × Python 3.11 and 3.12**.
 - Offline recorded-fixture replay: `~0.023s` of compute (a few seconds wall-clock including interpreter start). Target `<60s`.
 - Point-in-time reconstruction: `~0.159s` for 4,000 applications.

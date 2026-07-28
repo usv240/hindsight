@@ -75,6 +75,10 @@ def build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8100)
     serve.add_argument("--audit", type=Path, help="Audit config the console should report on")
+    serve.add_argument(
+        "--target-urn",
+        help="Bind console write-back to this exact DataHub asset URN",
+    )
     replay = commands.add_parser("replay-fixture", help="Replay a hash-verified offline fixture")
     replay.add_argument("--fixture", type=Path, default=Path("fixtures/credit_default"))
     replay.add_argument(
@@ -176,6 +180,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             transformation_path=config.transformation_path,
             remediation_path=config.remediation_path,
             post_outcome_table=config.post_outcome_table,
+            available_column=config.available_column,
+            prediction_column=config.prediction_column,
         )
         report["audit_config"] = config.to_dict()
         rendered = json.dumps(report, indent=2) + "\n"
@@ -193,7 +199,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         # Evidence must describe the asset it is written to. Without this an
         # operator can tag any URN in the catalog with an unrelated verdict.
-        if not config.describes(args.target_urn) and not args.allow_urn_mismatch:
+        if (
+            args.approve_writeback
+            and not config.describes(args.target_urn)
+            and not args.allow_urn_mismatch
+        ):
             print(
                 "error: refusing to publish.\n"
                 f"  audit '{config.name}' describes {config.target_urn}\n"
@@ -208,6 +218,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             transformation_path=config.transformation_path,
             remediation_path=config.remediation_path,
             post_outcome_table=config.post_outcome_table,
+            available_column=config.available_column,
+            prediction_column=config.prediction_column,
         )
         bundle["audit_config"] = config.to_dict()
         report = publish_audit(
@@ -218,7 +230,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             approved=args.approve_writeback,
         )
         report["audit_config"] = config.to_dict()
-        if not config.describes(args.target_urn):
+        if (
+            args.approve_writeback
+            and not config.describes(args.target_urn)
+            and args.allow_urn_mismatch
+        ):
             report["urn_mismatch_override"] = True
         rendered = json.dumps(report, indent=2) + "\n"
         args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -239,6 +255,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         if args.audit:
             os.environ["HINDSIGHT_AUDIT"] = str(args.audit)
+        if args.target_urn:
+            os.environ["HINDSIGHT_TARGET_URN"] = args.target_urn
         uvicorn.run(create_app(), host=args.host, port=args.port)
         return 0
 

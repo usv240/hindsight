@@ -63,34 +63,53 @@ def build_timeline(bundle: dict[str, Any], scenario: dict[str, Any]) -> Timeline
     days_after = _days_after(bundle, default=31)
     leak_reach = cutoff + timedelta(days=days_after)
 
+    context = bundle.get("validation", {}).get("evidence_context", {})
+    decision_asset, decision_column = _split_node(
+        context.get("decision_node"), "applications_at_decision_time.prediction_time"
+    )
+    safe_path = context.get("safe_lineage_path", [])
+    leakage_path = context.get("leakage_lineage_path", [])
+    safe_source_asset, safe_source_column = _split_node(
+        safe_path[0] if safe_path else None,
+        "customer_history_point_in_time.prior_delinquencies",
+    )
+    safe_feature_asset, safe_feature_column = _split_node(
+        safe_path[-1] if safe_path else None,
+        "feature_pipeline_safe.prior_delinquencies",
+    )
+    leak_feature_asset, leak_feature_column = _split_node(
+        leakage_path[-1] if leakage_path else None,
+        "feature_pipeline_leaky.days_since_last_payment",
+    )
+
     tracks = [
         Track(
-            label="applications_at_decision_time",
-            column="prediction_time",
+            label=decision_asset,
+            column=decision_column,
             start_pct=pct(start),
             end_pct=CUTOFF_PCT,
             kind="source",
             note="the decision itself",
         ),
         Track(
-            label="customer_history_point_in_time",
-            column="prior_delinquencies",
+            label=safe_source_asset,
+            column=safe_source_column,
             start_pct=pct(start),
             end_pct=CUTOFF_PCT,
             kind="source",
             note="entirely pre-cutoff",
         ),
         Track(
-            label="feature_pipeline_safe",
-            column="prior_delinquencies",
+            label=safe_feature_asset,
+            column=safe_feature_column,
             start_pct=pct(start + timedelta(days=6)),
             end_pct=CUTOFF_PCT,
             kind="safe",
             note="stops at the cutoff - cleared for release",
         ),
         Track(
-            label="feature_pipeline_leaky",
-            column="days_since_last_payment",
+            label=leak_feature_asset,
+            column=leak_feature_column,
             start_pct=pct(start + timedelta(days=6)),
             end_pct=CUTOFF_PCT,
             kind="leak",
@@ -125,10 +144,18 @@ def _days_after(bundle: dict[str, Any], default: int) -> int:
     for candidate in (
         bundle.get("sql_verification", {}).get("days_after"),
         bundle.get("validation", {}).get("days_after"),
+        bundle.get("validation", {})
+        .get("evidence_context", {})
+        .get("leakage_available_offset_days"),
     ):
         if isinstance(candidate, int | float) and candidate > 0:
             return int(candidate)
     return default
+
+
+def _split_node(value: Any, fallback: str) -> tuple[str, str]:
+    node = value if isinstance(value, str) and "." in value else fallback
+    return tuple(node.rsplit(".", 1))  # type: ignore[return-value]
 
 
 def _parse(value: Any) -> datetime | None:

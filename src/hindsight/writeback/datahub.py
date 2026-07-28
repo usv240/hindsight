@@ -4,6 +4,7 @@ import json
 import re
 from datetime import UTC, datetime
 from typing import Any
+from urllib.parse import urlsplit
 
 from hindsight.phase0.writeback_probe import (
     PROPERTY_URN,
@@ -37,6 +38,12 @@ def publish_audit(
         }
     if bundle.get("release_decision") != "block" or bundle.get("verdict") != "confirmed":
         raise ValueError("Only a deterministic confirmed/block bundle can use this publisher")
+    _validate_destination(bundle, target_urn=target_urn, server=server)
+    target_field_path = (
+        bundle.get("validation", {})
+        .get("evidence_context", {})
+        .get("leakage_feature_name", "days_since_last_payment")
+    )
 
     from datahub.metadata.urns import TagUrn
     from datahub.sdk import DataHubClient, Document, Tag
@@ -56,12 +63,12 @@ def publish_audit(
         (
             item
             for item in (getattr(target, "schema", None) or [])
-            if item.field_path == "days_since_last_payment"
+            if item.field_path == target_field_path
         ),
         None,
     )
     if field is None:
-        raise ValueError(f"Target {target_urn} lacks days_since_last_payment schema metadata")
+        raise ValueError(f"Target {target_urn} lacks {target_field_path} schema metadata")
     field.add_tag(TagUrn(TAG_NAME))
 
     _ensure_structured_property(server, token)
@@ -93,7 +100,7 @@ def publish_audit(
 
     reread_target = client.entities.get(target_urn)
     reread_field = next(
-        item for item in reread_target.schema if item.field_path == "days_since_last_payment"
+        item for item in reread_target.schema if item.field_path == target_field_path
     )
     reread_document = client.entities.get(document.urn)
     incidents = _get_incidents_with_retry(server, token, target_urn)
@@ -131,6 +138,24 @@ def publish_audit(
         },
         "mutation_performed": True,
     }
+
+
+def _validate_destination(bundle: dict[str, Any], *, target_urn: str, server: str) -> None:
+    if not target_urn.startswith("urn:li:dataset:"):
+        raise ValueError("Approved write-back requires a DataHub dataset URN")
+    parsed = urlsplit(server)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        raise ValueError("DataHub server must be an http(s) URL with a hostname")
+    if parsed.username or parsed.password:
+        raise ValueError("Put credentials in the token, not in the DataHub server URL")
+
+    configured = bundle.get("audit_config", {}).get("target_urn")
+    if configured is None:
+        raise ValueError("Approved write-back requires evidence bound to an exact target URN")
+    if configured != target_urn:
+        raise ValueError(
+            f"Audit evidence is bound to {configured}, not requested target {target_urn}"
+        )
 
 
 def _document_id(case_id: str) -> str:

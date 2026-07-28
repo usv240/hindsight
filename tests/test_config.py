@@ -51,9 +51,9 @@ def test_audit_config_rejects_paths_that_do_not_exist(tmp_path: Path) -> None:
         AuditConfig.load(path, tmp_path)
 
 
-def test_describes_is_permissive_only_when_no_target_is_declared() -> None:
+def test_unbound_audit_never_claims_to_describe_an_arbitrary_asset() -> None:
     unbound = AuditConfig.default(Path.cwd())
-    assert unbound.describes("urn:li:dataset:anything")
+    assert not unbound.describes("urn:li:dataset:anything")
 
     from dataclasses import replace
 
@@ -86,6 +86,7 @@ def test_publish_refuses_to_tag_an_asset_the_audit_does_not_describe(tmp_path: P
             str(config_path),
             "--target-urn",
             "urn:li:dataset:a-completely-different-asset",
+            "--approve-writeback",
             "--server",
             "http://must-not-be-called.invalid",
             "--output",

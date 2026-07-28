@@ -120,7 +120,7 @@
 <section class="panel" aria-labelledby="trap-heading">
   <div class="section-heading">
     <div>
-      <p class="eyebrow">The ablation trap</p>
+      <p class="eyebrow">Calibration regression fixture · constant across scenarios</p>
       <h2 id="trap-heading">Importance gets this exactly backwards{{ info('ablation-delta') }}</h2>
     </div>
   </div>
@@ -128,11 +128,13 @@
   {%- set safest = bundle.ablation_contrast.safe_feature -%}
   {%- set scale = (leaked if leaked > safest else safest) * 1.15 -%}
 
+  <p class="prose">This controlled regression pair is deliberately held constant across audits: it proves the gate does not confuse importance with illegal availability.</p>
+
   <div class="compare" role="group" aria-label="Ablation delta compared on one scale">
     <div class="compare-row" data-kind="leak">
       <div class="compare-name">
         <strong>Planted leaked feature</strong>
-        <span>days_since_last_payment</span>
+        <span>post-outcome feature</span>
       </div>
       <div class="compare-track">
         <div class="compare-fill" style="width: {{ (leaked / scale * 100) | round(1) }}%"></div>
@@ -143,7 +145,7 @@
     <div class="compare-row" data-kind="safe">
       <div class="compare-name">
         <strong>Legitimate control{{ info('safe-control') }}</strong>
-        <span>prior_delinquencies</span>
+        <span>pre-cutoff control</span>
       </div>
       <div class="compare-track">
         <div class="compare-fill" style="width: {{ (safest / scale * 100) | round(1) }}%"></div>
@@ -192,7 +194,11 @@
         <p class="eyebrow">Counterfactual test</p>
         <h2 id="pit-heading">Point-in-time reconstruction{{ info('point-in-time') }}</h2>
       </div>
-      <span class="finding danger">Confirmed</span>
+            {% if leakage.collapsed %}
+      <span class="finding danger">Confirmation route fired</span>
+      {% else %}
+      <span class="finding">Supporting evidence</span>
+      {% endif %}
     </div>
     <div class="metric">
       <div class="metric-head"><span>Observed training AUC</span><strong>{{ "%.6f"|format(leakage.observed_auc) }}</strong></div>
@@ -219,7 +225,7 @@
       <span class="finding ok">Clear</span>
     </div>
     <p class="prose">
-      The legitimate <code>prior_delinquencies</code> feature remains predictive because it existed
+      The legitimate <code>{{ bundle.validation.evidence_context.safe_feature_name }}</code> feature remains predictive because it existed
       before the decision. It must come back clear on every run.
     </p>
     <div class="metric" style="margin-top: var(--sp-4);">
@@ -280,6 +286,13 @@
   </div>
   {% endif %}
 
+  {% if health.can_write and not writeback_bound %}
+  <div class="banner" data-state="degraded">
+    <strong>Write-back target is not bound.</strong>
+    Restart with <code>hindsight serve --target-urn "&lt;exact DataHub URN&gt;"</code>.
+    Hindsight will not publish evidence to an arbitrary asset.
+  </div>
+  {% endif %}
   <div class="publish">
     <div>
       <p class="prose">
@@ -298,8 +311,10 @@
       {% endif %}
     </div>
     <form method="post" action="/publish">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="scenario" value="{{ scenario.slug }}">
       <div class="field">
-        <label for="target_urn">Synthetic target dataset URN</label>
+        <label for="target_urn">Bound target dataset URN</label>
         <input type="text" id="target_urn" name="target_urn" value="{{ target_urn }}"
                placeholder="urn:li:dataset:(urn:li:dataPlatform:duckdb,...,PROD)" required>
       </div>
@@ -309,12 +324,12 @@
       </div>
       <div class="consent">
         <input type="checkbox" id="approve_writeback" name="approve_writeback" value="true"
-               {% if not health.can_write %}disabled{% endif %}>
+               {% if not health.can_write or not writeback_bound %}disabled{% endif %}>
         <label for="approve_writeback">
           I approve these four catalog mutations against this synthetic asset.
         </label>
       </div>
-      <button class="btn" type="submit" {% if not health.can_write %}disabled{% endif %}>
+      <button class="btn" type="submit" {% if not health.can_write or not writeback_bound %}disabled{% endif %}>
         Preview write-back
       </button>
     </form>

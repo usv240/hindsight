@@ -150,12 +150,18 @@ def test_the_detail_page_leads_with_plain_english() -> None:
     assert "1.000000" in text
 
 
-def test_switching_scenario_changes_the_story_on_the_page() -> None:
+def test_running_a_scenario_records_and_renders_its_own_story() -> None:
     client = TestClient(create_app(Path.cwd()))
-    run = record_run(Path.cwd(), client.get("/api/audit").json())
-    text = client.get(f"/audits/{run['run_id']}?scenario=fraud_screening").text
-    assert "Is this transaction fraudulent?" in text
-    assert "disputes" in text.lower()
+    response = client.post(
+        "/audits/run",
+        data={
+            "csrf_token": client.app.state.csrf_token,
+            "scenario": "fraud_screening",
+        },
+        follow_redirects=True,
+    )
+    assert "Is this transaction fraudulent?" in response.text
+    assert "disputes" in response.text.lower()
 
 
 def test_the_story_names_the_post_outcome_source_not_the_feature() -> None:

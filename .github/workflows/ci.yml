@@ -1,5 +1,8 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
@@ -10,6 +13,7 @@ jobs:
   verify:
     name: Verify on ${{ matrix.os }} / Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -28,7 +32,7 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
 
       - name: Install project
-        run: uv sync --extra dev
+        run: uv sync --locked --extra dev
 
       - name: Lint
         run: |
@@ -37,6 +41,9 @@ jobs:
 
       - name: Tests
         run: uv run pytest -q
+
+      - name: Build distributions
+        run: uv build
 
       # The judge path must work with no Docker, no DataHub, no network and no
       # LLM. Running it in CI proves that claim on a clean machine rather than

@@ -24,6 +24,7 @@ _TIMEOUT_SECONDS = 2.0
 
 @dataclass
 class _Cached:
+    target: str | None = None
     checked_at: float = 0.0
     payload: dict[str, Any] = field(default_factory=dict)
 
@@ -39,10 +40,16 @@ def datahub_health(server: str | None = None, *, force: bool = False) -> dict[st
     """
     target = server or os.getenv("DATAHUB_GMS_URL")
     now = time.monotonic()
-    if not force and _cache.payload and (now - _cache.checked_at) < _CACHE_SECONDS:
+    if (
+        not force
+        and _cache.target == target
+        and _cache.payload
+        and (now - _cache.checked_at) < _CACHE_SECONDS
+    ):
         return _cache.payload
 
     payload = _probe(target)
+    _cache.target = target
     _cache.checked_at = now
     _cache.payload = payload
     return payload
@@ -114,5 +121,6 @@ def _result(
 
 def reset_cache() -> None:
     """Test hook - drop the cached probe result."""
+    _cache.target = None
     _cache.checked_at = 0.0
     _cache.payload = {}

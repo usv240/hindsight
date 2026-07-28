@@ -2,17 +2,19 @@ from __future__ import annotations
 
 import json
 import os
+import secrets
+from dataclasses import replace
 from pathlib import Path
 from typing import Annotated, Any
 
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from hindsight.config import AuditConfig
 from hindsight.demo import run_judge_demo
-from hindsight.scenarios import get_scenario, list_scenarios
+from hindsight.scenarios import SCENARIOS, get_scenario, list_scenarios
 from hindsight.web.activity import build_activity
 from hindsight.web.explain import explain
 from hindsight.web.glossary import GLOSSARY
@@ -37,6 +39,9 @@ def create_app(project_root: Path | None = None) -> FastAPI:
     )
     app.state.project_root = root
     templates = Jinja2Templates(directory=WEB_ROOT / "templates")
+    csrf_token = secrets.token_urlsafe(32)
+    app.state.csrf_token = csrf_token
+    templates.env.globals["csrf_token"] = csrf_token
     app.mount("/static", StaticFiles(directory=WEB_ROOT / "static"), name="static")
 
     # ---- API ------------------------------------------------------------
@@ -91,7 +96,14 @@ def create_app(project_root: Path | None = None) -> FastAPI:
         )
 
     @app.post("/audits/run")
-    def run_audit(request: Request, scenario: Annotated[str, Form()] = "") -> RedirectResponse:
+    def run_audit(
+        request: Request,
+        csrf_token: Annotated[str, Form()] = "",
+        scenario: Annotated[str, Form()] = "",
+    ) -> RedirectResponse:
+        _require_csrf(request, csrf_token)
+        if scenario and scenario not in SCENARIOS:
+            raise HTTPException(status_code=400, detail="Unknown audit scenario")
         bundle = _audit(root, scenario or None)
         run = record_run(root, bundle, scenario=scenario or None)
         suffix = f"?scenario={scenario}" if scenario else ""
@@ -102,9 +114,7 @@ def create_app(project_root: Path | None = None) -> FastAPI:
         runs = list_runs(root)
         if runs:
             return RedirectResponse(url=f"/audits/{runs[0]['run_id']}", status_code=303)
-        bundle = _audit(root)
-        run = record_run(root, bundle)
-        return RedirectResponse(url=f"/audits/{run['run_id']}", status_code=303)
+        return RedirectResponse(url="/", status_code=303)
 
     @app.get("/audits/{run_id}", response_class=HTMLResponse)
     def audit_detail(request: Request, run_id: str, scenario: str = "") -> HTMLResponse:
@@ -116,7 +126,7 @@ def create_app(project_root: Path | None = None) -> FastAPI:
                 context=_shell(root, "audits", list_runs(root)) | {"run_id": run_id},
                 status_code=404,
             )
-        slug = scenario or run.get("scenario")
+        slug = run.get("scenario") or scenario
         return _render_detail(templates, request, root, run=run, scenario_slug=slug)
 
     @app.get("/evidence", response_class=HTMLResponse)
@@ -142,17 +152,23 @@ def create_app(project_root: Path | None = None) -> FastAPI:
     def publish(
         request: Request,
         target_urn: Annotated[str, Form()],
+        csrf_token: Annotated[str, Form()] = "",
         server: Annotated[str, Form()] = "http://localhost:8080",
         approve_writeback: Annotated[bool, Form()] = False,
+        scenario: Annotated[str, Form()] = "",
     ) -> HTMLResponse:
-        config = _audit_config(root)
-        if not config.describes(target_urn):
+        _require_csrf(request, csrf_token)
+        if scenario and scenario not in SCENARIOS:
+            raise HTTPException(status_code=400, detail="Unknown audit scenario")
+        slug = scenario or None
+        config = _audit_config(root, slug)
+        if approve_writeback and not config.describes(target_urn):
+            described = config.target_urn or "no bound target"
             publication = {
                 "status": "error",
                 "message": (
-                    f"Refusing to publish: this audit describes {config.target_urn}, "
-                    f"not {target_urn}. Writing the verdict to an asset it does not "
-                    "describe would put false evidence in the catalog."
+                    f"Refusing approved write-back: this audit describes {described}, "
+                    f"not {target_urn}. Bind the exact target before publishing."
                 ),
                 "mutation_performed": False,
             }
@@ -160,13 +176,15 @@ def create_app(project_root: Path | None = None) -> FastAPI:
                 templates,
                 request,
                 root,
+                scenario_slug=slug,
                 publication=publication,
                 target_urn=target_urn,
                 server=server,
             )
+        bundle = _audit(root, slug)
         try:
             publication = publish_audit(
-                _audit(root),
+                bundle,
                 target_urn=target_urn,
                 server=server,
                 token=os.getenv("DATAHUB_GMS_TOKEN"),
@@ -178,17 +196,24 @@ def create_app(project_root: Path | None = None) -> FastAPI:
                 "message": str(error),
                 "mutation_performed": False,
             }
-        record_run(root, _audit(root), publication=publication)
+        record_run(root, bundle, publication=publication, scenario=slug)
         return _render_detail(
             templates,
             request,
             root,
+            scenario_slug=slug,
             publication=publication,
             target_urn=target_urn,
             server=server,
         )
 
     return app
+
+
+def _require_csrf(request: Request, supplied: str) -> None:
+    expected = request.app.state.csrf_token
+    if not secrets.compare_digest(supplied, expected):
+        raise HTTPException(status_code=403, detail="Invalid form token")
 
 
 # ---- Rendering ----------------------------------------------------------
@@ -215,7 +240,8 @@ def _render_detail(
     target_urn: str = "",
     server: str = "http://localhost:8080",
 ) -> HTMLResponse:
-    bundle = _audit(root, scenario_slug)
+    stored_bundle = run.get("evidence_bundle") if run else None
+    bundle = stored_bundle if isinstance(stored_bundle, dict) else _audit(root, scenario_slug)
     leakage = bundle["validation"]["leakage_case"]
     safe = bundle["validation"]["safe_control"]
     runs = list_runs(root)
@@ -236,7 +262,8 @@ def _render_detail(
             "leakage": leakage,
             "safe": safe,
             "publication": publication,
-            "target_urn": target_urn,
+            "target_urn": target_urn or config.target_urn or "",
+            "writeback_bound": config.target_urn is not None,
             "server": server,
             "activity": build_activity(root, bundle, publication),
             "advantage_lost": round((1 - leakage["advantage_retained"]) * 100, 1),
@@ -259,16 +286,21 @@ def _read_json(path: Path) -> dict[str, Any]:
 
 
 def _audit_config(root: Path, scenario_slug: str | None = None) -> AuditConfig:
-    """Resolve which audit to run, honouring an explicit scenario choice."""
+    """Resolve the audit and optionally bind its exact DataHub target from env."""
     if scenario_slug:
         scenario = get_scenario(scenario_slug)
         candidate = root / scenario.audit_config
-        if candidate.exists():
-            return AuditConfig.load(candidate, root)
-    configured = os.getenv("HINDSIGHT_AUDIT")
-    if configured:
-        return AuditConfig.load(Path(configured), root)
-    return AuditConfig.default(root)
+        config = (
+            AuditConfig.load(candidate, root) if candidate.exists() else AuditConfig.default(root)
+        )
+    else:
+        configured = os.getenv("HINDSIGHT_AUDIT")
+        config = (
+            AuditConfig.load(Path(configured), root) if configured else AuditConfig.default(root)
+        )
+
+    target_urn = os.getenv("HINDSIGHT_TARGET_URN")
+    return replace(config, target_urn=target_urn) if target_urn else config
 
 
 def _audit(root: Path, scenario_slug: str | None = None) -> dict[str, Any]:
@@ -289,25 +321,44 @@ def _audit(root: Path, scenario_slug: str | None = None) -> dict[str, Any]:
         transformation_path=config.transformation_path,
         remediation_path=config.remediation_path,
         post_outcome_table=config.post_outcome_table,
+        available_column=config.available_column,
+        prediction_column=config.prediction_column,
     )
     judge_demo = run_judge_demo(root)
     bundle["ablation_contrast"] = judge_demo["ablation_contrast"]
     bundle["demo_disclosures"] = judge_demo["disclosures"]
     bundle["audit_config"] = config.to_dict()
 
+    if len(_AUDIT_CACHE) >= 32:
+        _AUDIT_CACHE.clear()
     _AUDIT_CACHE[fingerprint] = bundle
     return bundle
 
 
 def _fingerprint(config: AuditConfig) -> tuple[Any, ...]:
-    """Invalidate the cache when any input file changes on disk."""
+    """Invalidate cached evidence when any input or binding changes."""
     stamps = []
-    for path in (config.scenario_path, config.transformation_path, config.remediation_path):
+    paths = [
+        config.scenario_path,
+        config.transformation_path,
+        config.remediation_path,
+    ]
+    if config.source_path is not None:
+        paths.append(config.source_path)
+    for path in paths:
         try:
             stamps.append((str(path), path.stat().st_mtime_ns))
         except OSError:
             stamps.append((str(path), None))
-    return (config.name, config.post_outcome_table, tuple(stamps))
+    semantics = (
+        config.name,
+        config.post_outcome_table,
+        config.available_column,
+        config.prediction_column,
+        config.target_urn,
+        config.synthetic,
+    )
+    return semantics + (tuple(stamps),)
 
 
 def _find_project_root() -> Path:

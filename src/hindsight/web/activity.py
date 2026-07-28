@@ -51,6 +51,9 @@ def build_activity(
     leakage = validation["leakage_case"]
     safe = validation["safe_control"]
     sql = bundle["sql_verification"]
+    context = validation.get("evidence_context", {})
+    leakage_path = context.get("leakage_lineage_path", [])
+    days_after = context.get("leakage_available_offset_days", "unknown")
 
     feed: list[dict[str, Any]] = [
         _entry(
@@ -87,10 +90,7 @@ def build_activity(
             channel="datahub",
             source="recorded",
             message="Traversing fine-grained column lineage",
-            detail=(
-                "payment_events_after_decision.payment_recorded_at "
-                "-> feature_pipeline_leaky.days_since_last_payment"
-            ),
+            detail=" -> ".join(leakage_path) if leakage_path else "lineage path unavailable",
             ok=True,
             glossary="column-lineage",
         ),
@@ -98,7 +98,7 @@ def build_activity(
             channel="datahub",
             source="computed",
             message="Classifying the upstream source against the prediction cutoff",
-            detail="source_kind = post_outcome - available 31 days after the decision",
+            detail=f"source_kind = post_outcome - available {days_after} days after the decision",
             ok=False,
             glossary="prediction-cutoff",
         ),

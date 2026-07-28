@@ -91,10 +91,18 @@ class AuditConfig:
         ):
             if not path.exists():
                 raise AuditConfigError(f"{label} path does not exist: {path}")
+        for label, value in (
+            ("available_column", self.available_column),
+            ("prediction_column", self.prediction_column),
+        ):
+            if not isinstance(value, str) or not value.strip():
+                raise AuditConfigError(f"{label} must be a non-empty column name")
+        if self.target_urn is not None and not self.target_urn.startswith("urn:li:"):
+            raise AuditConfigError("target_urn must be a DataHub URN beginning with urn:li:")
 
     def describes(self, urn: str) -> bool:
         """Whether this audit's evidence is actually about ``urn``."""
-        return self.target_urn is None or self.target_urn == urn
+        return self.target_urn is not None and self.target_urn == urn
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -103,6 +111,8 @@ class AuditConfig:
             "transformation_sql": str(self.transformation_path),
             "remediation_sql": str(self.remediation_path),
             "post_outcome_table": self.post_outcome_table,
+            "available_column": self.available_column,
+            "prediction_column": self.prediction_column,
             "target_urn": self.target_urn,
             "synthetic": self.synthetic,
         }

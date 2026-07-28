@@ -56,6 +56,7 @@
   <p>Run one to produce evidence. It works offline, with no DataHub required.</p>
   <pre class="sql"><code>uv run hindsight demo-audit</code></pre>
   <form method="post" action="/audits/run">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <button class="btn" type="submit">Run an audit now</button>
   </form>
 </section>
@@ -75,6 +76,7 @@
   <div class="scenarios">
     {% for s in scenarios %}
     <form method="post" action="/audits/run" class="scenario-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="scenario" value="{{ s.slug }}">
       <button class="scenario-card" type="submit">
         <span class="scenario-icon" aria-hidden="true">

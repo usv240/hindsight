@@ -44,13 +44,15 @@ Start the documented local DataHub quickstart and standalone MCP server, then:
 ```powershell
 uv sync --extra dev --extra datahub
 uv run python -m hindsight.phase0.datahub_probe
+$target = (Get-Content evidence/phase0/datahub-roundtrip.local.json | ConvertFrom-Json).entities.downstream
 uv run python -m hindsight.phase0.mcp_probe
-uv run hindsight serve
+uv run hindsight verify-fixture-live --target-urn $target
+uv run hindsight serve --target-urn $target
 ```
 
-The console publication form is dry-run by default. To publish, paste the
-synthetic leaky dataset URN returned by the probe and explicitly select the
-approval checkbox. The server writes the confirmed field tag, structured
+The console publication form is dry-run by default. `--target-urn` binds the evidence to
+the exact synthetic dataset returned by the probe; the console refuses approved write-back
+to any other asset. Explicitly select the approval checkbox to publish. The server writes the confirmed field tag, structured
 property, linked audit Document, and active incident, then rereads all four.
 
 Never enable approved mutation against a production catalog for the demo.

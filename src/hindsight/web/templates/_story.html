@@ -103,8 +103,13 @@
         <div>
           <strong>We rebuilt it and re-tested</strong>
           <span>
-            With the future removed, most of the model&rsquo;s edge vanished. A genuinely good
-            feature keeps its edge; this one did not.
+            {% if bundle.validation.leakage_case.collapsed %}
+            With the future removed, the model lost enough of its edge to cross the configured
+            confirmation policy.
+            {% else %}
+            Performance fell when future data was removed, but not far enough to cross the
+            configured confirmation policy. This route is supporting evidence only.
+            {% endif %}
           </span>
         </div>
       </div>
