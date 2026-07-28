@@ -1,5 +1,14 @@
 # ML leakage verdict contract
 
+Grounded in Kaufman, Rosset & Perlich, "Leakage in Data Mining: Formulation, Detection,
+and Avoidance" (KDD 2011; TKDD 6(4), 2012), which defines leakage through **legitimacy** -
+a feature is legitimate only if its information was available at prediction time. The
+point-in-time route below is their "learn-predict separation" applied as a test.
+
+This contract covers **leaking features**. Their second class, leakage in training
+*examples*, requires record-level provenance and is out of scope; say so rather than
+implying coverage.
+
 Use the least certain verdict supported by the evidence. Statistical importance is context only and never changes a verdict by itself.
 
 | Verdict | Minimum evidence | Release action |

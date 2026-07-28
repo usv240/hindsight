@@ -12,6 +12,7 @@ from hindsight.detectors import verify_temporal_cutoff
 from hindsight.engine import audit_case
 from hindsight.fixtures import run_fixture_replay
 from hindsight.models import AuditCase
+from hindsight.netguard import EndpointError, validate_endpoint
 from hindsight.phase0.preflight import write_preflight
 from hindsight.validation import run_credit_validation
 from hindsight.workflow import run_demo_audit
@@ -192,6 +193,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         return report["exit_code"]
 
     if args.command == "publish-audit":
+        try:
+            validate_endpoint(args.server)
+        except EndpointError as error:
+            print(f"error: {error}")
+            return 2
         try:
             config = _resolve_audit_config(args)
         except AuditConfigError as error:

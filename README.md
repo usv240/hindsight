@@ -242,6 +242,26 @@ uv run pytest
 
 ---
 
+## Theoretical grounding
+
+The verdict model is not invented. It follows the canonical formulation of leakage in
+[Kaufman, Rosset & Perlich, *Leakage in Data Mining: Formulation, Detection, and Avoidance*,
+KDD 2011](https://dl.acm.org/doi/10.1145/2020408.2020496) (extended in
+[TKDD 6(4), 2012](https://dl.acm.org/doi/10.1145/2382577.2382579)), which defines leakage in
+terms of **legitimacy**: a feature is legitimate only if the information it carries was
+available to the model at prediction time.
+
+| Kaufman et al. | Hindsight |
+|---|---|
+| Legitimacy of a feature | The directional lineage + availability-time check |
+| **Learn-predict separation** as the avoidance methodology | Point-in-time reconstruction, then re-evaluation on the same protocol |
+| Detection when *"the modeler has no control over how the data have been collected"* | Exactly our case: the leak was created upstream, in someone else's pipeline |
+
+Their taxonomy separates **leaking features** from **leakage in training examples** (rows that
+should not be in the training set at all). **Hindsight detects the first class only.** Row-level
+leakage needs record-level provenance, which is not something DataHub models today, and claiming
+otherwise would be dishonest. It is named in *What's next* rather than quietly omitted.
+
 ## Background
 
 Leakage is not a corner case:

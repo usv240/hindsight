@@ -68,11 +68,16 @@ def list_runs(project_root: Path, limit: int = 50) -> list[dict[str, Any]]:
     for path in sorted(directory.glob("*.json"), reverse=True):
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
-            payload.pop("evidence_bundle", None)
-            payload.pop("publication", None)
-            runs.append(payload)
-        except (json.JSONDecodeError, OSError):
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError):
             continue
+        # A file can be valid JSON and still not be a run: `null`, a list, a bare
+        # number. Anything that is not an object would crash the templates, so
+        # the type check has to come before any dict operation.
+        if not isinstance(payload, dict):
+            continue
+        payload.pop("evidence_bundle", None)
+        payload.pop("publication", None)
+        runs.append(payload)
         if len(runs) >= limit:
             break
     return runs
@@ -86,9 +91,10 @@ def get_run(project_root: Path, run_id: str) -> dict[str, Any] | None:
     if not path.exists():
         return None
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError):
         return None
+    return payload if isinstance(payload, dict) else None
 
 
 def group_by_scenario(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:

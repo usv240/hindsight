@@ -24,6 +24,10 @@ from typing import Any
 CUTOFF_PCT = 50.0
 _WINDOW_BEFORE = timedelta(days=45)
 _WINDOW_AFTER = timedelta(days=45)
+_DEFAULT_CUTOFF = datetime(2026, 1, 10, 9, tzinfo=UTC)
+# Leave room for the window on both sides of the representable range.
+_EARLIEST = datetime.min.replace(year=2, tzinfo=UTC)
+_LATEST = datetime.max.replace(year=9998, tzinfo=UTC)
 
 
 @dataclass
@@ -50,7 +54,10 @@ class Timeline:
 
 
 def build_timeline(bundle: dict[str, Any], scenario: dict[str, Any]) -> Timeline:
-    cutoff = _parse(scenario.get("prediction_time")) or datetime(2026, 1, 10, 9, tzinfo=UTC)
+    cutoff = _parse(scenario.get("prediction_time")) or _DEFAULT_CUTOFF
+    # datetime.min/max are only a few days from the representable edge, so the
+    # window arithmetic below overflows on absurd - but parseable - timestamps.
+    cutoff = min(max(cutoff, _EARLIEST), _LATEST)
     start = cutoff - _WINDOW_BEFORE
     end = cutoff + _WINDOW_AFTER
     span = (end - start).total_seconds()
