@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "run_id": "20260728T051306-a36c30",
+  "started_at": "2026-07-28T05:13:06.798647+00:00",
+  "audit": "credit_default",
+  "scenario": "credit_default",
+  "case_id": "credit-default-leaked-payment-event",
+  "verdict": "confirmed",
+  "release_decision": "block",
+  "exit_code": 3,
+  "runtime_seconds": 0.090431,
+  "rows": 4000,
+  "target_urn": null,
+  "published": false
+}

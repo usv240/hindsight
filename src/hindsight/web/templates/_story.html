@@ -36,6 +36,35 @@
     </div>
   </div>
 
+  {#- How Hindsight knew. In plain mode this is the only place DataHub appears,
+      so it must be here: the finding is worthless without its source. -#}
+  <div class="how-we-knew">
+    <div class="how-icon" aria-hidden="true">&#9741;</div>
+    <div>
+      <p class="eyebrow">How Hindsight knew</p>
+      <p>
+        Nobody told Hindsight which feature was suspicious. It read
+        <strong>DataHub</strong>{{ info('datahub') }} &mdash; the catalog that records every
+        table, column and pipeline in the company, and
+        <strong>which column was built from which</strong>{{ info('column-lineage') }}. Following
+        that map backwards from the model showed one feature drawing on
+        <code>{{ bundle.sql_verification.post_outcome_table }}</code> &mdash; a table whose rows
+        only appear <strong>after</strong> {{ scenario.cutoff_moment }}.
+      </p>
+      <p class="how-note">
+        {% if health.can_write %}
+        Connected to a live DataHub instance. Once a person approves, the finding is written
+        back into the catalog &mdash; a tag on the offending column, the verdict, an audit
+        document and an open incident{{ info('writeback-types') }} &mdash; so the next engineer
+        inherits it instead of rediscovering it.
+        {% else %}
+        Running on metadata recorded from a real DataHub instance{{ info('recorded-replay') }}.
+        Connect DataHub to publish the finding back into the catalog.
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
   {#- The scenario as a sequence of days, so the violation is a story not a stat. -#}
   <div class="story-steps">
     <p class="eyebrow">What actually happened</p>
@@ -48,6 +77,42 @@
       </li>
       {% endfor %}
     </ol>
+  </div>
+
+  {#- Which of the two independent routes proved it. Naming the route is what
+      turns "trust us" into "here is the specific thing that settled it". -#}
+  <div class="routes">
+    <p class="eyebrow">How certain is this?</p>
+    <div class="route-list">
+      <div class="route{% if bundle.confirmation_route == 'deterministic_sql_time_proof' %} is-fired{% endif %}">
+        <span class="route-mark" aria-hidden="true">
+          {%- if bundle.confirmation_route == 'deterministic_sql_time_proof' %}&#10003;{% else %}&mdash;{% endif -%}
+        </span>
+        <div>
+          <strong>We read the code that built it</strong>
+          <span>
+            The query pulls from a table whose rows only appear after the decision, with
+            nothing stopping it. That is proof, not an estimate &mdash; no retraining needed.
+          </span>
+        </div>
+      </div>
+      <div class="route{% if bundle.confirmation_route == 'point_in_time_collapse' %} is-fired{% endif %}">
+        <span class="route-mark" aria-hidden="true">
+          {%- if bundle.confirmation_route == 'point_in_time_collapse' %}&#10003;{% else %}&mdash;{% endif -%}
+        </span>
+        <div>
+          <strong>We rebuilt it and re-tested</strong>
+          <span>
+            With the future removed, most of the model&rsquo;s edge vanished. A genuinely good
+            feature keeps its edge; this one did not.
+          </span>
+        </div>
+      </div>
+    </div>
+    <p class="fine">
+      Either one is enough on its own. Hindsight reports which fired rather than blending them,
+      so you can see exactly what settled it.
+    </p>
   </div>
 
   <div class="story-grid">

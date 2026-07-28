@@ -57,3 +57,39 @@ def test_common_ancestry_without_direction_needs_review() -> None:
         suspicious_common_ancestry=True,
     )
     assert audit_case(AuditCase(**case)).verdict is Verdict.NEEDS_REVIEW
+
+
+# -- Confirmation routes ----------------------------------------------------
+
+
+def test_deterministic_sql_proof_confirms_without_a_statistical_collapse() -> None:
+    """The second confirmation route Codex adjudicated in round 2.
+
+    A transformation that joins a post-outcome source with no availability guard
+    proves post-cutoff data entered the feature. Requiring the point-in-time
+    collapse *as well* would let a case escape purely because a threshold landed
+    on the wrong side of it.
+    """
+    from hindsight.workflow import _resolve_verdict
+
+    verdict, route = _resolve_verdict("high_confidence", deterministic_proof=True)
+    assert verdict == "confirmed"
+    assert route == "deterministic_sql_time_proof"
+
+
+def test_point_in_time_collapse_is_reported_as_its_own_route() -> None:
+    from hindsight.workflow import _resolve_verdict
+
+    verdict, route = _resolve_verdict("confirmed", deterministic_proof=False)
+    assert verdict == "confirmed"
+    assert route == "point_in_time_collapse"
+
+
+def test_no_route_promotes_a_case_that_never_established_direction() -> None:
+    """Neither route may rescue weak evidence."""
+    from hindsight.workflow import _resolve_verdict
+
+    for weak in ("needs_review", "insufficient_metadata", "clear_for_release"):
+        verdict, route = _resolve_verdict(weak, deterministic_proof=True)
+        assert verdict == weak, weak
+        assert route == "none", weak

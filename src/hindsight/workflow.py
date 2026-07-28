@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from hindsight.detectors import verify_temporal_cutoff
+from hindsight.models import BLOCKING_VERDICTS, Verdict
 from hindsight.validation import run_credit_validation
 
 
@@ -24,11 +25,27 @@ def run_demo_audit(
     validation = run_credit_validation(scenario_path)
     leakage_verdict = validation["verdicts"]["leakage_case"]
     safe_verdict = validation["verdicts"]["safe_control"]
+
+    # Two independent routes reach `confirmed`, and the audit takes whichever
+    # fires. The point-in-time route lives in the validation above. The second -
+    # a deterministic SQL/time proof - was specified but never wired: a
+    # transformation that joins a post-outcome table with no availability guard
+    # proves post-cutoff information entered the feature, with no retraining and
+    # no dependence on where a statistical threshold happens to sit.
+    deterministic_proof = sql_verification.status == "violation"
+    verdict, confirmation_route = _resolve_verdict(
+        leakage_verdict["verdict"], deterministic_proof=deterministic_proof
+    )
+
+    # A blocking verdict must actually block. The aggregate validation status is
+    # not the right gate here: it also fails when the *statistical* collapse rule
+    # misses, which would let a case confirmed by deterministic proof through as
+    # "review". The two things that genuinely qualify a block are that the
+    # reconstruction really ran, and that the false-positive control stayed clear.
+    reconstruction_ran = bool(validation["checks"]["post_cutoff_records_were_excluded"])
+    control_clear = safe_verdict["verdict"] == "clear_for_release"
     should_block = (
-        sql_verification.status == "violation"
-        and validation["status"] == "passed"
-        and leakage_verdict["verdict"] == "confirmed"
-        and safe_verdict["verdict"] == "clear_for_release"
+        verdict in {v.value for v in BLOCKING_VERDICTS} and reconstruction_ran and control_clear
     )
     remediation = remediation_path.read_text(encoding="utf-8")
     remediation_verification = verify_temporal_cutoff(
@@ -46,7 +63,9 @@ def run_demo_audit(
         "schema_version": 1,
         "case_id": leakage_verdict["case_id"],
         "release_decision": "block" if should_block else "review",
-        "verdict": leakage_verdict["verdict"],
+        "verdict": verdict,
+        "confirmation_route": confirmation_route,
+        "point_in_time_verdict": leakage_verdict["verdict"],
         "checks": checks,
         "trace": [
             {
@@ -63,8 +82,8 @@ def run_demo_audit(
             },
             {
                 "step": "deterministic_verdict",
-                "status": leakage_verdict["verdict"],
-                "reason": leakage_verdict["reasons"][0],
+                "status": verdict,
+                "reason": _route_reason(confirmation_route, leakage_verdict["reasons"][0]),
             },
             {
                 "step": "safe_control",
@@ -95,3 +114,29 @@ def run_demo_audit(
         },
         "exit_code": 3 if should_block else 2,
     }
+
+
+def _resolve_verdict(point_in_time_verdict: str, *, deterministic_proof: bool) -> tuple[str, str]:
+    """Take the strongest verdict any single route can justify.
+
+    A deterministic SQL/time proof confirms on its own: if the transformation
+    joins a post-outcome table with no availability guard, post-cutoff data
+    demonstrably entered the feature. Requiring a statistical collapse *as well*
+    would let a feature escape on the wrong side of a threshold despite proof.
+    Neither route can promote a case that never established directional flow -
+    `insufficient_metadata` and `needs_review` are left untouched.
+    """
+    if point_in_time_verdict == Verdict.CONFIRMED.value:
+        return point_in_time_verdict, "point_in_time_collapse"
+    if deterministic_proof and point_in_time_verdict == Verdict.HIGH_CONFIDENCE.value:
+        return Verdict.CONFIRMED.value, "deterministic_sql_time_proof"
+    return point_in_time_verdict, "none"
+
+
+def _route_reason(route: str, fallback: str) -> str:
+    if route == "deterministic_sql_time_proof":
+        return (
+            "The transformation joins a post-outcome source with no availability cutoff, "
+            "which proves post-cutoff information entered the feature."
+        )
+    return fallback

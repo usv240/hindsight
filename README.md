@@ -52,6 +52,12 @@ An LLM may **explain** evidence. It can never **promote** a verdict.
 
 ---
 
+![The plain-English verdict](docs/img/console-audit-plain.png)
+
+*Every audit leads with the conclusion in ordinary words. The exact evidence is one click away.*
+
+---
+
 ## Judge quick start
 
 ```powershell
@@ -123,6 +129,21 @@ The point-in-time demo defines collapse as a strict majority of the apparent adv
 | Legitimate control AUC | 0.924842 | 0.924842 |
 
 Measured margin on the collapse rule: **5.142 percentage points**. See [evaluations/results.json](evaluations/results.json).
+
+---
+
+## The console
+
+| Overview and scenario picker | Run history |
+|---|---|
+| ![Overview](docs/img/console-overview.png) | ![Runs](docs/img/console-runs.png) |
+
+| Technical evidence view | Light theme |
+|---|---|
+| ![Technical](docs/img/console-audit-technical.png) | ![Light](docs/img/console-overview-light.png) |
+
+Screenshots are generated from the running app by `scripts/capture_screenshots.py`, so they
+cannot drift from what it actually renders.
 
 ---
 

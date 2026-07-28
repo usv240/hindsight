@@ -156,3 +156,22 @@ def test_switching_scenario_changes_the_story_on_the_page() -> None:
     text = client.get(f"/audits/{run['run_id']}?scenario=fraud_screening").text
     assert "Is this transaction fraudulent?" in text
     assert "disputes" in text.lower()
+
+
+def test_the_story_names_the_post_outcome_source_not_the_feature() -> None:
+    """A screenshot caught this naming the feature as its own source."""
+    from fastapi.testclient import TestClient
+
+    from hindsight.web import create_app
+    from hindsight.web.runs import record_run
+
+    client = TestClient(create_app(Path.cwd()))
+    run = record_run(Path.cwd(), client.get("/api/audit").json())
+    text = client.get(f"/audits/{run['run_id']}").text
+
+    start = text.find("HOW HINDSIGHT KNEW")
+    if start == -1:
+        start = text.find("How Hindsight knew")
+    block = text[start : start + 1400]
+    assert "payment_events_after_decision" in block
+    assert "feature_pipeline_leaky" not in block
