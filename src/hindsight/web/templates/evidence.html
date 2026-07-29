@@ -45,7 +45,7 @@
         </tr>
         <tr>
           <th scope="row">DataHub Skills</th><td><span class="finding ok">yes</span></td>
-          <td><code>datahub-ml-release-audit</code>, contributed upstream</td>
+          <td><code>datahub-ml-release-audit</code>, proposed upstream as datahub-skills#68</td>
         </tr>
         <tr>
           <th scope="row">DataHub Actions</th><td><span class="finding ok">yes</span></td>
@@ -231,6 +231,51 @@
   <p class="fine">
     <code>scripts/check_accessibility.py</code> &mdash; it found three real defects the first
     time it ran, including a subtle text colour that failed AA on most surfaces in both themes.
+  </p>
+</section>
+
+<!-- What went back upstream ------------------------------------------------ -->
+<section class="panel">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Contributed back</p>
+      <h2>Two pull requests to DataHub</h2>
+    </div>
+    <span class="finding ok">1 merged</span>
+  </div>
+  <p class="prose">
+    Both came out of building this rather than out of looking for something to contribute.
+  </p>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr><th scope="col">Pull request</th><th scope="col">What</th><th scope="col">State</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">
+            <a href="https://github.com/datahub-project/datahub/pull/18705"><code>datahub#18705</code></a>
+          </th>
+          <td>
+            Documents the required <code>customType</code> on <code>CUSTOM</code> incidents.
+            Hindsight raises one during write-back, and the tutorial as written fails with
+            <code>customType is required</code>.
+          </td>
+          <td><span class="finding ok">merged</span></td>
+        </tr>
+        <tr>
+          <th scope="row">
+            <a href="https://github.com/datahub-project/datahub-skills/pull/68"><code>datahub-skills#68</code></a>
+          </th>
+          <td>Adds the <code>datahub-ml-release-audit</code> skill: verdict lattice, workflow, evidence validator.</td>
+          <td><span class="finding">open</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="fine">
+    Full record, including what went wrong on the first attempt, in
+    <code>evidence/contributions/</code>.
   </p>
 </section>
 

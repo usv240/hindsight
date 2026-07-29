@@ -100,7 +100,6 @@ Being trusted matters more than being impressive. Almost every hard decision cam
 
 - Point-in-time reconstruction against arbitrary warehouse schemas (today it expects the seeded scenario's shape — the SQL checks, verdict lattice and write-back are already generic).
 - The remaining analyzers: training/serving skew and degenerate feedback loops.
-- Upstreaming the release-audit skill to `datahub-project/datahub-skills`.
 
 ---
 
@@ -127,9 +126,11 @@ uv run hindsight serve      # http://127.0.0.1:8100
 ## Links
 
 - **Repository:** https://github.com/usv240/hindsight
-- **Open-source contribution:** PR to `datahub-project/datahub-skills` adding `datahub-ml-release-audit` — _paste PR URL here_
+- **Open-source contributions:**
+  - [datahub#18705](https://github.com/datahub-project/datahub/pull/18705) — **merged** — documents the required `customType` field on `CUSTOM` incidents, which the tutorial omitted. Hit while building Hindsight's incident write-back; following the guide as written returns `customType is required: Failed to create incident.`
+  - [datahub-skills#68](https://github.com/datahub-project/datahub-skills/pull/68) — open, awaiting review — adds the `datahub-ml-release-audit` skill.
 - **Demo video:** _paste URL here_
 
 ## Feedback survey
 
-Opt in. Feedback to give: fine-grained lineage emission needs a worked end-to-end example in the docs; `CUSTOM` incidents require `customType`, which the current incident tutorial omits; the Analytics Agent quickstart is bash-only and needs a documented Windows/WSL2 path.
+Opt in. Feedback to give: fine-grained lineage emission needs a worked end-to-end example in the docs; the Analytics Agent quickstart is bash-only and needs a documented Windows/WSL2 path.

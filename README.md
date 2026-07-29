@@ -196,18 +196,16 @@ cannot drift from what it actually renders.
 | **DataHub Actions** | ✅ | Audits a model the moment it appears, without anyone triggering it |
 | Analytics Agent | — | Not applicable; this is not a text-to-SQL product |
 
-**Hindsight can watch instead of waiting.** `docker/hindsight-action.yml` subscribes to
-`EntityChangeEvent_v1`, filtered to model creation:
+**Hindsight can watch instead of waiting.** The isolated
+[`docker/hindsight-action.compose.yml`](docker/hindsight-action.compose.yml) deployment
+runs on DataHub's official Actions image and consumes `MetadataChangeLogEvent_v1`.
+It rejects unrelated entity types and URNs, audits one exact-bound model, deduplicates
+successful repeats, and emits a local JSONL proof. The proof configuration performs no
+autonomous catalog mutation; governed write-back still requires human approval.
 
-```powershell
-datahub actions -c docker/hindsight-action.yml
-```
-
-The action may **raise an incident** to notify — it never publishes the evidence
-record itself. An autonomous process silently mutating governed metadata is the thing
-this project argues against, and a test pins that guarantee at the source level.
-
-Full detail and live output: [evidence/integrations/2026-07-28.md](evidence/integrations/2026-07-28.md).
+The live official-runtime result is `confirmed / block / exit 3`. Reproduction commands
+and exact output are in [docker/ACTION.md](docker/ACTION.md) and
+[evidence/integrations/2026-07-28.md](evidence/integrations/2026-07-28.md).
 
 ## What Hindsight writes back to DataHub
 
@@ -232,11 +230,9 @@ different levels of maturity. The honest breakdown:
 | SQL / temporal verification | **Yes.** `scan-sql` walks a whole dbt project; `verify-sql` checks one file. Neither needs DataHub or the seeded data. |
 | Verdict lattice and evidence grading | **Yes.** Generic over any `AuditCase`. |
 | DataHub write-back, approval gate, re-read | **Yes, for an exact bound dataset URN whose offending field exists in schema metadata.** |
-| Point-in-time reconstruction | **Not yet.** Expects the scenario-data shape used by the seeded scenario. |
+| Point-in-time reconstruction | **Yes, from mapped CSV/Parquet snapshots.** User-defined columns, fail-closed validation, point-in-time joins, and source hashes. Direct warehouse connectors are not yet built. |
 
-So you can check your own SQL and publish governed evidence today after binding the audit to the exact DataHub asset it describes. Reconstructing *your*
-features point-in-time still requires producing a scenario config the validation runner
-understands. That is the honest boundary between this and a shipped product.
+You can check your own SQL, reconstruct external CSV/Parquet feature history, and publish governed evidence after binding the exact DataHub asset. The remaining boundary is transport: Hindsight reads exported snapshots rather than connecting directly to every warehouse engine.
 
 **Scan your own dbt project right now** — no DataHub, no seeded data, no setup:
 
@@ -293,7 +289,18 @@ a copyable workflow that blocks a pull request on `confirmed` leakage.
 
 ## Reusable DataHub Skill
 
-The [DataHub ML Release Audit Skill](skills/datahub-ml-release-audit/SKILL.md) turns Hindsight's calibrated evidence protocol into a reusable Agent Skill: the verdict contract, the MCP/CLI workflow, human-approved write-back rules, and a deterministic evidence-bundle validator. The local contribution is tested; an upstream pull request is external work and is not claimed as complete here.
+The [DataHub ML Release Audit Skill](skills/datahub-ml-release-audit/SKILL.md) turns Hindsight's calibrated evidence protocol into a reusable Agent Skill: the verdict contract, the MCP/CLI workflow, human-approved write-back rules, and a deterministic evidence-bundle validator.
+
+## Contributions back to DataHub
+
+Both came out of building this, not out of looking for something to contribute.
+
+| | Status |
+| --- | --- |
+| [datahub#18705](https://github.com/datahub-project/datahub/pull/18705) - document the required `customType` on `CUSTOM` incidents | **Merged** |
+| [datahub-skills#68](https://github.com/datahub-project/datahub-skills/pull/68) - add the `datahub-ml-release-audit` skill | Open, awaiting review |
+
+The first is small and worth explaining. Hindsight raises a DataHub incident as part of its write-back, and the incidents tutorial lists `CUSTOM` as a supported type without mentioning that `customType` is required alongside it. Following the guide as written fails with `customType is required: Failed to create incident.` The fix is a note and a worked example at the point where someone picks `CUSTOM`, verified against DataHub Core v1.5.0.6.
 
 ---
 
@@ -316,7 +323,7 @@ uv run pytest
 
 ## Reproducibility
 
-- **168 tests** pass, including the single-command judge regression and Skill contract tests.
+- **172 tests** pass, including the single-command judge regression and Skill contract tests.
 - CI runs lint, tests, the offline judge demo, an ASCII-console guard, and a JSON-deliverable guard on **Ubuntu and Windows × Python 3.11 and 3.12**.
 - Offline recorded-fixture replay: `~0.023s` of compute (a few seconds wall-clock including interpreter start). Target `<60s`.
 - Point-in-time reconstruction: `~0.159s` for 4,000 applications.

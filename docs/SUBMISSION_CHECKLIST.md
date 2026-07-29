@@ -28,7 +28,7 @@ Checked line-by-line against the official rules. Status as of 2026-07-28.
 | **Originality** | Cross-pipeline leakage detection. Existing research (Yang et al., ASE 2022) is notebook-scoped; this catches leaks originating in the warehouse. Not a feature DataHub ships. |
 | **Real-world usefulness** | CI release gate with exit codes, copyable workflow in `examples/ci/`, three industry scenarios. Boundaries stated honestly in the README. |
 | **Submission quality** | Plain-English mode by default, six generated screenshots, mermaid architecture diagram, research citations. |
-| **Bonus: OSS contribution** | Upstream-shaped `datahub-ml-release-audit` Skill is locally validated and tested. Opening the external PR is still outstanding and is not claimed complete. |
+| **Bonus: OSS contribution** | Two PRs, both arising from building this. `datahub#18705` (required `customType` on `CUSTOM` incidents) is **merged**. `datahub-skills#68` (the `datahub-ml-release-audit` skill) is open and awaiting review. |
 
 ## Final steps at submission time
 
