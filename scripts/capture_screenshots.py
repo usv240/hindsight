@@ -28,6 +28,7 @@ CONSOLE_SHOTS = [
     ("console-overview.png", "/", "Overview with the scenario picker", "dark", True),
     ("console-overview-light.png", "/", "The same page in light theme", "light", True),
     ("console-audit-plain.png", "/audits/latest", "Plain-English verdict", "dark", True),
+    ("console-evidence.png", "/evidence", "The artifacts, read from disk", "dark", True),
     ("console-runs.png", "/audits", "Run history", "dark", False),
     ("console-settings.png", "/settings", "Connection and audit target", "dark", False),
 ]

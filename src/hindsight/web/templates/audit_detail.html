@@ -25,8 +25,11 @@
 </section>
 
 <nav class="jumpnav" aria-label="Sections on this page">
+  {#- The story renders in both modes, so its anchors are unconditional. Only the
+      evidence sections below are technical-only. -#}
   <a href="#story-heading">Verdict</a>
-  <a href="#lineage-heading" class="tech-link">Timeline</a>
+  <a href="#trust-heading">Why believe it</a>
+  <a href="#lineage-heading">Timeline</a>
   <a href="#activity-heading" class="tech-link">What the agent did</a>
   <a href="#trap-heading" class="tech-link">The ablation trap</a>
   <a href="#publish-heading" class="tech-link">Publish</a>

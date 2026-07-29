@@ -4,9 +4,21 @@
 <section class="story" aria-labelledby="story-heading">
 
   <div class="story-verdict {{ 'is-block' if bundle.release_decision == 'block' else 'is-clear' }}">
-    <p class="eyebrow">In plain English</p>
-    <h2 id="story-heading">{{ plain.headline }}</h2>
-    <p class="story-sub">{{ plain.subhead }}</p>
+    <div class="verdict-copy">
+      <p class="eyebrow">In plain English</p>
+      <h2 id="story-heading">{{ plain.headline }}</h2>
+      <p class="story-sub">{{ plain.subhead }}</p>
+    </div>
+    {#- The card was half empty. The decision belongs in that space, not below. -#}
+    <div class="verdict-figure" role="group" aria-label="Release decision">
+      <span class="verdict-stamp">{{ bundle.release_decision | upper }}</span>
+      <span class="verdict-meta">{{ bundle.verdict | replace("_", " ") }}</span>
+      <span class="verdict-rule" aria-hidden="true"></span>
+      <span class="verdict-lost">{{ plain.lost_pct }}%</span>
+      <span class="verdict-meta">
+        {% if bundle.release_decision == 'block' %}of the skill was borrowed{% else %}skill retained{% endif %}
+      </span>
+    </div>
   </div>
 
   {#- The analogy. One idea, no jargon, mapped onto this scenario. -#}
@@ -83,7 +95,7 @@
       not sit behind the technical toggle. Framed here in plain language. -#}
   <div class="story-timeline">
     <p class="eyebrow">The problem, on a calendar</p>
-    <h3>One fact arrived after the decision</h3>
+    <h3 id="lineage-heading">One fact arrived after the decision</h3>
     <p class="prose">
       Everything left of the red line was knowable when the decision had to be made. Everything
       right of it did not exist yet. Watch the bottom row cross the line.
