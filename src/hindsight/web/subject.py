@@ -35,15 +35,30 @@ def _read(path: Path) -> dict[str, Any]:
     return payload if isinstance(payload, dict) else {}
 
 
+def _canonical_model_urn(urn: str) -> str:
+    """Upgrade the early synthetic shorthand to DataHub's canonical key shape."""
+    prefix = "urn:li:mlModel:hindsight."
+    if urn.startswith(prefix):
+        name = urn.removeprefix("urn:li:mlModel:")
+        return f"urn:li:mlModel:(urn:li:dataPlatform:mlflow,{name},PROD)"
+    return urn
+
+
 def _name_from_urn(urn: str) -> str:
     """Last meaningful segment of a URN, for display beside the full value.
 
-    ``urn:li:mlModel:hindsight.credit_default_v1_leaky`` -> ``credit_default_v1_leaky``
+    A canonical MLModel URN ending in hindsight.credit_default_v1_leaky,PROD)
+    is displayed as credit_default_v1_leaky.
     ``urn:li:schemaField:(hindsight.feature_pipeline_leaky,days_since_last_payment)``
         -> ``days_since_last_payment``
     """
     if not urn:
         return ""
+    if urn.startswith("urn:li:mlModel:(") and urn.endswith(")"):
+        inner = urn.split("(", 1)[1].rsplit(")", 1)[0]
+        parts = inner.rsplit(",", 2)
+        if len(parts) == 3:
+            return parts[1].rsplit(".", 1)[-1]
     if urn.endswith(")") and "," in urn:
         return urn.rsplit(",", 1)[-1].rstrip(")")
     return urn.rsplit(":", 1)[-1].rsplit(".", 1)[-1]
@@ -160,7 +175,9 @@ def describe(
     if not leaked and isinstance(truth.get("safe_control"), dict):
         truth = {**truth, **truth["safe_control"]}
 
-    model_urn = str(context.get(f"{prefix}model_urn") or truth.get("model_urn") or "")
+    model_urn = _canonical_model_urn(
+        str(context.get(f"{prefix}model_urn") or truth.get("model_urn") or "")
+    )
     feature_urn = str(context.get(f"{prefix}feature_urn") or truth.get("feature_urn") or "")
 
     # Only credit_default ships a ground-truth fixture, but every scenario
