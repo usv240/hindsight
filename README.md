@@ -316,7 +316,7 @@ uv run pytest
 
 ## Reproducibility
 
-- **95 tests** pass, including the single-command judge regression and Skill contract tests.
+- **168 tests** pass, including the single-command judge regression and Skill contract tests.
 - CI runs lint, tests, the offline judge demo, an ASCII-console guard, and a JSON-deliverable guard on **Ubuntu and Windows × Python 3.11 and 3.12**.
 - Offline recorded-fixture replay: `~0.023s` of compute (a few seconds wall-clock including interpreter start). Target `<60s`.
 - Point-in-time reconstruction: `~0.159s` for 4,000 applications.

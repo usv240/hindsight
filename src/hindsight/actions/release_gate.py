@@ -190,8 +190,5 @@ class HindsightReleaseGate(Action):
 
 
 def _get(payload: Any, key: str) -> str | None:
-    if isinstance(payload, dict):
-        value = payload.get(key)
-    else:
-        value = getattr(payload, key, None)
+    value = payload.get(key) if isinstance(payload, dict) else getattr(payload, key, None)
     return value if isinstance(value, str) else None

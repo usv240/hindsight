@@ -19,6 +19,10 @@ from hindsight.lineage import PathResolution, kit_available, resolve_column_path
 
 def test_lineage_resolution_degrades_when_datahub_is_not_configured(monkeypatch) -> None:
     monkeypatch.delenv("DATAHUB_GMS_URL", raising=False)
+    monkeypatch.setattr(
+        "hindsight.lineage.kit_available",
+        lambda: (False, "DATAHUB_GMS_URL is not set"),
+    )
     result = resolve_column_path(
         source_urn="urn:li:dataset:(p,a,PROD)",
         source_column="x",

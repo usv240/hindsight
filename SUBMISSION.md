@@ -89,7 +89,7 @@ DataHub is reached through the **official MCP server** for discovery, lineage an
 - A false-positive control with a *larger* ablation delta that must clear every run.
 - Frozen generator, published threshold margin (5.142pp), and an honest disclosure that the planted leak is total by construction.
 - Every catalog write re-read to prove persistence; dry-run by default.
-- **95 tests**, CI on Ubuntu + Windows × Python 3.11 + 3.12, plus guards that fail the build on non-ASCII console output or a BOM in any JSON deliverable.
+- **168 tests**, CI on Ubuntu + Windows × Python 3.11 + 3.12, plus guards that fail the build on non-ASCII console output or a BOM in any JSON deliverable.
 - Offline fixture replay so a reviewer sees it work in seconds with no Docker.
 
 ## What we learned

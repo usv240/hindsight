@@ -57,6 +57,17 @@ target-version = "py311"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
+[tool.uv]
+# DataHub Actions 0.2.x still pins Pydantic 1, while the current DataHub SDK
+# requires Pydantic 2. The action is deployed in its own runner environment;
+# it is intentionally not installed alongside the main app's DataHub extra.
+conflicts = [
+  [
+    { extra = "datahub" },
+    { extra = "actions" },
+  ],
+]
+
 [dependency-groups]
 dev = [
     "httpx>=0.28,<1",
