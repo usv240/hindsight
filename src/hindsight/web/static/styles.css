@@ -57,7 +57,7 @@
 
   --text: #e8ecf5;
   --text-muted: #9aa5bd;
-  --text-faint: #6b768f;
+  --text-faint: #808eac;
 
   --accent: #7c86ff;
   --accent-ink: #070a12;
@@ -86,7 +86,7 @@
 
   --text: #0f1420;
   --text-muted: #4f5771;
-  --text-faint: #6d768f;
+  --text-faint: #5d647a;
 
   --accent: #4f46e5;
   --accent-ink: #ffffff;
@@ -115,7 +115,7 @@
     --border-strong: #c7cddb;
     --text: #0f1420;
     --text-muted: #4f5771;
-    --text-faint: #6d768f;
+    --text-faint: #5d647a;
     --accent: #4f46e5;
     --accent-ink: #ffffff;
     --accent-soft: #ecebfd;
@@ -1481,13 +1481,18 @@ body:not([data-mode]) .tech-only { display: none; }
   width: 24px; height: 24px;
   border-radius: 50%;
   background: var(--border-strong);
-  color: var(--text-faint);
+  /* Both subtle steps land near 4.46:1 on this chip, just under AA. The glyph
+     is decorative, but low-vision readers still use it to tell the two routes
+     apart, so it wears full-strength ink. */
+  color: var(--text);
   font-weight: 800;
   font-size: 13px;
 }
 .route.is-fired .route-mark { background: var(--ok); color: var(--bg); }
 .route strong { display: block; font-size: var(--step-0); font-weight: 650; margin-bottom: 2px; }
-.route span { font-size: var(--step--1); color: var(--text-muted); }
+/* Scoped to the description column: `.route span` also matched the mark,
+   and being a descendant selector it quietly outranked `.route-mark`. */
+.route > div > span { font-size: var(--step--1); color: var(--text-muted); }
 
 /* -- Landing hero ----------------------------------------------------------
    A first-time visitor gets the problem in ordinary words and a picture of it
@@ -1723,7 +1728,7 @@ h3 { letter-spacing: -0.015em; }
 .lede { letter-spacing: -0.005em; }
 
 /* Body copy reads better a little narrower than the container allows. */
-.prose, .story-sub, .trust-a, .route span { max-width: var(--measure-tight); }
+.prose, .story-sub, .trust-a, .route > div > span { max-width: var(--measure-tight); }
 
 /* -- Vertical rhythm -------------------------------------------------------
    The old spacing came from whatever each block happened to set. One scale,

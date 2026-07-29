@@ -59,3 +59,20 @@ jobs:
 
       - name: Assert JSON deliverables parse strictly
         run: uv run python scripts/check_json_deliverables.py
+
+      # The console claims anyone can read it. That is checkable, so check it:
+      # every route, both themes, both reading levels, against WCAG 2.1 AA.
+      # One runner is enough - the result is a property of the stylesheet, not
+      # of the operating system, and a browser download on every matrix leg
+      # would cost more than it proves.
+      - name: Accessibility gate on the console
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        shell: bash
+        run: |
+          uv run --with playwright playwright install --with-deps chromium
+          uv run hindsight serve &
+          for _ in $(seq 1 40); do
+            curl -sf http://127.0.0.1:8100 > /dev/null && break
+            sleep 1
+          done
+          uv run --with playwright python scripts/check_accessibility.py
