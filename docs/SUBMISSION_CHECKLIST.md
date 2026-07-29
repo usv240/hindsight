@@ -1,12 +1,12 @@
 # Submission checklist
 
-Checked line-by-line against the official rules. Status as of 2026-07-28.
+Checked line-by-line against the official rules. Status as of 2026-07-29.
 
 ## Required
 
 | # | Requirement | Status |
 |---|---|---|
-| 1 | Working software application using DataHub | ✅ 168 tests, CI green, live end-to-end proof in `evidence/live/` |
+| 1 | Working software application using DataHub | ✅ 215 tests, a four-platform CI matrix, live end-to-end proof in `evidence/live/` |
 | 2 | Addresses a challenge track | ✅ Production ML Agents |
 | 3 | URL judges can use to test functionality | ⬜ **Blocked until repo is public**; then `uv run hindsight demo` works with no Docker in <1 min |
 | 4 | Public code repository | ⬜ **Repo is private — flip at submission** (see below) |
@@ -24,7 +24,7 @@ Checked line-by-line against the official rules. Status as of 2026-07-28.
 | Criterion | Evidence |
 |---|---|
 | **Use of DataHub** | Column-level lineage + ML entities read via official MCP server and Python SDK. Writes back a field tag, structured property, audit Document and active incident — each re-read to prove persistence. Named in the default plain-English view, not buried in a technical tab. |
-| **Technical execution** | Deterministic engine, LLM structurally outside the decision path. 168 tests. CI on Ubuntu + Windows × Python 3.11 + 3.12. ASCII-console and JSON-deliverable guards. |
+| **Technical execution** | Deterministic engine, LLM structurally outside the decision path. 215 tests. CI on Ubuntu + Windows × Python 3.11 + 3.12. ASCII-console and JSON-deliverable guards. |
 | **Originality** | Cross-pipeline leakage detection. Existing research (Yang et al., ASE 2022) is notebook-scoped; this catches leaks originating in the warehouse. Not a feature DataHub ships. |
 | **Real-world usefulness** | CI release gate with exit codes, copyable workflow in `examples/ci/`, three industry scenarios. Boundaries stated honestly in the README. |
 | **Submission quality** | Plain-English mode by default, six generated screenshots, mermaid architecture diagram, research citations. |
@@ -50,9 +50,9 @@ gh repo view usv240/hindsight --json licenseInfo,visibility
 
 Stated plainly rather than left as gaps a judge might find:
 
-- **Point-in-time reconstruction on arbitrary warehouse schemas.** Expects the seeded
-  scenario's data shape. The SQL checks, verdict lattice and DataHub write-back are already
-  generic. Documented in the README's maturity table.
+- **Direct warehouse point-in-time adapters.** Arbitrary CSV and Parquet snapshot schemas are
+  supported through an explicit, hashed column mapping. Direct BigQuery, Snowflake, and
+  warehouse-native query adapters remain future work.
 - **Console authentication.** Binds to loopback, protects state-changing forms with CSRF tokens, and requires an exact write-back target; an authenticating proxy is still required beyond loopback.
   Needs an authenticating proxy before any real exposure.
 - **True call-level instrumentation of the activity log.** Entries are derived from real

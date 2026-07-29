@@ -89,7 +89,7 @@ DataHub is reached through the **official MCP server** for discovery, lineage an
 - A false-positive control with a *larger* ablation delta that must clear every run.
 - Frozen generator, published threshold margin (5.142pp), and an honest disclosure that the planted leak is total by construction.
 - Every catalog write re-read to prove persistence; dry-run by default.
-- **168 tests**, CI on Ubuntu + Windows × Python 3.11 + 3.12, plus guards that fail the build on non-ASCII console output or a BOM in any JSON deliverable.
+- **215 tests**, CI on Ubuntu + Windows × Python 3.11 + 3.12, plus guards that fail the build on non-ASCII console output or a BOM in any JSON deliverable.
 - Offline fixture replay so a reviewer sees it work in seconds with no Docker.
 
 ## What we learned
@@ -98,7 +98,7 @@ Being trusted matters more than being impressive. Almost every hard decision cam
 
 ## What's next
 
-- Point-in-time reconstruction against arbitrary warehouse schemas (today it expects the seeded scenario's shape — the SQL checks, verdict lattice and write-back are already generic).
+- Point-in-time reconstruction against arbitrary warehouse schemas (CSV/Parquet snapshots can now be mapped onto arbitrary source columns; direct warehouse adapters remain future work).
 - The remaining analyzers: training/serving skew and degenerate feedback loops.
 
 ---
