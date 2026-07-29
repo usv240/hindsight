@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "scenario": "subscription_churn_wide_snapshots",
+  "seed": 20260730,
+  "train_rows": 900,
+  "test_rows": 300,
+  "prediction_time": "2026-03-02T08:00:00Z",
+  "suspect_feature": "plan_changes_to_date",
+  "ground_truth": {
+    "defect": "The running plan-change count includes the downgrade a customer makes while cancelling, recorded after the retention decision.",
+    "safe_reconstruction": "Keep only plan-change observations recorded at or before decided_at.",
+    "safe_control": "support_tickets_90d is strongly predictive and entirely pre-decision."
+  },
+  "collapse_rule": {
+    "minimum_observed_advantage": 0.05,
+    "maximum_advantage_retained": 0.5,
+    "rationale": "A collapse means a strict majority of the observed advantage came from records that did not exist at the decision."
+  },
+  "safe_control_rule": {
+    "minimum_ablation_delta": 0.02
+  },
+  "audit_evidence": {
+    "decision_node": "retention_decisions.decided_at",
+    "leakage_case_id": "churn-post-decision-plan-change",
+    "safe_case_id": "churn-support-tickets-safe-control",
+    "leakage_model_urn": "urn:li:mlModel:(urn:li:dataPlatform:mlflow,acme.churn_v3_leaky,PROD)",
+    "safe_model_urn": "urn:li:mlModel:(urn:li:dataPlatform:mlflow,acme.churn_v4_safe,PROD)",
+    "leakage_feature_urn": "urn:li:schemaField:(acme.churn_features,plan_changes_to_date)",
+    "safe_feature_urn": "urn:li:schemaField:(acme.churn_features,support_tickets_90d)",
+    "leakage_lineage_path": [
+      "plan_change_history.recorded_at",
+      "churn_features.plan_changes_to_date"
+    ],
+    "safe_lineage_path": [
+      "retention_decisions.support_tickets_90d",
+      "churn_features.support_tickets_90d"
+    ],
+    "leakage_available_offset_days": 14,
+    "safe_available_offset_days": -2
+  },
+  "point_in_time_adapter": {
+    "kind": "wide_snapshots",
+    "applications": {
+      "path": "retention_decisions.csv",
+      "format": "csv"
+    },
+    "columns": {
+      "entity_id": "subscriber_key",
+      "prediction_time": "decided_at",
+      "label": "churned_within_90d",
+      "split": "eval_split",
+      "base_features": [
+        "tenure_months",
+        "monthly_spend_usd"
+      ],
+      "safe_feature": "support_tickets_90d",
+      "snapshot_entity_id": "cust",
+      "snapshot_time": "as_of",
+      "feature": "plan_changes_to_date"
+    },
+    "feature_snapshots": {
+      "path": "feature_snapshots.csv",
+      "format": "csv"
+    },
+    "sweep_features": [
+      "plan_changes_to_date",
+      "support_tickets_snapshot",
+      "logins_30d",
+      "tenure_snapshot",
+      "spend_snapshot"
+    ]
+  }
+}

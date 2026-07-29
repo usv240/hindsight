@@ -17,6 +17,7 @@ from sklearn.preprocessing import StandardScaler
 
 from hindsight.engine import audit_case
 from hindsight.models import AuditCase
+from hindsight.validation.adapter import load_adapted_input
 
 
 @dataclass(frozen=True)
@@ -40,30 +41,42 @@ def run_credit_validation(config_path: Path) -> dict[str, Any]:
     started = time.perf_counter()
     raw_config = config_path.read_bytes()
     config = json.loads(raw_config)
-    generated = _generate(config)
-
-    with duckdb.connect(":memory:") as connection:
-        _load_tables(connection, generated)
-        reconstructed = connection.execute(
-            """
-            SELECT
-                a.application_id,
-                arg_max(r.feature_value, r.available_at) AS observed_value,
-                arg_max(r.feature_value, r.available_at)
-                    FILTER (WHERE r.available_at <= a.prediction_time) AS point_in_time_value,
-                count(*) FILTER (WHERE r.available_at > a.prediction_time) AS excluded_records
-            FROM applications AS a
-            JOIN feature_records AS r USING (application_id)
-            GROUP BY a.application_id
-            ORDER BY a.application_id
-            """
-        ).fetchall()
-
-    observed = np.asarray([row[1] for row in reconstructed], dtype=float)
-    point_in_time = np.asarray([row[2] for row in reconstructed], dtype=float)
-    excluded_records = int(sum(row[3] for row in reconstructed))
-    base = generated["base_features"]
-    label = generated["label"]
+    adapted = load_adapted_input(config, config_path)
+    if adapted is None:
+        generated = _generate(config)
+        with duckdb.connect(":memory:") as connection:
+            _load_tables(connection, generated)
+            reconstructed = connection.execute(
+                """
+                SELECT
+                    a.application_id,
+                    arg_max(r.feature_value, r.available_at) AS observed_value,
+                    arg_max(r.feature_value, r.available_at)
+                        FILTER (WHERE r.available_at <= a.prediction_time)
+                        AS point_in_time_value,
+                    count(*) FILTER (WHERE r.available_at > a.prediction_time)
+                        AS excluded_records
+                FROM applications AS a
+                JOIN feature_records AS r USING (application_id)
+                GROUP BY a.application_id
+                ORDER BY a.application_id
+                """
+            ).fetchall()
+        observed = np.asarray([row[1] for row in reconstructed], dtype=float)
+        point_in_time = np.asarray([row[2] for row in reconstructed], dtype=float)
+        excluded_records = int(sum(row[3] for row in reconstructed))
+        base = generated["base_features"]
+        safe_feature = generated["safe_feature"]
+        label = generated["label"]
+        provenance: dict[str, Any] = {"adapter": "frozen_generator"}
+    else:
+        observed = adapted.observed
+        point_in_time = adapted.point_in_time
+        excluded_records = adapted.excluded_records
+        base = adapted.base_features
+        safe_feature = adapted.safe_feature
+        label = adapted.label
+        provenance = adapted.provenance
     split = int(config["train_rows"])
 
     baseline_auc = _auc(base, label, split)
@@ -77,8 +90,8 @@ def run_credit_validation(config_path: Path) -> dict[str, Any]:
         max_retained=float(config["collapse_rule"]["maximum_advantage_retained"]),
     )
 
-    safe_observed_auc = _auc(np.column_stack((base, generated["safe_feature"])), label, split)
-    safe_point_in_time_auc = _auc(np.column_stack((base, generated["safe_feature"])), label, split)
+    safe_observed_auc = _auc(np.column_stack((base, safe_feature)), label, split)
+    safe_point_in_time_auc = _auc(np.column_stack((base, safe_feature)), label, split)
     safe_control = _compare(
         baseline_auc,
         safe_observed_auc,
@@ -142,6 +155,7 @@ def run_credit_validation(config_path: Path) -> dict[str, Any]:
             "engine": "duckdb",
             "cutoff_predicate": "available_at <= prediction_time",
             "excluded_post_cutoff_records": excluded_records,
+            "input": provenance,
         },
         "evidence_context": evidence,
         "leakage_case": asdict(leakage),
@@ -153,6 +167,11 @@ def run_credit_validation(config_path: Path) -> dict[str, Any]:
     }
 
 
+def run_point_in_time_validation(config_path: Path) -> dict[str, Any]:
+    """Run point-in-time reconstruction for a generated or adapted scenario."""
+    return run_credit_validation(config_path)
+
+
 def _evidence_profile(config: dict[str, Any]) -> dict[str, Any]:
     """Return scenario-specific identities with legacy credit defaults."""
 
@@ -160,8 +179,12 @@ def _evidence_profile(config: dict[str, Any]) -> dict[str, Any]:
         "decision_node": "applications_at_decision_time.prediction_time",
         "leakage_case_id": "credit-default-leaked-payment-event",
         "safe_case_id": "credit-default-prior-delinquencies-safe-control",
-        "leakage_model_urn": "urn:li:mlModel:hindsight.credit_default_v1_leaky",
-        "safe_model_urn": "urn:li:mlModel:hindsight.credit_default_v2_safe",
+        "leakage_model_urn": (
+            "urn:li:mlModel:(urn:li:dataPlatform:mlflow,hindsight.credit_default_v1_leaky,PROD)"
+        ),
+        "safe_model_urn": (
+            "urn:li:mlModel:(urn:li:dataPlatform:mlflow,hindsight.credit_default_v2_safe,PROD)"
+        ),
         "leakage_feature_urn": (
             "urn:li:schemaField:(hindsight.feature_pipeline_leaky,days_since_last_payment)"
         ),
@@ -182,6 +205,31 @@ def _evidence_profile(config: dict[str, Any]) -> dict[str, Any]:
     supplied = config.get("audit_evidence", {})
     if not isinstance(supplied, dict):
         raise ValueError("audit_evidence must be a JSON object")
+
+    # The defaults describe the built-in credit scenario. A scenario reading
+    # someone else's data through the adapter must declare its own identities:
+    # emitting "credit-default-leaked-payment-event" and prior_delinquencies
+    # lineage over a churn dataset would be a confident claim about the wrong
+    # artifact, which is worse than refusing to run.
+    if config.get("point_in_time_adapter") is not None:
+        required = (
+            "decision_node",
+            "leakage_case_id",
+            "safe_case_id",
+            "leakage_model_urn",
+            "safe_model_urn",
+            "leakage_feature_urn",
+            "safe_feature_urn",
+            "leakage_lineage_path",
+            "safe_lineage_path",
+        )
+        missing = [key for key in required if key not in supplied]
+        if missing:
+            raise ValueError(
+                "a scenario using point_in_time_adapter must declare audit_evidence."
+                f" Missing: {', '.join(missing)}"
+            )
+
     profile = defaults | supplied
     for key in ("leakage_lineage_path", "safe_lineage_path"):
         path = profile.get(key)
