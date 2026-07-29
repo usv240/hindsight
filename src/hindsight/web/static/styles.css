@@ -1676,15 +1676,25 @@ body:not([data-mode]) .tech-only { display: none; }
 
 /* -- In-page navigation ---------------------------------------------------- */
 
-.jumpnav {
+/* The row is what sticks now: section links on the left, reading level on the
+   right. Both change what you are looking at, so they travel together. */
+.pagebar {
   position: sticky;
   top: 52px;
   z-index: 15;
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin-bottom: calc(-1 * var(--sp-2));
+}
+
+.jumpnav {
+  display: flex;
   gap: var(--sp-1);
   flex-wrap: wrap;
   padding: var(--sp-2);
-  margin-bottom: calc(-1 * var(--sp-2));
   border-radius: 999px;
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg) 92%, transparent);
@@ -2419,4 +2429,14 @@ h3 { letter-spacing: -0.015em; }
   letter-spacing: 0.07em;
   font-weight: 700;
   color: var(--text-faint);
+}
+
+/* Sticky, so it needs the same treatment as the pills beside it rather than
+   sitting transparent over scrolling content. */
+.pagebar .mode-switch {
+  backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+}
+@media (max-width: 720px) {
+  .pagebar { justify-content: flex-start; }
 }

@@ -26,11 +26,9 @@
     <h1>{{ scenario.question }}</h1>
     <p class="lede">{{ scenario.situation }}</p>
   </div>
+  {#- The reading-level switch used to sit here. It belongs beside the section
+      links it changes, not stacked above the title - see the page bar below. -#}
   <div class="head-controls">
-    <div class="mode-switch" role="group" aria-label="Reading level">
-      <button type="button" data-mode="plain" aria-pressed="true">Plain English</button>
-      <button type="button" data-mode="technical" aria-pressed="false">Technical</button>
-    </div>
     {#- Nobody discovers Ctrl+P on a web app, and this record is meant to be
         filed against a change request. -#}
     <div class="head-actions">
@@ -69,6 +67,9 @@
 
 {% include "_subject.html" %}
 
+{#- One sticky row: where you are on the left, how much detail on the right.
+    Both are the same kind of control - they change what you are looking at. -#}
+<div class="pagebar">
 <nav class="jumpnav" aria-label="Sections on this page">
   {#- The story renders in both modes, so its anchors are unconditional. Only the
       evidence sections below are technical-only. Order follows the page. -#}
@@ -80,6 +81,12 @@
   <a href="#trap-heading" class="tech-link">The ablation trap</a>
   <a href="#publish-heading" class="tech-link">Publish</a>
 </nav>
+
+  <div class="mode-switch" role="group" aria-label="Reading level">
+    <button type="button" data-mode="plain" aria-pressed="true">Plain English</button>
+    <button type="button" data-mode="technical" aria-pressed="false">Technical</button>
+  </div>
+</div>
 
 {% include "_story.html" %}
 
