@@ -1,0 +1,33 @@
+{#- What is under audit. Sits above the verdict because "of what, exactly" is
+    the first question a reviewer asks, and the page previously never answered
+    it - it delivered a judgement on "this model" and named no model.
+
+    Shown in both reading levels: identity is not a technical detail. -#}
+
+{% if subject.facts %}
+<section class="subject" aria-labelledby="subject-heading">
+  <div class="subject-head">
+    <p class="eyebrow" id="subject-heading">What is being audited</p>
+    {% if subject.synthetic %}
+    {#- These URNs look real because they are real URNs; they just point at
+        generated data. Saying so beside them costs one line. -#}
+    <span class="finding">synthetic dataset{{ info('recorded-replay') }}</span>
+    {% endif %}
+  </div>
+
+  <dl class="subject-facts">
+    {% for fact in subject.facts %}
+    <div class="subject-fact">
+      <dt>{{ fact.label }}</dt>
+      <dd>
+        <span class="subject-value">{{ fact.value }}</span>
+        {% if fact.detail %}
+        <span class="subject-detail{% if 'too late' in fact.detail %} is-violation{% endif %}">{{ fact.detail }}</span>
+        {% endif %}
+        <span class="subject-note">{{ fact.note }}</span>
+      </dd>
+    </div>
+    {% endfor %}
+  </dl>
+</section>
+{% endif %}

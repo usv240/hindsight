@@ -22,6 +22,7 @@ from hindsight.web.explain import explain
 from hindsight.web.glossary import GLOSSARY
 from hindsight.web.health import datahub_health
 from hindsight.web.runs import get_run, group_by_scenario, list_runs, record_run
+from hindsight.web.subject import describe as describe_subject
 from hindsight.web.timeline import build_timeline
 from hindsight.workflow import run_demo_audit
 from hindsight.writeback import publish_audit
@@ -278,6 +279,15 @@ def _render_detail(
             "scenario": scenario.to_dict(),
             "scenarios": [s.to_dict() for s in list_scenarios()],
             "plain": explain(bundle, scenario.to_dict()),
+            # A verdict about "this model" is not an audit record until it says
+            # which model, which feature, and as of when.
+            "subject": describe_subject(
+                root,
+                scenario_slug or config.name,
+                bundle=bundle,
+                run=run,
+                subject=config.subject,
+            ),
             "timeline": build_timeline(bundle, scenario_data),
             "leakage": leakage,
             "safe": safe,
