@@ -224,7 +224,14 @@
     <li>The generator is <strong>frozen</strong>; measured results are published rather than tuned.</li>
     <li>The collapse threshold and its measured margin are disclosed, not hidden.</li>
     <li>An LLM may explain evidence. It can never promote a verdict{{ info('verdict-lattice') }}.</li>
+    <li>This console claims anyone can read it, so CI checks that: every route, both
+        themes, both reading levels, against <strong>WCAG 2.1 AA</strong> contrast plus
+        accessible names, labels, heading order and landmarks.</li>
   </ul>
+  <p class="fine">
+    <code>scripts/check_accessibility.py</code> &mdash; it found three real defects the first
+    time it ran, including a subtle text colour that failed AA on most surfaces in both themes.
+  </p>
 </section>
 
 {% if runs %}
