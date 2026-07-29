@@ -133,86 +133,72 @@ def describe(
         if moment is not None:
             available = (moment + timedelta(days=_days_after(bundle, default=31))).isoformat()
 
-    facts: list[dict[str, str]] = []
+    gap = _days_between(available, cutoff) if (available and cutoff) else None
+    late = gap is not None and gap > 0
 
-    if model_urn:
-        facts.append(
-            {
-                "label": "Model under audit",
-                "value": _name_from_urn(model_urn),
-                "detail": model_urn,
-                "note": "The version being considered for release",
-            }
-        )
-    if feature_urn:
-        dataset = _dataset_from_field_urn(feature_urn)
-        facts.append(
-            {
-                "label": "Feature examined",
-                "value": _name_from_urn(feature_urn),
-                "detail": f"in {dataset}" if dataset else feature_urn,
-                "note": "One column out of everything the model was shown",
-            }
-        )
+    # Grouped rather than a flat list of six equal cells. A reader wants three
+    # things in order: what the artifact is, when the line was drawn, and only
+    # then the bookkeeping about this particular run.
+    model = (
+        {
+            "name": _name_from_urn(model_urn),
+            "urn": model_urn,
+            "note": "The version being considered for release",
+        }
+        if model_urn
+        else None
+    )
+
+    feature = (
+        {
+            "name": _name_from_urn(feature_urn),
+            "table": _dataset_from_field_urn(feature_urn),
+            "urn": feature_urn,
+            "note": "One column out of everything the model was shown",
+        }
+        if feature_urn
+        else None
+    )
+
+    timing = None
     if cutoff:
-        facts.append(
-            {
-                "label": "Decision moment",
-                "value": _human_time(cutoff),
-                "detail": "",
-                "note": "Nothing after this instant was knowable",
-            }
-        )
-    if available:
-        gap = _days_between(available, cutoff) if cutoff else None
-        # The same row means opposite things either side of the cutoff. On a
-        # clean audit it is the reason the feature is legitimate, so calling it
-        # "the whole defect" there would contradict the verdict beside it.
-        late = gap is not None and gap > 0
-        facts.append(
-            {
-                "label": "That fact became knowable",
-                "value": _human_time(available),
-                "detail": (
-                    f"{gap} {_plural(gap, 'day')} too late"
-                    if late
-                    else f"{abs(gap)} {_plural(gap, 'day')} before the decision"
-                    if gap is not None
-                    else ""
-                ),
-                "note": (
-                    "The gap is the whole defect"
-                    if late
-                    else "Already knowable, so legitimate to use"
-                ),
-            }
-        )
+        timing = {
+            "cutoff": _human_time(cutoff),
+            "available": _human_time(available) if available else "",
+            "gap_days": abs(gap) if gap is not None else None,
+            "gap_label": (
+                f"{abs(gap)} {_plural(gap, 'day')} too late"
+                if late
+                else f"{abs(gap)} {_plural(gap, 'day')} earlier"
+                if gap is not None
+                else ""
+            ),
+            "late": late,
+            # One sentence a reader can take away without parsing the diagram.
+            "summary": (
+                "The feature reached past the moment the decision was made."
+                if late
+                else "Everything the feature used was already knowable."
+            ),
+        }
 
+    meta: list[dict[str, str]] = []
     validation = bundle.get("validation") or {}
     rows = validation.get("rows") or (run or {}).get("rows")
     if rows:
-        facts.append(
-            {
-                "label": "Records re-tested",
-                "value": f"{int(rows):,}",
-                "detail": "",
-                "note": "Rebuilt as the data looked on the day",
-            }
-        )
-
+        meta.append({"label": "Records re-tested", "value": f"{int(rows):,}"})
     started = str((run or {}).get("started_at") or "")
     if started:
-        facts.append(
-            {
-                "label": "Audited",
-                "value": _human_time(started),
-                "detail": (run or {}).get("run_id", ""),
-                "note": "This record, not a cached one",
-            }
-        )
+        meta.append({"label": "Audited", "value": _human_time(started)})
+    run_id = (run or {}).get("run_id")
+    if run_id:
+        meta.append({"label": "Run", "value": str(run_id)})
 
     return {
-        "facts": facts,
+        "model": model,
+        "feature": feature,
+        "timing": timing,
+        "meta": meta,
         "model_urn": model_urn,
         "feature_urn": feature_urn,
         # Synthetic data is disclosed everywhere else in this project; the one

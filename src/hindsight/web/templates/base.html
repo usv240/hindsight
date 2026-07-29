@@ -21,7 +21,7 @@
   <meta name="twitter:image" content="{{ url_for('static', path='/og-card.png') }}">
   <title>{% block title %}Hindsight{% endblock %}</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%237c86ff'/><text x='16' y='23' font-size='20' font-family='sans-serif' font-weight='800' text-anchor='middle' fill='%23070a12'>H</text></svg>">
-  <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">
+  <link rel="stylesheet" href="{{ asset('styles.css') }}">
   <script>
     (function () {
       try {
@@ -30,7 +30,7 @@
       } catch (e) { /* private mode: fall back to the OS preference */ }
     })();
   </script>
-  <script defer src="{{ url_for('static', path='/app.js') }}"></script>
+  <script defer src="{{ asset('app.js') }}"></script>
   <script id="glossary-data" type="application/json">{{ glossary | tojson }}</script>
   {% block head_data %}{% endblock %}
 </head>

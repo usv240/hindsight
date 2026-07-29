@@ -2,9 +2,13 @@
     the first question a reviewer asks, and the page previously never answered
     it - it delivered a judgement on "this model" and named no model.
 
+    Three zones rather than six equal cells: the artifact, the timing, then the
+    bookkeeping. The gap between the two dates is the entire defect, so it is
+    drawn rather than left as a line of text.
+
     Shown in both reading levels: identity is not a technical detail. -#}
 
-{% if subject.facts %}
+{% if subject.model or subject.timing %}
 <section class="subject" aria-labelledby="subject-heading">
   <div class="subject-head">
     <p class="eyebrow" id="subject-heading">What is being audited</p>
@@ -15,19 +19,59 @@
     {% endif %}
   </div>
 
-  <dl class="subject-facts">
-    {% for fact in subject.facts %}
-    <div class="subject-fact">
-      <dt>{{ fact.label }}</dt>
-      <dd>
-        <span class="subject-value">{{ fact.value }}</span>
-        {% if fact.detail %}
-        <span class="subject-detail{% if 'too late' in fact.detail %} is-violation{% endif %}">{{ fact.detail }}</span>
-        {% endif %}
-        <span class="subject-note">{{ fact.note }}</span>
-      </dd>
+  <div class="subject-what">
+    {% if subject.model %}
+    <div class="subject-item">
+      <p class="subject-label">Model</p>
+      <p class="subject-name">{{ subject.model.name }}</p>
+      <p class="subject-sub">{{ subject.model.note }}</p>
+      <code class="subject-urn" title="{{ subject.model.urn }}">{{ subject.model.urn }}</code>
     </div>
+    {% endif %}
+
+    {% if subject.feature %}
+    <div class="subject-item">
+      <p class="subject-label">Feature examined</p>
+      <p class="subject-name">{{ subject.feature.name }}</p>
+      <p class="subject-sub">
+        in <code>{{ subject.feature.table }}</code> &mdash; {{ subject.feature.note | lower }}
+      </p>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if subject.timing %}
+  {#- The whole audit turns on which side of the line a fact falls, so the two
+      dates are shown as a span with the gap called out between them. -#}
+  <div class="subject-when{% if subject.timing.late %} is-late{% endif %}">
+    <div class="when-point">
+      <span class="when-label">Decision made</span>
+      <span class="when-date">{{ subject.timing.cutoff }}</span>
+      <span class="when-note">Nothing after this was knowable</span>
+    </div>
+
+    {% if subject.timing.available %}
+    <div class="when-gap" role="presentation">
+      <span class="when-gap-line" aria-hidden="true"></span>
+      <span class="when-gap-value">{{ subject.timing.gap_label }}</span>
+    </div>
+
+    <div class="when-point">
+      <span class="when-label">Feature's data arrived</span>
+      <span class="when-date">{{ subject.timing.available }}</span>
+      <span class="when-note">{{ subject.timing.summary }}</span>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if subject.meta %}
+  <p class="subject-meta">
+    {% for item in subject.meta %}
+    <span><span class="meta-label">{{ item.label }}</span> {{ item.value }}</span>
+    {%- if not loop.last %} <span class="meta-sep" aria-hidden="true">&middot;</span> {% endif %}
     {% endfor %}
-  </dl>
+  </p>
+  {% endif %}
 </section>
 {% endif %}

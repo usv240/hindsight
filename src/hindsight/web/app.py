@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import secrets
 from dataclasses import replace
+from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -47,6 +49,13 @@ def create_app(project_root: Path | None = None) -> FastAPI:
     templates.env.globals["csrf_token"] = csrf_token
     app.mount("/static", StaticFiles(directory=WEB_ROOT / "static"), name="static")
     templates.env.globals["public_demo"] = demo_mode.enabled
+
+    # Static assets are served without a Cache-Control header, so browsers apply
+    # heuristic caching and can hold a stale stylesheet indefinitely. That is how
+    # a redesigned panel renders as unstyled markup for someone who already had
+    # the page open. Hashing the content into the URL means a changed file is a
+    # changed URL, which no cache can serve from.
+    templates.env.globals["asset"] = _asset_url
 
     # ---- API ------------------------------------------------------------
 
@@ -393,6 +402,20 @@ def _fingerprint(config: AuditConfig) -> tuple[Any, ...]:
         config.synthetic,
     )
     return semantics + (tuple(stamps),)
+
+
+@lru_cache(maxsize=32)
+def _asset_digest(name: str) -> str:
+    path = WEB_ROOT / "static" / name.lstrip("/")
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()[:10]
+    except OSError:
+        return "0"
+
+
+def _asset_url(name: str) -> str:
+    """/static/<name>?v=<content hash>, so caches invalidate on change."""
+    return f"/static/{name.lstrip('/')}?v={_asset_digest(name)}"
 
 
 def _find_project_root() -> Path:
