@@ -58,8 +58,12 @@ def record_run(
     return run
 
 
-def list_runs(project_root: Path, limit: int = 50) -> list[dict[str, Any]]:
-    """Return recorded runs, newest first. Never raises on a bad file."""
+def list_runs(project_root: Path, limit: int | None = 50) -> list[dict[str, Any]]:
+    """Return recorded runs, newest first. Never raises on a bad file.
+
+    ``limit=None`` reads every run. Aggregates need that: a summary computed
+    from the newest 50 silently drops scenarios that have not run recently.
+    """
     directory = runs_dir(project_root)
     if not directory.exists():
         return []
@@ -78,7 +82,7 @@ def list_runs(project_root: Path, limit: int = 50) -> list[dict[str, Any]]:
         payload.pop("evidence_bundle", None)
         payload.pop("publication", None)
         runs.append(payload)
-        if len(runs) >= limit:
+        if limit is not None and len(runs) >= limit:
             break
     return runs
 

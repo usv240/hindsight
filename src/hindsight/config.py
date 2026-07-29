@@ -23,6 +23,21 @@ class AuditConfigError(ValueError):
     """Raised when an audit config is missing, malformed, or points at nothing."""
 
 
+def _display_path(path: Path) -> str:
+    """Project-relative with forward slashes, falling back to the file name.
+
+    Never returns an absolute path: these strings are shown in the console and
+    served by the API, where the host's directory layout is nobody's business.
+    """
+    for parent in (Path.cwd(), *Path.cwd().parents):
+        if (parent / "pyproject.toml").exists():
+            try:
+                return path.resolve().relative_to(parent.resolve()).as_posix()
+            except ValueError:
+                break
+    return path.name
+
+
 @dataclass(frozen=True)
 class AuditConfig:
     """One thing to audit: the data, the SQL that built it, and the asset it is."""
@@ -110,11 +125,14 @@ class AuditConfig:
         return self.target_urn is not None and self.target_urn == urn
 
     def to_dict(self) -> dict[str, Any]:
+        # Relative where possible. These are rendered on the settings page and
+        # returned by /api/audit, so an absolute path publishes the directory
+        # layout of whatever machine happens to be serving.
         return {
             "name": self.name,
-            "scenario": str(self.scenario_path),
-            "transformation_sql": str(self.transformation_path),
-            "remediation_sql": str(self.remediation_path),
+            "scenario": _display_path(self.scenario_path),
+            "transformation_sql": _display_path(self.transformation_path),
+            "remediation_sql": _display_path(self.remediation_path),
             "post_outcome_table": self.post_outcome_table,
             "available_column": self.available_column,
             "prediction_column": self.prediction_column,

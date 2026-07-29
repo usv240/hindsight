@@ -23,6 +23,15 @@
     <p class="prose">
       <strong>Hindsight catches that before the model reaches anyone.</strong>
     </p>
+    {#- DataHub used to appear nowhere on the first screen except the status
+        pill, which reads as infrastructure rather than as the thing the whole
+        method rests on. One sentence, on screen one. -#}
+    <p class="prose hero-source">
+      It works by reading <strong>DataHub</strong>{{ info('datahub') }} &mdash; following
+      <strong>which column was built from which</strong>{{ info('column-lineage') }} back
+      from the model, then checking whether anything it found could only have been known
+      after the decision.
+    </p>
     <div class="hero-cta">
       <a class="btn" href="#pick-heading">See it on a real example</a>
       <a class="btn ghost" href="#what-is-this">How does it work?</a>

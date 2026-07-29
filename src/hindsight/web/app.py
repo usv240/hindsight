@@ -102,11 +102,15 @@ def create_app(project_root: Path | None = None) -> FastAPI:
     @app.get("/audits", response_class=HTMLResponse)
     def audits(request: Request) -> HTMLResponse:
         runs = list_runs(root)
+        # The table below shows recent runs, but the per-scenario summary is a
+        # claim about all of them. Computing it from the same capped list made
+        # scenarios disappear from history once 50 newer runs existed, so the
+        # page contradicted the overview about how many scenarios there are.
         return templates.TemplateResponse(
             request=request,
             name="audits.html",
             context=_shell(root, "audits", runs)
-            | {"runs": runs, "groups": group_by_scenario(runs)},
+            | {"runs": runs, "groups": group_by_scenario(list_runs(root, limit=None))},
         )
 
     @app.post("/audits/run")

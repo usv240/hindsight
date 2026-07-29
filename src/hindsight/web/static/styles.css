@@ -2259,3 +2259,11 @@ h3 { letter-spacing: -0.015em; }
   .subject { padding: var(--sp-5) var(--sp-4); }
   .subject-facts { gap: var(--sp-4); }
 }
+
+/* The one line on the first screen that says what this is built on. Set apart
+   from the surrounding prose without shouting. */
+.hero-source {
+  border-left: 2px solid var(--accent);
+  padding-left: var(--sp-4);
+  color: var(--text-muted);
+}
