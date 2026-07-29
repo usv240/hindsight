@@ -234,6 +234,109 @@
   </p>
 </section>
 
+<!-- Data this project did not generate ------------------------------------- -->
+{% if external %}
+<section class="panel" aria-labelledby="external-heading">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">The fair test</p>
+      <h2 id="external-heading">Does it work on data we did not create?</h2>
+    </div>
+    <span class="finding ok">{{ external.result.status }}</span>
+  </div>
+
+  <p class="prose">{{ external.what_this_is }}</p>
+
+  <div class="stats" aria-label="Result on external data">
+    <div class="stat">
+      <span class="stat-label">Looked this good</span>
+      <span class="stat-value is-block">{{ external.result.observed_auc }}</span>
+      <span class="stat-note">AUC with the suspect feature</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Actually was</span>
+      <span class="stat-value">{{ external.result.point_in_time_auc }}</span>
+      <span class="stat-note">rebuilt as of the decision</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Advantage retained</span>
+      <span class="stat-value is-block">{{ external.result.advantage_retained_pct }}%</span>
+      <span class="stat-note">of {{ external.result.observed_advantage }} apparent gain</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Records excluded</span>
+      <span class="stat-value">{{ "{:,}".format(external.result.excluded_post_cutoff_records) }}</span>
+      <span class="stat-note">did not exist at the decision</span>
+    </div>
+  </div>
+
+  <p class="prose"><strong>{{ external.dataset.domain }}.</strong> {{ external.dataset.leak }}</p>
+
+  {#- The sweep is the answer to "I have forty features and no idea which one". -#}
+  <h3 style="margin-top: var(--sp-6);">Every feature, ranked by what the cutoff removes</h3>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Feature</th><th scope="col">Looked this good</th>
+          <th scope="col">Actually was</th><th scope="col">Advantage lost</th>
+          <th scope="col">Verdict</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in external.sweep.findings %}
+        <tr>
+          <th scope="row"><code>{{ row.feature }}</code></th>
+          <td>{{ row.observed_auc }}</td>
+          <td>{{ row.point_in_time_auc }}</td>
+          <td>{{ row.advantage_lost }}</td>
+          <td>
+            {% if row.collapsed %}<span class="finding danger">flagged</span>
+            {% else %}<span class="finding ok">clean</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="callout">
+    <p>
+      <strong>Read the second row before the first.</strong> {{ external.sweep.the_trap }}
+      That is the difference between a leakage detector and an importance chart.
+    </p>
+  </div>
+  <p class="fine">{{ external.sweep.how_to_read_this }}</p>
+
+  {#- Take the data away and check it yourself. -#}
+  <h3 style="margin-top: var(--sp-6);">Take the data and run it yourself</h3>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr><th scope="col">File</th><th scope="col">What it is</th><th scope="col">Size</th></tr>
+      </thead>
+      <tbody>
+        {% for file in external.dataset.files %}
+        <tr>
+          <th scope="row">
+            <a href="/examples/adapter/{{ file.name }}" download><code>{{ file.name }}</code></a>
+          </th>
+          <td>{{ file.what }}</td>
+          <td>{{ file.lines }} lines</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <pre class="artifact"><code>{% for command in external.commands %}{{ command }}
+{% endfor %}</code></pre>
+  <p class="fine">
+    Every number above is a recorded result, not a live one &mdash; a public demo should not
+    retrain a model because someone opened a page. A test re-runs the real audit on every
+    build and fails if these figures drift.
+  </p>
+</section>
+{% endif %}
+
 <!-- What went back upstream ------------------------------------------------ -->
 <section class="panel">
   <div class="section-heading">

@@ -20,6 +20,7 @@ from hindsight.scenarios import SCENARIOS, get_scenario, list_scenarios
 from hindsight.web import demo_mode
 from hindsight.web.activity import build_activity
 from hindsight.web.artifacts import collect as collect_artifacts
+from hindsight.web.artifacts import external_proof
 from hindsight.web.explain import explain
 from hindsight.web.glossary import GLOSSARY
 from hindsight.web.health import datahub_health
@@ -128,6 +129,33 @@ def create_app(project_root: Path | None = None) -> FastAPI:
         suffix = f"?scenario={scenario}" if scenario else ""
         return RedirectResponse(url=f"/audits/{run['run_id']}{suffix}", status_code=303)
 
+    # Judges should be able to take the sample dataset away and run it, so the
+    # files the evidence page describes are downloadable. Names are matched
+    # against a fixed allowlist rather than joined onto a path: this endpoint is
+    # public on the hosted demo, and "serve any file the visitor names" is how
+    # that becomes a directory traversal.
+    EXAMPLE_FILES = {
+        "retention_decisions.csv": "text/csv",
+        "plan_change_history.csv": "text/csv",
+        "feature_snapshots.csv": "text/csv",
+        "scenario.json": "application/json",
+        "scenario_wide.json": "application/json",
+    }
+
+    @app.get("/examples/adapter/{name}")
+    def example_file(name: str) -> Response:
+        media_type = EXAMPLE_FILES.get(name)
+        if media_type is None:
+            raise HTTPException(status_code=404, detail="No such example file")
+        path = root / "examples" / "adapter" / name
+        if not path.is_file():
+            raise HTTPException(status_code=404, detail="Example file is not installed")
+        return Response(
+            content=path.read_bytes(),
+            media_type=media_type,
+            headers={"Content-Disposition": f'attachment; filename="{name}"'},
+        )
+
     @app.get("/audits/{run_id}/evidence.json")
     def evidence_record(run_id: str, inline: int = 0) -> Response:
         """The full evidence record.
@@ -175,7 +203,11 @@ def create_app(project_root: Path | None = None) -> FastAPI:
             request=request,
             name="evidence.html",
             context=_shell(root, "evidence", runs)
-            | {"runs": runs, "artifacts": collect_artifacts(root)},
+            | {
+                "runs": runs,
+                "artifacts": collect_artifacts(root),
+                "external": external_proof(root),
+            },
         )
 
     @app.get("/settings", response_class=HTMLResponse)

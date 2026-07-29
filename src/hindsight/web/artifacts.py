@@ -17,6 +17,21 @@ from pathlib import Path
 from typing import Any
 
 
+def external_proof(project_root: Path) -> dict[str, Any] | None:
+    """The recorded audit of data this project did not generate.
+
+    Rendered rather than recomputed: retraining a model because a stranger loaded
+    a page is not something a public demo should offer. `tests/test_external_proof.py`
+    re-runs the real audit and fails if these numbers drift.
+    """
+    path = project_root / "evidence" / "adapter" / "external-data-proof.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
 def collect(project_root: Path) -> dict[str, Any]:
     root = Path(project_root)
     return {

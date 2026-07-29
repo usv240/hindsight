@@ -2,249 +2,205 @@
 
 > Your model is not smarter. It has hindsight.
 
-A credit model scores beautifully in testing. It ships. It fails.
+**[Open the live demo](https://hindsight-production-abf8.up.railway.app)** &middot; nothing to install
 
-The model was never good — one of its features quietly contained the answer. Somewhere three joins upstream, a column was built from events that only exist *after* the decision it is supposed to predict. This is called **target leakage**, and it is one of the most expensive silent failures in production ML.
+---
+
+## The problem, in three sentences
+
+A bank builds a model to predict who will repay a loan. It scores almost perfectly in
+testing, so they ship it, and it fails.
+
+The model was never good. One of the facts it was shown could only be known **after** the
+loan decision had already been made, so in testing it was reading the answer, and in
+production that answer does not exist yet.
+
+This is called **target leakage**. It is one of the most expensive silent failures in
+production ML, and what makes it hard is that the mistake usually happens in a data
+pipeline that the person training the model never looks at.
 
 **Hindsight proves whether that happened, before the model is released.**
 
-**[See it running](https://hindsight-production-abf8.up.railway.app)** - a read-only demo serving five real audits, no setup.
-Running new audits and writing to a catalog are disabled there; clone and run
-`uv run hindsight serve` to do either.
+### The analogy, once
+
+A student aces a practice exam. Impressive, until you notice the answer sheet was on the
+desk. The score was real; the ability was not. Take the answers away, retake the exam, and
+you learn what they actually know.
+
+That retake is what Hindsight does, and it does it with dates.
+
+---
+
+## Try it in 60 seconds
+
+```bash
+git clone https://github.com/usv240/hindsight && cd hindsight
+uv sync --extra dev
+uv run hindsight demo
+```
+
+No Docker, no DataHub, no API key, no network. It prints the column lineage path, the
+before-and-after scores, and the verdict. Exit `3` means leakage confirmed.
+
+Or open the [live demo](https://hindsight-production-abf8.up.railway.app) and click a
+scenario.
+
+---
+
+## How it works
+
+Four steps. The unusual one is the first, and it is the one that needs DataHub.
+
+```mermaid
+flowchart LR
+  subgraph DH["DataHub"]
+    L["Column-level lineage<br/>which column was built from which"]
+  end
+
+  subgraph HS["Hindsight"]
+    direction TB
+    A["1 · Trace it back<br/><i>where did each fact come from?</i>"]
+    B["2 · Check the clock<br/><i>when did it become knowable?</i>"]
+    C["3 · Read the code<br/><i>is there a cutoff guard?</i>"]
+    D["4 · Rebuild and re-test<br/><i>remove the future, retrain</i>"]
+    A --> B --> C --> D
+  end
+
+  L -->|read| A
+  D --> V{"Verdict"}
+  V -->|"exit 0 / 2 / 3"| CI["CI release gate"]
+  V --> HA["Human approval"]
+  HA -->|"approved writes"| W["Tag · property<br/>Document · incident"]
+  W -->|"written back, then re-read"| L
+```
+
+| Step | What happens |
+|---|---|
+| **1. Trace it back** | Follow DataHub's column-level lineage backwards from the model to the real source of every feature it used |
+| **2. Check the clock** | For each source, ask when its rows became knowable, and compare that to the moment the decision had to be made |
+| **3. Read the code** | Parse the SQL that built the feature. If it joins a post-decision source with no `available_at <= prediction_time` guard, that is proof, and no retraining is needed |
+| **4. Rebuild and re-test** | Reconstruct the feature using only records that existed at the cutoff, retrain, compare. A leaked feature loses its advantage; a legitimate one keeps it |
+
+Either step 3 or step 4 is sufficient alone. Hindsight reports **which one fired** rather
+than blending them, so you can see exactly what settled it.
+
+Only after a human approves is the finding written back into DataHub, so the next engineer
+inherits it instead of rediscovering it.
 
 ---
 
 ## Why this needs DataHub
 
-Leakage is a **cross-system, column-level** defect. That is precisely why the existing tools miss it:
+The leak is created **upstream, in the warehouse**, often three joins away from the model.
+So:
 
-| Tool | Why it cannot see the leak |
+| Where you might look | Why it cannot see the problem |
 |---|---|
-| The training notebook | The leak happened upstream in the warehouse, long before `read_parquet` |
-| The feature store | It sees features, not their ancestry |
-| Model monitoring | It fires months later, after the money is gone |
+| The training notebook | The defect was created far upstream, before `read_parquet` |
+| The feature store | It sees finished features, not where they came from |
+| Monitoring | It notices months later, once the losses arrive |
+| A data quality tool | Every value is valid. Nothing is null, nothing is out of range |
 
-The question *"was this information legally available at prediction time?"* is unanswerable inside any one system. It becomes answerable the moment you have a **column-level lineage graph spanning all of them** — which is what DataHub is.
+Only a map spanning raw tables, transformations, features and models can answer *"could this
+have been known at the time?"* — and that map is DataHub's column-level lineage.
 
-Hindsight reads that graph through the DataHub MCP Server and Python SDK, reconstructs each feature's ancestry, checks it against the prediction cutoff, validates the consequence, and **writes an auditable verdict back into the catalog** so the next engineer or agent inherits the finding.
-
-```mermaid
-flowchart LR
-  subgraph DH["DataHub Core"]
-    L["Column-level lineage<br/>ML entities · transformations<br/>owners · profiles"]
-  end
-
-  subgraph HS["Hindsight"]
-    direction TB
-    A["1 · Lineage investigator<br/><i>ancestry via MCP + SDK</i>"]
-    B["2 · Temporal reasoner<br/><i>available_at vs prediction_time</i>"]
-    C["3 · Transformation verifier<br/><i>sqlglot AST</i>"]
-    D["4 · Validation runner<br/><i>point-in-time reconstruction</i>"]
-    E["5 · Evidence grader<br/><i>deterministic verdict lattice</i>"]
-    A --> B --> C --> D --> E
-  end
-
-  L -->|read| A
-  E --> V{"Verdict"}
-  V -->|"exit 0 / 2 / 3"| CI["CI release gate"]
-  V --> HA["Human approval"]
-  HA -->|"approved writes"| W["Tag · structured property<br/>audit Document · incident"]
-  W -->|"written back + re-read"| L
-```
-
-An LLM may **explain** evidence. It can never **promote** a verdict.
+**No LLM decides anything.** A language model may explain the evidence in prose. Reaching a
+verdict runs through deterministic code with no model in the path.
 
 ---
 
-![The plain-English verdict](docs/img/console-audit-plain.png)
+## Test it yourself, end to end
 
-*Every audit leads with the conclusion in ordinary words. The exact evidence is one click away.*
+Four levels, each self-contained. Stop whenever you are satisfied.
 
----
+### Level 1 — one minute, fully offline
 
-## Judge quick start
-
-```powershell
+```bash
 uv sync --extra dev
 uv run hindsight demo
 ```
 
-One command. No Docker, DataHub, network, warehouse, or LLM required — it replays metadata recorded from a live DataHub Core instance, and prints the exact column lineage path the verdict rests on. Returns in seconds.
+A complete audit on metadata recorded from a real DataHub instance.
 
-To re-prove those recordings against your own DataHub instance:
+### Level 2 — five minutes, the console
 
-```powershell
-uv run hindsight verify-fixture-live --target-urn "<synthetic-dataset-urn>"
+```bash
+uv run hindsight serve          # http://127.0.0.1:8100
 ```
 
-For the full live path — DataHub Core, MCP server, and approved write-back — see **[QUICKSTART.md](QUICKSTART.md)**.
+Click a scenario. Five are offered across three industries, and **one is expected to pass** —
+a gate that can only say no is indistinguishable from one that is not looking. Toggle
+**Plain English / Technical**. Press **View evidence** to read the raw record the page argues
+from, or **Download** to take it away.
 
----
+### Level 3 — ten minutes, on data we did not create
 
-## The result an ablation detector gets backwards
+Hindsight's own scenarios are generated by code in this repository, so on their own they
+cannot answer the fair question. [`examples/adapter/`](examples/adapter/) is committed CSV in
+a different domain — subscription churn — with different column names and a different leak
+mechanism.
 
-| Feature | Ablation delta | Hindsight verdict |
-|---|---:|---|
-| Planted post-outcome feature | 0.21 | `confirmed` |
-| Legitimate pre-cutoff control | **0.24** | `clear_for_release` |
-
-The safe feature matters **more** by ablation, yet Hindsight clears it.
-
-This is the whole argument. Feature importance tells you a feature is *useful*; it says nothing about whether the information was *allowed to exist* at prediction time. A detector built on ablation gets this case exactly backwards — which is why the high-correlation control is a permanent regression test, not a nice-to-have.
-
----
-
-## Measured, not asserted
-
-`uv run hindsight benchmark` sweeps the defect from total reach to almost none,
-against a matched clean control for every case. **42 cases, 0 false positives,
-0 false negatives.** The headline is less interesting than the breakdown:
-
-| Reach of the defect | Mean AUC delta | Statistical route | Overall |
-|---:|---:|---:|---:|
-| 100% | 0.1768 | 100% | 100% |
-| 70% | 0.1578 | 100% | 100% |
-| 40% | 0.1086 | **0%** | 100% |
-| 15% | 0.0451 | **0%** | 100% |
-| 2% | **0.0066** | **0%** | 100% |
-
-**The statistical route stops firing below 40% reach.** At 2% the performance
-difference is 0.0066 of AUC — invisible to any threshold anyone would set — and the
-deterministic SQL/time proof still catches it. That is the argument for two routes,
-measured instead of claimed.
-
-**Read the perfect score with care.** Ground truth is structural — "leaked" means the
-query joins a post-outcome source with no guard, and the deterministic route reads
-that same query — so its score is close to true by construction. What is measured
-honestly is the statistical route's collapse, the absence of false positives across
-21 guarded queries, and the vanishing AUC delta. Full caveats in
-[evidence/benchmark/2026-07-28.md](evidence/benchmark/2026-07-28.md).
-
-## Validated against a real dbt project
-
-Run against [dbt-labs/jaffle-shop](https://github.com/dbt-labs/jaffle-shop) — a public
-project written by someone else, with no knowledge of this tool. It parsed all 13
-models, resolved `ref()` templating, and correctly reported which model reads a
-nominated source without a guard.
-
-**It also found two bugs in Hindsight.** Every dbt model was being reported as clean,
-because Jinja templating made them unparseable and unparseable was falling through to
-"no post-outcome source" — a false negative wearing a pass, which is precisely the
-failure this project exists to prevent. Both are fixed and covered by tests.
-
-## Two independent confirmation routes
-
-Hindsight deliberately keeps two artifacts separate:
-
-1. **[confirmed_leakage.case.json](examples/confirmed_leakage.case.json)** isolates the deterministic SQL/time route. Its `point_in_time_advantage_collapsed` flag is intentionally `false`, because deterministic cutoff proof alone confirms that case.
-2. **The [recorded fixture](fixtures/credit_default/)** exercises the independent point-in-time route for the same planted defect mechanism — removing post-cutoff records, rerunning the comparison, and confirming the collapse.
-
-They are complementary proofs, not conflicting measurements.
-
----
-
-## Evidence contract
-
-| Verdict | Minimum evidence | CI |
-|---|---|---:|
-| `insufficient_metadata` | Required lineage or time evidence is absent | `2` |
-| `needs_review` | Ancestry is suspicious, but direction or time is unproven | `2` |
-| `high_confidence` | Directional outcome lineage **and** an availability violation | `3` |
-| `confirmed` | Deterministic cutoff proof **or** qualified point-in-time reconstruction | `3` |
-| `clear_for_release` | Configured checks and planted safe controls pass | `0` |
-
-**Plain ablation is explanatory context only. It is unreachable as a confirmation branch in the verdict engine.**
-
----
-
-## Honest synthetic-demo disclosures
-
-The planted synthetic leak is **total by construction**, so its observed AUC of `1.000000` is expected. Real leakage can be subtler. The generator is frozen; Hindsight reports the measured result rather than retuning it to look realistic.
-
-The point-in-time demo defines collapse as a strict majority of the apparent advantage disappearing. The `50%` boundary is a visible, configurable demo policy — not a universal scientific constant. It cannot confirm leakage by itself: the engine also requires directional post-outcome lineage and an authoritative availability-time violation.
-
-| Measure | Observed | Point-in-time |
-|---|---:|---:|
-| Planted case AUC | 1.000000 | 0.833630 |
-| Advantage over baseline | 0.301712 | 0.135342 |
-| Advantage retained | - | 44.858% |
-| Legitimate control AUC | 0.924842 | 0.924842 |
-
-Measured margin on the collapse rule: **5.142 percentage points**. See [evaluations/results.json](evaluations/results.json).
-
----
-
-## The console
-
-| Overview and scenario picker | Run history |
-|---|---|
-| ![Overview](docs/img/console-overview.png) | ![Runs](docs/img/console-runs.png) |
-
-| Technical evidence view | Light theme |
-|---|---|
-| ![Technical](docs/img/console-audit-technical.png) | ![Light](docs/img/console-overview-light.png) |
-
-Screenshots are generated from the running app by `scripts/capture_screenshots.py`, so they
-cannot drift from what it actually renders.
-
----
-
-## Which DataHub surfaces this uses
-
-| Surface | Used | How |
-|---|:--:|---|
-| Context graph | ✅ | Column-level lineage, ML entities, schema, profiles |
-| MCP Server | ✅ | Discovery, lineage reads, governed mutations |
-| **Agent Context Kit** | ✅ | `get_lineage_paths_between` — the column-level directional path query this project is built on |
-| DataHub Skills | ✅ | `datahub-ml-release-audit` |
-| **DataHub Actions** | ✅ | Audits a model the moment it appears, without anyone triggering it |
-| Analytics Agent | — | Not applicable; this is not a text-to-SQL product |
-
-**Hindsight can watch instead of waiting.** The isolated
-[`docker/hindsight-action.compose.yml`](docker/hindsight-action.compose.yml) deployment
-runs on DataHub's official Actions image and consumes `MetadataChangeLogEvent_v1`.
-It rejects unrelated entity types and URNs, audits one exact-bound model, deduplicates
-successful repeats, and emits a local JSONL proof. The proof configuration performs no
-autonomous catalog mutation; governed write-back still requires human approval.
-
-The live official-runtime result is `confirmed / block / exit 3`. Reproduction commands
-and exact output are in [docker/ACTION.md](docker/ACTION.md) and
-[evidence/integrations/2026-07-28.md](evidence/integrations/2026-07-28.md).
-
-## What Hindsight writes back to DataHub
-
-Strong submissions contribute to the graph rather than only reading it. After human approval, Hindsight publishes and then **re-reads every mutation** to prove persistence:
-
-- `hindsight:leakage-confirmed` field tag on the offending column
-- `hindsight.auditVerdict` structured property on the model
-- a linked **audit Document** containing the evidence path, safe-control results, and remediation
-- an active `ML_LEAKAGE` incident, reused on retry rather than duplicated
-
-Publication is **dry-run by default** and requires explicit `--approve-writeback`. Evidence lives in [evidence/](evidence/), including a [live end-to-end proof](evidence/live/2026-07-27.md).
-
----
-
-## Point this at your own pipeline
-
-**Read this before assuming what works.** Hindsight is four components, and they are at
-different levels of maturity. The honest breakdown:
-
-| Component | Works on your own assets today? |
-|---|---|
-| SQL / temporal verification | **Yes.** `scan-sql` walks a whole dbt project; `verify-sql` checks one file. Neither needs DataHub or the seeded data. |
-| Verdict lattice and evidence grading | **Yes.** Generic over any `AuditCase`. |
-| DataHub write-back, approval gate, re-read | **Yes, for an exact bound dataset URN whose offending field exists in schema metadata.** |
-| Point-in-time reconstruction | **Yes, from mapped CSV/Parquet snapshots.** User-defined columns, fail-closed validation, point-in-time joins, and source hashes. Direct warehouse connectors are not yet built. |
-
-You can check your own SQL, reconstruct external CSV/Parquet feature history, and publish governed evidence after binding the exact DataHub asset. The remaining boundary is transport: Hindsight reads exported snapshots rather than connecting directly to every warehouse engine.
-
-**Scan your own dbt project right now** — no DataHub, no seeded data, no setup:
-
-```powershell
-uv run hindsight scan-sql path/to/dbt/models   --post-outcome-table payments_after_decision   --post-outcome-table disputes
+```bash
+uv run hindsight validate-point-in-time --scenario examples/adapter/scenario.json
 ```
 
-```text
+```
+baseline, honest features only     0.825 AUC
+with the suspect feature           0.993
+rebuilt as of the decision         0.826
+advantage retained                  0.4%
+post-cutoff records excluded        664
+```
+
+The feature looked worth 0.168 AUC. Once records that did not exist at the decision were
+removed, it was worth 0.0007.
+
+**When you do not know which feature is guilty**, sweep all of them:
+
+```bash
+uv run hindsight sweep-features --scenario examples/adapter/scenario_wide.json
+```
+
+```
+feature                     obs AUC  pit AUC  advantage lost  collapsed
+plan_changes_to_date         0.9932   0.8257          0.1674  True
+support_tickets_snapshot     0.9601   0.9601          0.0000  False
+logins_30d                   0.8251   0.8251          0.0000  False
+tenure_snapshot              0.8252   0.8252          0.0000  False
+spend_snapshot               0.8252   0.8252          0.0000  False
+```
+
+Read the second row before the first. `support_tickets_snapshot` scores 0.96 against a 0.825
+baseline — one of the most predictive features present, and entirely legitimate. Rank this
+list by importance and it lands near the top. Rank by *advantage lost to the cutoff* and it
+sits at zero, where it belongs. **That distinction is the whole method.**
+
+The same data is also available as a wide snapshot table, which is the shape most feature
+stores actually use. A test asserts both shapes agree on the verdict to within 1e-9.
+
+Full walkthrough, including how to point it at your own files:
+[examples/adapter/README.md](examples/adapter/README.md)
+
+### Level 4 — thirty minutes, live DataHub
+
+```bash
+uv run datahub docker quickstart --quickstart-compose-file docker/datahub.quickstart.yml
+uv run hindsight serve
+```
+
+The status pill turns green on its own. The write-back panel becomes live: approve it and
+Hindsight publishes a tag, a structured property, an audit Document and an incident, then
+**re-reads every one** to prove it persisted. Full steps in [QUICKSTART.md](QUICKSTART.md).
+
+### Checking your own pipeline's SQL
+
+Needs no DataHub and no seeded data:
+
+```bash
+uv run hindsight scan-sql path/to/dbt/models --post-outcome-table payments_after_decision
+```
+
+```
 Scanned 214 SQL file(s) under models
 
 VIOLATIONS (2) - post-outcome data with no cutoff:
@@ -254,117 +210,212 @@ VIOLATIONS (2) - post-outcome data with no cutoff:
 clean: 11   violations: 2   unchecked: 0   no post-outcome source: 201
 ```
 
-Exit codes match the release gate: `3` blocks a pull request, `0` lets it through.
-Files it could not parse are reported as **unchecked**, never as clean — a file that was
-never examined has not passed.
-
-**Or a single transformation:**
-
-```powershell
-uv run hindsight verify-sql path/to/your_feature.sql --post-outcome-table your_events_table
-```
-
-**Define an audit target** — see [audits/](audits/) for the schema:
-
-```powershell
-uv run hindsight demo-audit --audit audits/my_pipeline.json
-uv run hindsight serve --audit audits/my_pipeline.json --target-urn "<exact-dataset-urn>"
-```
-
-Set `target_urn` in that config, pass `--target-urn` to `serve`, or set
-`HINDSIGHT_TARGET_URN`. Hindsight refuses approved write-back to any other asset unless
-the CLI receives the explicit emergency override `--allow-urn-mismatch`, because writing evidence onto an asset
-it does not describe puts false findings in your catalog.
-
-**Wire it into CI** with [examples/ci/hindsight-gate.yml](examples/ci/hindsight-gate.yml) —
-a copyable workflow that blocks a pull request on `confirmed` leakage.
-
-### Operational notes
-
-- Use a DataHub **service account**, ideally scoped with a Default View. `--token` lands in
-  shell history; prefer `DATAHUB_GMS_TOKEN`.
-- The console **has no authentication**. It binds to `127.0.0.1`, uses per-process CSRF
-  tokens on state-changing forms, and requires an exact target binding before write-back.
-  Put it behind an authenticating proxy before exposing it beyond loopback.
-- Missing lineage or time metadata yields `insufficient_metadata` rather than a guess. A
-  low-evidence answer is the honest one.
+Exit `3` blocks a pull request. Files that could not be parsed are reported as
+**unchecked**, never as clean — a file that was never examined has not passed.
 
 ---
 
-## Reusable DataHub Skill
+## Measured, not asserted
 
-The [DataHub ML Release Audit Skill](skills/datahub-ml-release-audit/SKILL.md) turns Hindsight's calibrated evidence protocol into a reusable Agent Skill: the verdict contract, the MCP/CLI workflow, human-approved write-back rules, and a deterministic evidence-bundle validator.
+`uv run hindsight benchmark` sweeps the defect from total reach down to almost none, against
+a matched clean control for every case. **42 cases, 0 false positives, 0 false negatives.**
+The breakdown matters more than the headline:
+
+| Reach of the defect | Mean AUC delta | Statistical route fires | Caught overall |
+|---:|---:|---:|---:|
+| 100% | 0.1768 | yes | yes |
+| 70% | 0.1578 | yes | yes |
+| 40% | 0.1086 | **no** | yes |
+| 15% | 0.0451 | **no** | yes |
+| 2% | **0.0066** | **no** | yes |
+
+**The statistical route stops firing below 40% reach.** At 2% the performance difference is
+0.0066 of AUC, invisible to any threshold anyone would realistically set, and the
+deterministic SQL/time proof still catches it. That is the argument for two independent
+routes, measured rather than claimed.
+
+**Read the perfect score with care.** Ground truth is structural — "leaked" means the query
+joins a post-outcome source with no guard, and the deterministic route reads that same query
+— so its score is close to true by construction. What is measured honestly is the
+statistical route's collapse, the absence of false positives across 21 guarded queries, and
+the vanishing AUC delta. Full caveats in
+[evidence/benchmark/2026-07-28.md](evidence/benchmark/2026-07-28.md).
+
+### Validated against a real dbt project
+
+Run against [dbt-labs/jaffle-shop](https://github.com/dbt-labs/jaffle-shop), a public project
+written by someone else with no knowledge of this tool. It parsed all 13 models, resolved
+`ref()` templating, and correctly reported which model reads a nominated source without a
+guard.
+
+**It also found two bugs in Hindsight.** Every dbt model was being reported as clean, because
+Jinja templating made them unparseable and unparseable was falling through to "no
+post-outcome source" — a false negative wearing a pass, which is precisely the failure this
+project exists to prevent. Both are fixed and covered by tests.
+
+---
+
+## Four ways this tool could be fooling you
+
+| Objection | What stops it |
+|---|---|
+| "It probably flags everything." | A legitimate feature with a **larger** importance score than the leaked one is audited on every run and must come back clean. It does. |
+| "It can only ever say no." | One scenario is expected to **pass**, and does: the same model after the repair. |
+| "The numbers were tuned." | The generator is **frozen** and its seed committed. Whatever it produces is published, including a collapse threshold missed by **5.1 points**, disclosed rather than hidden. |
+| "An LLM decided this." | It cannot. Reaching a verdict runs through deterministic code with no model in the path. |
+
+### The verdict contract
+
+| Verdict | Minimum evidence | CI exit |
+|---|---|---:|
+| `insufficient_metadata` | Required lineage or time evidence is absent | `2` |
+| `needs_review` | Ancestry is suspicious, but direction or time is unproven | `2` |
+| `high_confidence` | Directional outcome lineage **and** an availability violation | `3` |
+| `confirmed` | Deterministic cutoff proof **or** qualified point-in-time reconstruction | `3` |
+| `clear_for_release` | Configured checks and planted safe controls pass | `0` |
+
+**Plain ablation is explanatory context only.** It is structurally unreachable as a
+confirmation branch, because a legitimate feature can easily have a larger ablation delta
+than a leaked one.
+
+---
+
+## Which DataHub surfaces this uses
+
+| Surface | Used | How |
+|---|:--:|---|
+| Context graph | yes | Column-level lineage, ML entities, schema, profiles |
+| MCP Server | yes | Discovery, lineage reads, governed mutations |
+| **Agent Context Kit** | yes | `get_lineage_paths_between`, the column-level directional path query this project is built on |
+| DataHub Skills | yes | `datahub-ml-release-audit` |
+| **DataHub Actions** | yes | Audits a model the moment it appears, with nobody triggering it |
+| Analytics Agent | — | Not applicable; this is not a text-to-SQL product |
+
+**It can watch instead of waiting.** The isolated
+[`docker/hindsight-action.compose.yml`](docker/hindsight-action.compose.yml) deployment runs
+on DataHub's official Actions image, rejects unrelated entity types and URNs, audits one
+exact-bound model, and emits a local JSONL proof. It never publishes evidence itself, because
+a process that silently rewrites governed metadata is the thing this project argues against.
+Live result: `confirmed / block / exit 3`. See [docker/ACTION.md](docker/ACTION.md).
+
+### What gets written back
+
+After human approval, then re-read to prove it persisted:
+
+- `hindsight:leakage-confirmed` field tag on the offending column
+- `hindsight.auditVerdict` structured property on the model
+- a linked **audit Document** with the evidence path, control results and remediation
+- an active `ML_LEAKAGE` incident, reused on retry rather than duplicated
+
+Publication is **dry-run by default** and requires explicit `--approve-writeback`. A write
+that reports success but cannot be read back is treated as a failure.
+
+---
+
+## The console
+
+| Overview and scenario picker | Technical evidence view |
+|---|---|
+| ![Overview](docs/img/console-overview.png) | ![Technical](docs/img/console-audit-technical.png) |
+
+Screenshots are generated from the running app by `scripts/capture_screenshots.py`, so they
+cannot drift from what it renders. Every route is checked against WCAG 2.1 AA contrast on
+every build by `scripts/check_accessibility.py`.
+
+---
+
+## Honest limits
+
+Read this before assuming what works. The components are at different maturity levels.
+
+| Component | Works on your own data today? |
+|---|---|
+| SQL / temporal verification | **Yes.** `scan-sql` walks a whole dbt project. No DataHub needed |
+| Verdict lattice and evidence grading | **Yes.** Generic over any `AuditCase` |
+| Point-in-time reconstruction | **Yes, with a contract.** Mapped CSV/Parquet, long-form or wide snapshots |
+| DataHub write-back and re-read | **Yes**, for an exact bound dataset URN whose field exists in schema metadata |
+
+**Point-in-time reconstruction needs an availability timestamp.** A nightly overwrite that
+keeps no history cannot be audited this way by anyone, including this tool: the information
+required to answer the question was never stored. The remaining boundary is transport —
+Hindsight reads exported snapshots rather than connecting directly to every warehouse engine.
+
+**The synthetic scenarios are total by construction.** The planted leak reaches every record,
+so its observed AUC of `1.000000` is expected, and real leakage can be subtler. The generator
+is frozen; measured results are published rather than retuned.
+
+| Measure | Observed | Point-in-time |
+|---|---:|---:|
+| Planted case AUC | 1.000000 | 0.833630 |
+| Advantage over baseline | 0.301712 | 0.135342 |
+| Advantage retained | — | 44.858% |
+| Legitimate control AUC | 0.924842 | 0.924842 |
+
+Measured margin on the collapse rule: **5.142 percentage points**. The 50% boundary is a
+visible, configurable policy, not a universal constant.
+
+---
 
 ## Contributions back to DataHub
 
 Both came out of building this, not out of looking for something to contribute.
 
 | | Status |
-| --- | --- |
-| [datahub#18705](https://github.com/datahub-project/datahub/pull/18705) - document the required `customType` on `CUSTOM` incidents | **Merged** |
-| [datahub-skills#68](https://github.com/datahub-project/datahub-skills/pull/68) - add the `datahub-ml-release-audit` skill | Open, awaiting review |
+|---|---|
+| [datahub#18705](https://github.com/datahub-project/datahub/pull/18705) — document the required `customType` on `CUSTOM` incidents | **Merged** |
+| [datahub-skills#68](https://github.com/datahub-project/datahub-skills/pull/68) — add the `datahub-ml-release-audit` skill | Open, awaiting review |
 
-The first is small and worth explaining. Hindsight raises a DataHub incident as part of its write-back, and the incidents tutorial lists `CUSTOM` as a supported type without mentioning that `customType` is required alongside it. Following the guide as written fails with `customType is required: Failed to create incident.` The fix is a note and a worked example at the point where someone picks `CUSTOM`, verified against DataHub Core v1.5.0.6.
+The first is small and worth explaining. Hindsight raises a DataHub incident during
+write-back, and the incidents tutorial lists `CUSTOM` as a supported type without mentioning
+that `customType` is required alongside it. Following the guide as written fails with
+`customType is required: Failed to create incident.` Verified against DataHub Core v1.5.0.6.
 
 ---
 
-## Useful commands
+## Reference
 
-```powershell
-uv run hindsight demo --json
-uv run hindsight replay-fixture
-uv run hindsight verify-fixture-live --target-urn "<synthetic-dataset-urn>"
-uv run hindsight demo-audit --output evidence/demo-audit.local.json
-uv run hindsight verify-sql examples/leaky_feature.sql --post-outcome-table payment_events_after_decision
-uv run hindsight publish-audit --target-urn "<synthetic-dataset-urn>"
-uv run hindsight publish-audit --audit audits/my_pipeline.json --target-urn "<exact-dataset-urn>" --approve-writeback
-uv run pytest
+### Commands
+
+| Command | What it does |
+|---|---|
+| `hindsight demo` | Full offline audit. The judge path |
+| `hindsight serve` | The evidence console on `:8100` |
+| `hindsight validate-point-in-time --scenario ...` | Reconstruct one scenario, generated or external |
+| `hindsight sweep-features --scenario ...` | Audit every candidate feature and rank them |
+| `hindsight scan-sql <dir> --post-outcome-table ...` | Walk a dbt project. Exit `3` blocks a PR |
+| `hindsight verify-sql --sql <file>` | Check one transformation for a cutoff guard |
+| `hindsight benchmark` | The 42-case sweep |
+| `hindsight trace-lineage ...` | Column-level path query via the Agent Context Kit |
+| `hindsight publish-audit --approve-writeback` | Write the finding into DataHub |
+
+Define your own audit target with [audits/](audits/), then:
+
+```bash
+uv run hindsight demo-audit --audit audits/my_pipeline.json
+uv run hindsight serve --audit audits/my_pipeline.json --target-urn "<exact-dataset-urn>"
 ```
 
-`demo` returns `0` when the demonstration reproduces all expected outcomes. Release-gate commands use the CI semantics in the evidence contract above.
+### Reproducibility
+
+Frozen seeds, committed lockfile, CI on Ubuntu and Windows across Python 3.11 and 3.12. Raw
+machine reports stay ignored as `*.local.json`; the sanitized summaries in
+[evidence/](evidence/) are versioned with the code that produced them.
+
+### Theoretical grounding
+
+- Kaufman, Rosset & Perlich, *Leakage in Data Mining: Formulation, Detection, and Avoidance*,
+  **KDD 2011** — defines leakage through legitimacy and learn-predict separation. Their
+  second class, leakage in training examples, needs record-level provenance and is explicitly
+  out of scope here rather than implied.
+- Yang, Brower-Sinning, Lewis & Kästner, *Data Leakage in Notebooks*, **ASE 2022** — found
+  leakage pervasive across 100,000+ public notebooks. Their static analysis works *inside* the
+  notebook; the class Hindsight targets originates upstream, in the pipeline.
+  [arXiv:2209.03345](https://arxiv.org/abs/2209.03345)
+- Kapoor & Narayanan, *Leakage and the Reproducibility Crisis in ML-based Science*,
+  **Patterns 2023** — 294 papers across 17 disciplines affected.
 
 ---
-
-## Reproducibility
-
-- **172 tests** pass, including the single-command judge regression and Skill contract tests.
-- CI runs lint, tests, the offline judge demo, an ASCII-console guard, and a JSON-deliverable guard on **Ubuntu and Windows × Python 3.11 and 3.12**.
-- Offline recorded-fixture replay: `~0.023s` of compute (a few seconds wall-clock including interpreter start). Target `<60s`.
-- Point-in-time reconstruction: `~0.159s` for 4,000 applications.
-- Raw `*.local.json`, environments, caches, and build outputs are ignored.
-
----
-
-## Theoretical grounding
-
-The verdict model is not invented. It follows the canonical formulation of leakage in
-[Kaufman, Rosset & Perlich, *Leakage in Data Mining: Formulation, Detection, and Avoidance*,
-KDD 2011](https://dl.acm.org/doi/10.1145/2020408.2020496) (extended in
-[TKDD 6(4), 2012](https://dl.acm.org/doi/10.1145/2382577.2382579)), which defines leakage in
-terms of **legitimacy**: a feature is legitimate only if the information it carries was
-available to the model at prediction time.
-
-| Kaufman et al. | Hindsight |
-|---|---|
-| Legitimacy of a feature | The directional lineage + availability-time check |
-| **Learn-predict separation** as the avoidance methodology | Point-in-time reconstruction, then re-evaluation on the same protocol |
-| Detection when *"the modeler has no control over how the data have been collected"* | Exactly our case: the leak was created upstream, in someone else's pipeline |
-
-Their taxonomy separates **leaking features** from **leakage in training examples** (rows that
-should not be in the training set at all). **Hindsight detects the first class only.** Row-level
-leakage needs record-level provenance, which is not something DataHub models today, and claiming
-otherwise would be dishonest. It is named in *What's next* rather than quietly omitted.
-
-## Background
-
-Leakage is not a corner case:
-
-- Yang, Brower-Sinning, Lewis & Kästner, *Data Leakage in Notebooks: Static Detection and Better Processes*, **ASE 2022** — found leakage pervasive across **100,000+ public notebooks**. Their static analysis works *inside* the notebook; the class of leak Hindsight targets originates upstream, in the data pipeline. [arXiv:2209.03345](https://arxiv.org/abs/2209.03345)
-- Kapoor & Narayanan, *Leakage and the reproducibility crisis in machine-learning-based science*, **Patterns 4(9), 2023** — leakage has corrupted **294 papers across 17 scientific disciplines**. [Cell Patterns](https://www.cell.com/patterns/fulltext/S2666-3899(23)00159-9)
-- Sculley et al., *Hidden Technical Debt in Machine Learning Systems*, **NeurIPS 2015**. [NeurIPS](https://papers.nips.cc/paper/5656-hidden-technical-debt-in-machine-learning-systems)
-
-DataHub's own writing makes the case for the substrate: *"Without column-level lineage, these mistakes stay hidden until the model reaches production."* — [Data Lineage for ML](https://datahub.com/blog/data-lineage-for-ml/)
 
 ## License
 
-Apache License 2.0. See [LICENSE](LICENSE).
+Apache 2.0. See [LICENSE](LICENSE).
