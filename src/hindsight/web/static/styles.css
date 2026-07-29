@@ -2278,3 +2278,109 @@ h3 { letter-spacing: -0.015em; }
   white-space: nowrap;
   border: 0;
 }
+
+/* -- The lineage chain ----------------------------------------------------
+   What DataHub supplied, drawn. The page argued from this path in prose and
+   never showed it, which for a project whose whole claim is "the catalog knew"
+   was the wrong thing to leave implicit.
+
+   Status colour ships with a glyph and a label, never colour alone, and the
+   <details> table below repeats every value.
+------------------------------------------------------------------------- */
+
+.chain { display: grid; gap: var(--sp-3); }
+
+.chain-flow {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--sp-2);
+}
+
+.chain-node {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+/* The model is the thing being judged, so it reads as the terminus. */
+.chain-node.is-model { border-color: var(--border-strong); background: var(--surface-2); }
+.chain-node.is-violation {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 7%, var(--surface));
+}
+
+.chain-kind {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--text-faint);
+}
+.chain-table {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: var(--step--1);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.chain-col {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: var(--step--1);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+.chain-flag {
+  margin-top: var(--sp-2);
+  font-size: var(--step--1);
+  font-weight: 700;
+  color: var(--danger);
+}
+
+/* One connector, laid along the flow rather than stacked across it. The list
+   items stretch to card height, so the arrow has to centre itself inside that. */
+.chain-arrow {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 var(--sp-1);
+  color: var(--text-faint);
+}
+.chain-arrow-head { font-size: var(--step-0); line-height: 1; margin-left: -2px; }
+.chain-arrow-line { width: 20px; height: 2px; border-radius: 2px; background: var(--border-strong); }
+/* The hop that carries the defect forward, dashed like the timing connector so
+   the two visuals on this page agree with each other. */
+.chain-arrow-line.is-violation {
+  background: repeating-linear-gradient(90deg, var(--danger) 0 5px, transparent 5px 9px);
+}
+.chain-arrow:has(.is-violation) .chain-arrow-head { color: var(--danger); }
+
+.chain-table-view summary {
+  cursor: pointer;
+  font-size: var(--step--1);
+  color: var(--text-muted);
+  width: fit-content;
+}
+.chain-table-view summary:hover { color: var(--text); }
+.chain-table-view .table-wrap { margin-top: var(--sp-3); }
+
+/* Stacked, a horizontal arrow means nothing; rotate it. */
+@media (max-width: 760px) {
+  .chain-flow { flex-direction: column; align-items: stretch; }
+  .chain-node { flex: 1 1 auto; }
+  /* Stacked, a horizontal arrow points at nothing. Turn the whole connector. */
+  .chain-arrow { flex-direction: column; align-self: flex-start; padding: 0 0 0 var(--sp-5); }
+  .chain-arrow-head { transform: rotate(90deg); margin: -2px 0 0; }
+  .chain-arrow-line { width: 2px; height: 14px; }
+}
+
+.head-actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 640px) { .head-actions { justify-content: flex-start; } }

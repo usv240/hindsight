@@ -86,6 +86,47 @@ def _days_between(later: str, earlier: str) -> int | None:
     return (end - start).days
 
 
+def _chain(
+    context: dict[str, Any], prefix: str, model_urn: str, late: bool
+) -> list[dict[str, Any]]:
+    """The lineage path as nodes, source first, model last.
+
+    This is the one thing DataHub supplies that nothing else could, and the page
+    described it in prose while never showing it. Drawn from the recorded path,
+    so a scenario with no path recorded gets no diagram rather than a guess.
+    """
+    path = context.get(f"{prefix}lineage_path")
+    if not isinstance(path, list) or not path:
+        return []
+
+    nodes: list[dict[str, Any]] = []
+    for index, step in enumerate(path):
+        if not isinstance(step, str):
+            continue
+        table, _, column = step.partition(".")
+        nodes.append(
+            {
+                "table": table,
+                "column": column or "",
+                "kind": "source" if index == 0 else "feature",
+                # Only the first hop can cross the cutoff: it is the one reading
+                # from a table whose rows postdate the decision.
+                "violates": late and index == 0,
+            }
+        )
+
+    if model_urn:
+        nodes.append(
+            {
+                "table": _name_from_urn(model_urn),
+                "column": "",
+                "kind": "model",
+                "violates": False,
+            }
+        )
+    return nodes
+
+
 def describe(
     project_root: Path,
     scenario_family: str,
@@ -198,6 +239,7 @@ def describe(
         "model": model,
         "feature": feature,
         "timing": timing,
+        "chain": _chain(context, prefix, model_urn, late),
         "meta": meta,
         "model_urn": model_urn,
         "feature_urn": feature_urn,

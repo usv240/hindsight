@@ -141,3 +141,29 @@ def test_unknown_scenario_degrades_without_raising() -> None:
     described = describe(PROJECT_ROOT, "not_a_scenario", bundle={}, run=None, subject="leaked")
     assert described["model"] is None
     assert described["timing"] is None
+
+
+def test_the_lineage_chain_runs_source_to_model() -> None:
+    chain = _live("credit_default")["chain"]
+    assert [node["kind"] for node in chain] == ["source", "feature", "model"]
+    assert chain[0]["table"] == "payment_events_after_decision"
+    assert chain[-1]["table"] == "credit_default_v1_leaky"
+
+
+def test_only_the_source_hop_is_flagged_and_only_when_late() -> None:
+    """The violation is reading a post-outcome table, not the hops after it."""
+    leaky = _live("credit_default")["chain"]
+    assert [node["violates"] for node in leaky] == [True, False, False]
+
+    # A clean audit must not paint anything red.
+    clean = _live("credit_default_fixed")["chain"]
+    assert not any(node["violates"] for node in clean)
+
+
+def test_each_scenario_draws_its_own_path() -> None:
+    sources = {
+        slug: _live(slug)["chain"][0]["table"]
+        for slug in ("credit_default", "fraud_screening", "hospital_readmission")
+    }
+    assert len(set(sources.values())) == 3, sources
+    assert sources["fraud_screening"] == "disputes_after_authorisation"

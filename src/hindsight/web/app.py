@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import FastAPI, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -127,6 +127,24 @@ def create_app(project_root: Path | None = None) -> FastAPI:
         run = record_run(root, bundle, scenario=scenario or None)
         suffix = f"?scenario={scenario}" if scenario else ""
         return RedirectResponse(url=f"/audits/{run['run_id']}{suffix}", status_code=303)
+
+    @app.get("/audits/{run_id}/evidence.json")
+    def download_evidence(run_id: str) -> Response:
+        """The full evidence record, as a file.
+
+        The page argues from this bundle, so anyone doubting the argument should
+        be able to take the bundle away and check it rather than trust the
+        rendering of it.
+        """
+        run = get_run(root, run_id)
+        if run is None:
+            raise HTTPException(status_code=404, detail="No such run")
+        payload = json.dumps(run, indent=2, sort_keys=True)
+        return Response(
+            content=payload,
+            media_type="application/json",
+            headers={"Content-Disposition": f'attachment; filename="hindsight-{run_id}.json"'},
+        )
 
     @app.get("/audits/latest", response_class=HTMLResponse)
     def latest_audit(request: Request) -> Any:

@@ -33,7 +33,15 @@
     </div>
     {#- Nobody discovers Ctrl+P on a web app, and this record is meant to be
         filed against a change request. -#}
-    <button type="button" class="btn ghost is-print" data-print>Save as PDF</button>
+    <div class="head-actions">
+      <button type="button" class="btn ghost is-print" data-print>Save as PDF</button>
+      {#- Anyone doubting the argument should be able to take the record away
+          and check it, rather than trust this rendering of it. -#}
+      {% if run %}
+      <a class="btn ghost is-print" href="/audits/{{ run.run_id }}/evidence.json"
+         download>Download evidence</a>
+      {% endif %}
+    </div>
   </div>
 </section>
 

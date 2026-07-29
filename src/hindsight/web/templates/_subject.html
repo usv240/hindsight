@@ -65,6 +65,69 @@
   </div>
   {% endif %}
 
+  {% if subject.chain %}
+  {#- The lineage DataHub supplied, drawn. The page argued from this path in
+      prose and never showed it. Status colour ships with an icon and a label,
+      never colour alone, and the table below repeats every value. -#}
+  <div class="chain">
+    <p class="subject-label">Where the feature came from{{ info('column-lineage') }}</p>
+    <ol class="chain-flow">
+      {% for node in subject.chain %}
+      <li class="chain-node is-{{ node.kind }}{% if node.violates %} is-violation{% endif %}">
+        <span class="chain-kind">
+          {%- if node.kind == 'source' %}Source table
+          {%- elif node.kind == 'feature' %}Feature
+          {%- else %}Model{% endif -%}
+        </span>
+        <span class="chain-table">{{ node.table }}</span>
+        {% if node.column %}<span class="chain-col">{{ node.column }}</span>{% endif %}
+        {% if node.violates %}
+        <span class="chain-flag">
+          <span aria-hidden="true">&#9888;</span> rows appear after the decision
+        </span>
+        {% endif %}
+      </li>
+      {% if not loop.last %}
+      <li class="chain-arrow" aria-hidden="true">
+        <span class="chain-arrow-line{% if subject.chain[loop.index0].violates %} is-violation{% endif %}"></span>
+        <span class="chain-arrow-head">&rarr;</span>
+      </li>
+      {% endif %}
+      {% endfor %}
+    </ol>
+
+    <details class="chain-table-view">
+      <summary>Table view of this path</summary>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">Step</th><th scope="col">Table</th>
+              <th scope="col">Column</th><th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for node in subject.chain %}
+            <tr>
+              <th scope="row">{{ loop.index }}</th>
+              <td><code>{{ node.table }}</code></td>
+              <td>{% if node.column %}<code>{{ node.column }}</code>{% else %}&mdash;{% endif %}</td>
+              <td>
+                {% if node.violates %}
+                <span class="finding danger">rows appear after the decision</span>
+                {% else %}
+                <span class="finding">knowable at decision time</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+  {% endif %}
+
   {% if subject.meta %}
   <p class="subject-meta">
     {% for item in subject.meta %}
