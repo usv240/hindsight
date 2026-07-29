@@ -51,7 +51,15 @@
         </a>
         <a href="/audits" class="nav-item{% if active == 'audits' %} is-active{% endif %}">
           <span class="nav-dot" aria-hidden="true"></span> Runs
-          {% if run_count %}<span class="nav-count">{{ run_count }}</span>{% endif %}
+          {#- A bare number here reads as "we ran it 50 times until it looked
+              good". Name what it counts, for the tooltip and for screen
+              readers, so the badge cannot be read as a score. -#}
+          {% if run_count %}
+          <span class="nav-count" title="{{ run_count }} audits recorded on this machine">
+            <span aria-hidden="true">{{ run_count }}</span>
+            <span class="sr-only">{{ run_count }} audits recorded</span>
+          </span>
+          {% endif %}
         </a>
         <a href="/evidence" class="nav-item{% if active == 'evidence' %} is-active{% endif %}">
           <span class="nav-dot" aria-hidden="true"></span> Evidence
