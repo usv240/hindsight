@@ -338,6 +338,9 @@
       } catch (err) {
         /* private mode */
       }
+      /* Whole sections appear and disappear here, so anything tracking them
+         needs to recount rather than trust its last answer. */
+      document.dispatchEvent(new CustomEvent("hindsight:modechange"));
     }
 
     Array.prototype.forEach.call(buttons, function (button) {
@@ -375,9 +378,107 @@
     });
   }
 
+  /* -- 8. Section spy -----------------------------------------------------
+     The audit page is long enough that the sticky jump nav stops being useful
+     once you no longer know which pill you are standing in. This marks the
+     section currently under the header.
+
+     Heading elements are only a few pixels tall, so IntersectionObserver would
+     flicker on and off; reading positions against the same offset the browser
+     already uses for scroll-padding is steadier.
+  --------------------------------------------------------------------------- */
+
+  function initSectionSpy() {
+    var nav = document.querySelector(".jumpnav");
+    if (!nav) return;
+
+    var links = [].slice.call(nav.querySelectorAll('a[href^="#"]'));
+    if (links.length < 2) return;
+
+    /* Sorted by where the target sits on the page, not by nav order. The two
+       agree today, but a spy that silently depends on them agreeing goes wrong
+       the first time someone reorders a pill. */
+    var pairs = links
+      .map(function (link) {
+        return {
+          link: link,
+          target: document.getElementById(link.getAttribute("href").slice(1)),
+        };
+      })
+      .filter(function (pair) {
+        return pair.target !== null;
+      })
+      .sort(function (a, b) {
+        var order = a.target.compareDocumentPosition(b.target);
+        /* eslint-disable-next-line no-bitwise */
+        return order & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+      });
+
+    var offset = 132;  /* topbar + jump nav + a little breathing room */
+    var queued = false;
+
+    function visible(el) {
+      return !!(el && el.offsetParent !== null);
+    }
+
+    function update() {
+      queued = false;
+      var current = null;
+
+      pairs.forEach(function (pair) {
+        if (!visible(pair.link) || !visible(pair.target)) return;
+        if (pair.target.getBoundingClientRect().top - offset <= 0) current = pair.link;
+      });
+
+      var shown = pairs.filter(function (pair) {
+        return visible(pair.link) && visible(pair.target);
+      });
+
+      /* Before the first heading scrolls past, the first pill is the honest
+         answer - not "nothing selected". */
+      if (!current && shown.length) current = shown[0].link;
+
+      /* The last section or two sit inside the final viewport, so their
+         headings never cross the line and the spy would stall one pill short.
+         At the bottom of the page, the last section is where you are. */
+      var atBottom =
+        window.innerHeight + window.scrollY >= document.body.scrollHeight - 2;
+      if (atBottom && shown.length) current = shown[shown.length - 1].link;
+
+      links.forEach(function (link) {
+        var on = link === current;
+        link.classList.toggle("is-current", on);
+        if (on) {
+          link.setAttribute("aria-current", "true");
+        } else {
+          link.removeAttribute("aria-current");
+        }
+      });
+    }
+
+    function schedule() {
+      if (queued) return;
+      queued = true;
+      window.requestAnimationFrame(update);
+    }
+
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    /* Switching reading level shows and hides whole sections. */
+    document.addEventListener("hindsight:modechange", schedule);
+    /* The activity log renders after boot, so the page gets taller without a
+       scroll or resize event. Without this the spy answers about a page height
+       that no longer exists. */
+    if (window.ResizeObserver) {
+      new ResizeObserver(schedule).observe(document.body);
+    }
+    update();
+  }
+
   function boot() {
     initTheme();
     initModeSwitch();
+    initSectionSpy();
     initPopovers();
     initActivityLog();
     initPublishForm();

@@ -1946,3 +1946,11 @@ h3 { letter-spacing: -0.015em; }
   .crumbs > *:not(:last-child):not(.sep) { display: none; }
   .crumbs > .sep { display: none; }
 }
+
+/* The pill you are standing in. Filled rather than tinted, so it reads at a
+   glance while scrolling past. */
+.jumpnav a.is-current {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.jumpnav a.is-current:hover { background: var(--accent); color: var(--accent-ink); }
