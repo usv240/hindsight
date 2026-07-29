@@ -10,10 +10,19 @@
     <h1>Audit runs</h1>
     <p class="lede">Every audit is an event. Compare verdicts over time rather than trusting one.</p>
   </div>
-  <form method="post" action="/audits/run">
+  {% if not public_demo() %}
+  {% if not public_demo() %}
+<form method="post" action="/audits/run">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <button class="btn" type="submit">Run an audit</button>
   </form>
+  {% else %}
+  {#- Running one trains a model. Not something a public URL should offer. -#}
+  <p class="fine" style="max-width: 30ch; text-align: right;">
+    Read-only demo. Every run below was produced by the real tool; clone the
+    repository to run your own.
+  </p>
+  {% endif %}
 </section>
 
 {% if runs %}
@@ -126,6 +135,7 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <button class="btn" type="submit">Run an audit now</button>
   </form>
+{% endif %}
 </section>
 {% endif %}
 

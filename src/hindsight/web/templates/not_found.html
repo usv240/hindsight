@@ -11,10 +11,12 @@
   </p>
   <div class="log-controls" style="justify-content: center;">
     <a class="btn" href="/audits">Back to runs</a>
-    <form method="post" action="/audits/run">
+    {% if not public_demo() %}
+<form method="post" action="/audits/run">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <button class="btn ghost" type="submit">Run a new audit</button>
     </form>
+{% endif %}
   </div>
 </section>
 {% endblock %}

@@ -1,0 +1,21 @@
+.git
+.github
+.venv
+.pytest_cache
+.ruff_cache
+dist
+docs/img/*.png
+
+# Audit history is local product state and there can be hundreds of files. The
+# public demo image needs evidence to serve, but it should be the same evidence
+# everywhere - not whatever happens to be on the machine doing the build. So:
+# exclude the directory, then re-admit exactly the five runs that are committed,
+# one per scenario. The image is then reproducible from a clean clone.
+evidence/runs/*
+!evidence/runs/README.md
+!evidence/runs/20260728T174522-89d397.json
+!evidence/runs/20260728T175344-81df34.json
+!evidence/runs/20260729T044318-0be937.json
+!evidence/runs/20260729T050141-dc73ad.json
+!evidence/runs/20260729T050250-693684.json
+

@@ -1,0 +1,229 @@
+{
+  "schema_version": 2,
+  "run_id": "20260729T050141-dc73ad",
+  "started_at": "2026-07-29T05:01:41.674709+00:00",
+  "audit": "credit_default",
+  "scenario": "credit_default",
+  "case_id": "credit-default-leaked-payment-event",
+  "verdict": "confirmed",
+  "release_decision": "block",
+  "exit_code": 3,
+  "runtime_seconds": 0.443783,
+  "rows": 4000,
+  "target_urn": null,
+  "published": false,
+  "evidence_sha256": "a24289cb1578127e3bd2398bdc7490bd74ba40b3328dbebd98d3835d85d699ec",
+  "evidence_bundle": {
+    "schema_version": 1,
+    "case_id": "credit-default-leaked-payment-event",
+    "release_decision": "block",
+    "verdict": "confirmed",
+    "confirmation_route": "point_in_time_collapse",
+    "point_in_time_verdict": "confirmed",
+    "checks": {
+      "transformation_violation_proven": true,
+      "point_in_time_confirmation_passed": true,
+      "safe_control_cleared": true,
+      "proposed_remediation_verifies_safe": true,
+      "no_catalog_mutation_without_approval": true
+    },
+    "trace": [
+      {
+        "step": "transformation_verification",
+        "status": "violation",
+        "reason": "The post-outcome source is referenced, but no directional available_at <= prediction_time cutoff was found. The transformation does not reference available_at."
+      },
+      {
+        "step": "point_in_time_reconstruction",
+        "status": "passed",
+        "excluded_post_cutoff_records": 4000
+      },
+      {
+        "step": "deterministic_verdict",
+        "status": "confirmed",
+        "reason": "The feature advantage collapsed under point-in-time reconstruction."
+      },
+      {
+        "step": "safe_control",
+        "status": "clear_for_release",
+        "ablation_delta": 0.226554
+      },
+      {
+        "step": "writeback",
+        "status": "awaiting_human_approval"
+      }
+    ],
+    "sql_verification": {
+      "status": "violation",
+      "reason": "The post-outcome source is referenced, but no directional available_at <= prediction_time cutoff was found. The transformation does not reference available_at.",
+      "referenced_tables": [
+        "applications_at_decision_time",
+        "payment_events_after_decision"
+      ],
+      "cutoff_predicates": [],
+      "post_outcome_table": "payment_events_after_decision",
+      "available_column": "available_at",
+      "prediction_column": "prediction_time",
+      "exit_code": 3
+    },
+    "validation": {
+      "schema_version": 1,
+      "scenario": "credit_default_at_origination",
+      "config_sha256": "65befe58cde01243899e3ed9c3993eeaf6049a13fb9b53244ac69d642a0c29b3",
+      "seed": 20260727,
+      "rows": 4000,
+      "runtime_seconds": 0.443783,
+      "status": "passed",
+      "checks": {
+        "post_cutoff_records_were_excluded": true,
+        "leaked_feature_advantage_collapsed": true,
+        "safe_feature_has_large_ablation_delta": true,
+        "safe_feature_advantage_persisted": true,
+        "safe_feature_is_point_in_time_stable": true
+      },
+      "reconstruction": {
+        "engine": "duckdb",
+        "cutoff_predicate": "available_at <= prediction_time",
+        "excluded_post_cutoff_records": 4000,
+        "input": {
+          "adapter": "frozen_generator"
+        }
+      },
+      "evidence_context": {
+        "decision_node": "applications_at_decision_time.prediction_time",
+        "leakage_case_id": "credit-default-leaked-payment-event",
+        "safe_case_id": "credit-default-prior-delinquencies-safe-control",
+        "leakage_model_urn": "urn:li:mlModel:hindsight.credit_default_v1_leaky",
+        "safe_model_urn": "urn:li:mlModel:hindsight.credit_default_v2_safe",
+        "leakage_feature_urn": "urn:li:schemaField:(hindsight.feature_pipeline_leaky,days_since_last_payment)",
+        "safe_feature_urn": "urn:li:schemaField:(hindsight.customer_history_point_in_time,prior_delinquencies)",
+        "leakage_lineage_path": [
+          "payment_events_after_decision.payment_recorded_at",
+          "feature_pipeline_leaky.days_since_last_payment"
+        ],
+        "safe_lineage_path": [
+          "customer_history_point_in_time.prior_delinquencies",
+          "feature_pipeline_safe.prior_delinquencies"
+        ],
+        "leakage_available_offset_days": 31,
+        "safe_available_offset_days": -1,
+        "leakage_feature_name": "days_since_last_payment",
+        "safe_feature_name": "prior_delinquencies"
+      },
+      "leakage_case": {
+        "baseline_auc": 0.698288,
+        "observed_auc": 1.0,
+        "point_in_time_auc": 0.83363,
+        "observed_advantage": 0.301712,
+        "point_in_time_advantage": 0.135342,
+        "advantage_retained": 0.44858,
+        "collapsed": true
+      },
+      "safe_control": {
+        "baseline_auc": 0.698288,
+        "observed_auc": 0.924842,
+        "point_in_time_auc": 0.924842,
+        "observed_advantage": 0.226554,
+        "point_in_time_advantage": 0.226554,
+        "advantage_retained": 1.0,
+        "collapsed": false
+      },
+      "verdicts": {
+        "leakage_case": {
+          "case_id": "credit-default-leaked-payment-event",
+          "verdict": "confirmed",
+          "reasons": [
+            "The feature advantage collapsed under point-in-time reconstruction."
+          ],
+          "evidence": {
+            "lineage_path": [
+              "payment_events_after_decision.payment_recorded_at",
+              "feature_pipeline_leaky.days_since_last_payment"
+            ],
+            "source_kind": "post_outcome",
+            "source_available_at": "2026-02-10T09:00:00+00:00",
+            "prediction_time": "2026-01-10T09:00:00+00:00",
+            "deterministic_cutoff_proof": false,
+            "point_in_time_advantage_collapsed": true,
+            "ablation_delta": 0.301712
+          },
+          "exit_code": 3
+        },
+        "safe_control": {
+          "case_id": "credit-default-prior-delinquencies-safe-control",
+          "verdict": "clear_for_release",
+          "reasons": [
+            "No directional post-outcome availability violation was established."
+          ],
+          "evidence": {
+            "lineage_path": [
+              "customer_history_point_in_time.prior_delinquencies",
+              "feature_pipeline_safe.prior_delinquencies"
+            ],
+            "source_kind": "pre_outcome",
+            "source_available_at": "2026-01-09T09:00:00+00:00",
+            "prediction_time": "2026-01-10T09:00:00+00:00",
+            "deterministic_cutoff_proof": false,
+            "point_in_time_advantage_collapsed": false,
+            "ablation_delta": 0.226554
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    "remediation": {
+      "path": "examples/remediation.sql",
+      "sha256": "6069a18533a78f3514a7c279d6ad59a6b532bb946a9182f7155177f848df5ffc",
+      "verification": {
+        "status": "safe",
+        "reason": "A directional availability cutoff protects the post-outcome source.",
+        "referenced_tables": [
+          "applications_at_decision_time",
+          "payment_events_after_decision"
+        ],
+        "cutoff_predicates": [
+          "payment.available_at <= application.prediction_time"
+        ],
+        "post_outcome_table": "payment_events_after_decision",
+        "available_column": "available_at",
+        "prediction_column": "prediction_time",
+        "exit_code": 0
+      }
+    },
+    "writeback": {
+      "status": "awaiting_human_approval",
+      "planned_types": [
+        "field_tag",
+        "structured_property",
+        "audit_document",
+        "active_incident"
+      ],
+      "mutation_performed": false
+    },
+    "exit_code": 3,
+    "ablation_contrast": {
+      "leaked_feature": 0.21,
+      "safe_feature": 0.24,
+      "safe_exceeds_leaked_by": 0.03,
+      "conclusion": "The legitimate feature has the larger ablation delta, yet Hindsight clears it."
+    },
+    "demo_disclosures": [
+      "The deterministic example and point-in-time recording are independent confirmation routes for the same planted defect mechanism.",
+      "The planted leak is total by construction, so observed AUC 1.000000 is expected; real-world leakage can be subtler.",
+      "The 50% majority-loss threshold is a visible demo policy, not a universal scientific constant, and it cannot confirm leakage without directional post-outcome lineage plus an availability-time violation."
+    ],
+    "audit_config": {
+      "name": "credit_default",
+      "scenario": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\scenarios\\credit_default\\scenario.json",
+      "transformation_sql": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\examples\\leaky_feature.sql",
+      "remediation_sql": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\examples\\remediation.sql",
+      "post_outcome_table": "payment_events_after_decision",
+      "available_column": "available_at",
+      "prediction_column": "prediction_time",
+      "target_urn": null,
+      "synthetic": true,
+      "subject": "leaked"
+    }
+  },
+  "publication": null
+}

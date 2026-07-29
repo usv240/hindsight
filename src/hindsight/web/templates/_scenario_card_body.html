@@ -1,0 +1,10 @@
+{#- The inside of a scenario card. Extracted so the local build (a submit
+    button that runs the audit) and the public demo (a link into the run that
+    was already recorded) cannot drift apart. -#}
+<span class="scenario-icon" aria-hidden="true">
+  {%- if s.icon == "bank" %}&#9974;{% elif s.icon == "pulse" %}&#9829;{% elif s.icon == "check" %}&#10003;{% elif s.icon == "hard" %}&#9888;{% else %}&#9873;{% endif -%}
+</span>
+<span class="scenario-domain">{{ s.domain }}</span>
+<h3>{{ s.name }}</h3>
+<p>{{ s.situation }}</p>
+<p class="scenario-q">&ldquo;{{ s.question }}&rdquo;</p>

@@ -337,6 +337,25 @@
       </div>
       {% endif %}
     </div>
+    {% if public_demo() %}
+    {#- The demo has no catalog to write to, and a public form that mutates one
+        would be the exact thing this project argues against. Describe it instead. -#}
+    <div class="callout">
+      <p>
+        <strong>Write-back is disabled on the public demo.</strong>
+        Against a live instance this form publishes four records once a person ticks the
+        approval box: a tag on the offending column, the verdict as a structured property,
+        an audit document, and an open incident{{ info('writeback-types') }}. Each one is
+        read back afterwards, and a write that cannot be re-read is treated as a
+        failure{{ info('reread') }}.
+      </p>
+      <p class="fine">
+        Clone the repository and run <code>uv run hindsight serve</code> against your own
+        DataHub to exercise it. The example record it produces is in
+        <code>examples/audit_document.md</code>.
+      </p>
+    </div>
+    {% else %}
     <form method="post" action="/publish">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="scenario" value="{{ scenario.slug }}">
@@ -360,6 +379,7 @@
         Preview write-back
       </button>
     </form>
+    {% endif %}
   </div>
 </section>
 

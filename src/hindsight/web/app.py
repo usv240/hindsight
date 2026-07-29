@@ -15,6 +15,7 @@ from fastapi.templating import Jinja2Templates
 from hindsight.config import AuditConfig
 from hindsight.demo import run_judge_demo
 from hindsight.scenarios import SCENARIOS, get_scenario, list_scenarios
+from hindsight.web import demo_mode
 from hindsight.web.activity import build_activity
 from hindsight.web.artifacts import collect as collect_artifacts
 from hindsight.web.explain import explain
@@ -44,6 +45,7 @@ def create_app(project_root: Path | None = None) -> FastAPI:
     app.state.csrf_token = csrf_token
     templates.env.globals["csrf_token"] = csrf_token
     app.mount("/static", StaticFiles(directory=WEB_ROOT / "static"), name="static")
+    templates.env.globals["public_demo"] = demo_mode.enabled
 
     # ---- API ------------------------------------------------------------
 
@@ -103,6 +105,7 @@ def create_app(project_root: Path | None = None) -> FastAPI:
         csrf_token: Annotated[str, Form()] = "",
         scenario: Annotated[str, Form()] = "",
     ) -> RedirectResponse:
+        _refuse_if_public_demo()
         _require_csrf(request, csrf_token)
         if scenario and scenario not in SCENARIOS:
             raise HTTPException(status_code=400, detail="Unknown audit scenario")
@@ -160,6 +163,7 @@ def create_app(project_root: Path | None = None) -> FastAPI:
         approve_writeback: Annotated[bool, Form()] = False,
         scenario: Annotated[str, Form()] = "",
     ) -> HTMLResponse:
+        _refuse_if_public_demo()
         _require_csrf(request, csrf_token)
         if scenario and scenario not in SCENARIOS:
             raise HTTPException(status_code=400, detail="Unknown audit scenario")
@@ -229,7 +233,20 @@ def _shell(root: Path, active: str, runs: list[dict[str, Any]]) -> dict[str, Any
         "glossary": GLOSSARY,
         "health": datahub_health(),
         "run_count": len(runs),
+        # In the hosted demo the run buttons become links into recorded runs,
+        # so every template that offers one needs the mapping.
+        "scenario_links": demo_mode.scenario_links(runs),
     }
+
+
+def _refuse_if_public_demo() -> None:
+    """Stop a mutating route before it costs anything.
+
+    Checked first in the handler, ahead of CSRF and argument validation, so the
+    public deployment never trains a model or opens a connection on request.
+    """
+    if demo_mode.enabled():
+        raise HTTPException(status_code=403, detail=demo_mode.REFUSAL)
 
 
 def _render_detail(

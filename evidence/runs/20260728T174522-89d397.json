@@ -1,0 +1,226 @@
+{
+  "schema_version": 2,
+  "run_id": "20260728T174522-89d397",
+  "started_at": "2026-07-28T17:45:22.700366+00:00",
+  "audit": "hospital_readmission",
+  "scenario": "hospital_readmission",
+  "case_id": "readmission-post-discharge-followup",
+  "verdict": "confirmed",
+  "release_decision": "block",
+  "exit_code": 3,
+  "runtime_seconds": 0.099133,
+  "rows": 4000,
+  "target_urn": null,
+  "published": false,
+  "evidence_sha256": "adb628d33bbc83387b56ab65b9697be6ba158314f67317e38e9c1238392edecf",
+  "evidence_bundle": {
+    "schema_version": 1,
+    "case_id": "readmission-post-discharge-followup",
+    "release_decision": "block",
+    "verdict": "confirmed",
+    "confirmation_route": "deterministic_sql_time_proof",
+    "point_in_time_verdict": "high_confidence",
+    "checks": {
+      "transformation_violation_proven": true,
+      "point_in_time_confirmation_passed": false,
+      "safe_control_cleared": true,
+      "proposed_remediation_verifies_safe": true,
+      "no_catalog_mutation_without_approval": true
+    },
+    "trace": [
+      {
+        "step": "transformation_verification",
+        "status": "violation",
+        "reason": "The post-outcome source is referenced, but no directional available_at <= prediction_time cutoff was found. The transformation does not reference available_at."
+      },
+      {
+        "step": "point_in_time_reconstruction",
+        "status": "failed",
+        "excluded_post_cutoff_records": 4000
+      },
+      {
+        "step": "deterministic_verdict",
+        "status": "confirmed",
+        "reason": "The transformation joins a post-outcome source with no availability cutoff, which proves post-cutoff information entered the feature."
+      },
+      {
+        "step": "safe_control",
+        "status": "clear_for_release",
+        "ablation_delta": 0.207554
+      },
+      {
+        "step": "writeback",
+        "status": "awaiting_human_approval"
+      }
+    ],
+    "sql_verification": {
+      "status": "violation",
+      "reason": "The post-outcome source is referenced, but no directional available_at <= prediction_time cutoff was found. The transformation does not reference available_at.",
+      "referenced_tables": [
+        "discharges_at_decision_time",
+        "followup_appointments_after_discharge"
+      ],
+      "cutoff_predicates": [],
+      "post_outcome_table": "followup_appointments_after_discharge",
+      "available_column": "available_at",
+      "prediction_column": "prediction_time",
+      "exit_code": 3
+    },
+    "validation": {
+      "schema_version": 1,
+      "scenario": "readmission_at_discharge",
+      "config_sha256": "26248ad0efa1b11f1b142126503606552ace07a01935d0756a06ecef92545fa1",
+      "seed": 20260728,
+      "rows": 4000,
+      "runtime_seconds": 0.099133,
+      "status": "failed",
+      "checks": {
+        "post_cutoff_records_were_excluded": true,
+        "leaked_feature_advantage_collapsed": false,
+        "safe_feature_has_large_ablation_delta": true,
+        "safe_feature_advantage_persisted": true,
+        "safe_feature_is_point_in_time_stable": true
+      },
+      "reconstruction": {
+        "engine": "duckdb",
+        "cutoff_predicate": "available_at <= prediction_time",
+        "excluded_post_cutoff_records": 4000
+      },
+      "evidence_context": {
+        "decision_node": "discharges_at_decision_time.prediction_time",
+        "leakage_case_id": "readmission-post-discharge-followup",
+        "safe_case_id": "readmission-prior-admissions-safe-control",
+        "leakage_model_urn": "urn:li:mlModel:hindsight.readmission_v1_leaky",
+        "safe_model_urn": "urn:li:mlModel:hindsight.readmission_v2_safe",
+        "leakage_feature_urn": "urn:li:schemaField:(hindsight.readmission_feature_pipeline,followup_appointments_booked)",
+        "safe_feature_urn": "urn:li:schemaField:(hindsight.patient_history_point_in_time,prior_admissions_12m)",
+        "leakage_lineage_path": [
+          "followup_appointments_after_discharge.booked_at",
+          "readmission_feature_pipeline.followup_appointments_booked"
+        ],
+        "safe_lineage_path": [
+          "patient_history_point_in_time.prior_admissions_12m",
+          "readmission_feature_pipeline_safe.prior_admissions_12m"
+        ],
+        "leakage_available_offset_days": 22,
+        "safe_available_offset_days": -1,
+        "leakage_feature_name": "followup_appointments_booked",
+        "safe_feature_name": "prior_admissions_12m"
+      },
+      "leakage_case": {
+        "baseline_auc": 0.725227,
+        "observed_auc": 1.0,
+        "point_in_time_auc": 0.865901,
+        "observed_advantage": 0.274773,
+        "point_in_time_advantage": 0.140674,
+        "advantage_retained": 0.511964,
+        "collapsed": false
+      },
+      "safe_control": {
+        "baseline_auc": 0.725227,
+        "observed_auc": 0.932781,
+        "point_in_time_auc": 0.932781,
+        "observed_advantage": 0.207554,
+        "point_in_time_advantage": 0.207554,
+        "advantage_retained": 1.0,
+        "collapsed": false
+      },
+      "verdicts": {
+        "leakage_case": {
+          "case_id": "readmission-post-discharge-followup",
+          "verdict": "high_confidence",
+          "reasons": [
+            "Directional outcome lineage and an availability-time violation are established."
+          ],
+          "evidence": {
+            "lineage_path": [
+              "followup_appointments_after_discharge.booked_at",
+              "readmission_feature_pipeline.followup_appointments_booked"
+            ],
+            "source_kind": "post_outcome",
+            "source_available_at": "2026-02-01T09:00:00+00:00",
+            "prediction_time": "2026-01-10T09:00:00+00:00",
+            "deterministic_cutoff_proof": false,
+            "point_in_time_advantage_collapsed": false,
+            "ablation_delta": 0.274773
+          },
+          "exit_code": 3
+        },
+        "safe_control": {
+          "case_id": "readmission-prior-admissions-safe-control",
+          "verdict": "clear_for_release",
+          "reasons": [
+            "No directional post-outcome availability violation was established."
+          ],
+          "evidence": {
+            "lineage_path": [
+              "patient_history_point_in_time.prior_admissions_12m",
+              "readmission_feature_pipeline_safe.prior_admissions_12m"
+            ],
+            "source_kind": "pre_outcome",
+            "source_available_at": "2026-01-09T09:00:00+00:00",
+            "prediction_time": "2026-01-10T09:00:00+00:00",
+            "deterministic_cutoff_proof": false,
+            "point_in_time_advantage_collapsed": false,
+            "ablation_delta": 0.207554
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    "remediation": {
+      "path": "examples/hospital_readmission_remediation.sql",
+      "sha256": "636337331471725d6ef5b1feaa5be228058b005cfe6093c8db07af01132bfb4c",
+      "verification": {
+        "status": "safe",
+        "reason": "A directional availability cutoff protects the post-outcome source.",
+        "referenced_tables": [
+          "discharges_at_decision_time",
+          "followup_appointments_after_discharge"
+        ],
+        "cutoff_predicates": [
+          "evt.available_at <= src.prediction_time"
+        ],
+        "post_outcome_table": "followup_appointments_after_discharge",
+        "available_column": "available_at",
+        "prediction_column": "prediction_time",
+        "exit_code": 0
+      }
+    },
+    "writeback": {
+      "status": "awaiting_human_approval",
+      "planned_types": [
+        "field_tag",
+        "structured_property",
+        "audit_document",
+        "active_incident"
+      ],
+      "mutation_performed": false
+    },
+    "exit_code": 3,
+    "ablation_contrast": {
+      "leaked_feature": 0.21,
+      "safe_feature": 0.24,
+      "safe_exceeds_leaked_by": 0.03,
+      "conclusion": "The legitimate feature has the larger ablation delta, yet Hindsight clears it."
+    },
+    "demo_disclosures": [
+      "The deterministic example and point-in-time recording are independent confirmation routes for the same planted defect mechanism.",
+      "The planted leak is total by construction, so observed AUC 1.000000 is expected; real-world leakage can be subtler.",
+      "The 50% majority-loss threshold is a visible demo policy, not a universal scientific constant, and it cannot confirm leakage without directional post-outcome lineage plus an availability-time violation."
+    ],
+    "audit_config": {
+      "name": "hospital_readmission",
+      "scenario": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\scenarios\\hospital_readmission\\scenario.json",
+      "transformation_sql": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\examples\\hospital_readmission_leaky.sql",
+      "remediation_sql": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\examples\\hospital_readmission_remediation.sql",
+      "post_outcome_table": "followup_appointments_after_discharge",
+      "available_column": "available_at",
+      "prediction_column": "prediction_time",
+      "target_urn": null,
+      "synthetic": true,
+      "subject": "leaked"
+    }
+  },
+  "publication": null
+}

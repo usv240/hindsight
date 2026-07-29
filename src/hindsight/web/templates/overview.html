@@ -51,7 +51,19 @@
   </figure>
 </section>
 
-{% if health.state != "connected" %}
+{#- Locally, "not configured" is a thing you can fix, so the banner says how.
+    On the public demo it is the permanent and correct state, and telling a
+    visitor to set an environment variable they have no shell for reads as a
+    broken deployment rather than a deliberate one. -#}
+{% if public_demo() %}
+<div class="banner" data-state="info">
+  <strong>Read-only demo.</strong>
+  Every audit below was produced by the real tool against metadata recorded from a live
+  DataHub Core instance. Running new audits and writing findings back to a catalog are
+  disabled here.
+  <a href="https://github.com/usv240/hindsight">Run it yourself</a>
+</div>
+{% elif health.state != "connected" %}
 <div class="banner" data-state="{{ health.state }}">
   <strong>{{ health.label }}.</strong> {{ health.detail }}
   {% if health.state == "not_configured" %}
@@ -73,20 +85,26 @@
     </div>
   </div>
   <div class="scenarios">
+    {#- Same card either way. Locally it runs the audit; on the public demo it
+        opens the run that was already recorded, so a visitor still reaches every
+        scenario without being able to spend the server's CPU. -#}
     {% for s in scenarios %}
+    {% set recorded = scenario_links.get(s.slug) %}
+    {% if public_demo() %}
+    {#- A scenario with no recorded run still gets a card. Dropping it would
+        silently shorten the list and nobody would know a scenario existed. -#}
+    <a class="scenario-card" href="{{ '/audits/' ~ recorded if recorded else '/audits' }}">
+      {% include "_scenario_card_body.html" %}
+    </a>
+    {% else %}
     <form method="post" action="/audits/run" class="scenario-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="scenario" value="{{ s.slug }}">
       <button class="scenario-card" type="submit">
-        <span class="scenario-icon" aria-hidden="true">
-          {%- if s.icon == "bank" %}&#9974;{% elif s.icon == "pulse" %}&#9829;{% elif s.icon == "check" %}&#10003;{% elif s.icon == "hard" %}&#9888;{% else %}&#9873;{% endif -%}
-        </span>
-        <span class="scenario-domain">{{ s.domain }}</span>
-        <h3>{{ s.name }}</h3>
-        <p>{{ s.situation }}</p>
-        <p class="scenario-q">&ldquo;{{ s.question }}&rdquo;</p>
+        {% include "_scenario_card_body.html" %}
       </button>
     </form>
+    {% endif %}
     {% endfor %}
   </div>
 </section>
@@ -177,10 +195,12 @@
 <section class="empty">
   <h2>No audits recorded yet</h2>
   <p>Run one to produce evidence. It works offline, with no DataHub required.</p>
-  <form method="post" action="/audits/run">
+  {% if not public_demo() %}
+<form method="post" action="/audits/run">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <button class="btn" type="submit">Run an audit now</button>
   </form>
+{% endif %}
 </section>
 {% endif %}
 

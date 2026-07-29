@@ -2045,3 +2045,7 @@ h3 { letter-spacing: -0.015em; }
 .head-controls { display: grid; gap: var(--sp-2); justify-items: end; }
 .btn.is-print { font-size: var(--step--1); padding: var(--sp-2) var(--sp-4); }
 @media (max-width: 640px) { .head-controls { justify-items: start; } }
+
+/* The demo banner states a deliberate condition, not a fault, so it wears the
+   accent rather than a warning colour. */
+.banner[data-state="info"] { border-color: var(--accent); background: var(--accent-soft); }

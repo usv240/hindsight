@@ -1,0 +1,229 @@
+{
+  "schema_version": 2,
+  "run_id": "20260729T044318-0be937",
+  "started_at": "2026-07-29T04:43:18.670066+00:00",
+  "audit": "fraud_screening",
+  "scenario": "fraud_screening",
+  "case_id": "fraud-screening-post-authorisation-dispute",
+  "verdict": "confirmed",
+  "release_decision": "block",
+  "exit_code": 3,
+  "runtime_seconds": 0.08066,
+  "rows": 4000,
+  "target_urn": null,
+  "published": false,
+  "evidence_sha256": "27e6eb32306393bf63fe4f6565fa83cc4fe8229f62b4b4aae1df460ebbad8d1a",
+  "evidence_bundle": {
+    "schema_version": 1,
+    "case_id": "fraud-screening-post-authorisation-dispute",
+    "release_decision": "block",
+    "verdict": "confirmed",
+    "confirmation_route": "deterministic_sql_time_proof",
+    "point_in_time_verdict": "high_confidence",
+    "checks": {
+      "transformation_violation_proven": true,
+      "point_in_time_confirmation_passed": false,
+      "safe_control_cleared": true,
+      "proposed_remediation_verifies_safe": true,
+      "no_catalog_mutation_without_approval": true
+    },
+    "trace": [
+      {
+        "step": "transformation_verification",
+        "status": "violation",
+        "reason": "The post-outcome source is referenced, but no directional available_at <= prediction_time cutoff was found. The transformation does not reference available_at."
+      },
+      {
+        "step": "point_in_time_reconstruction",
+        "status": "failed",
+        "excluded_post_cutoff_records": 4000
+      },
+      {
+        "step": "deterministic_verdict",
+        "status": "confirmed",
+        "reason": "The transformation joins a post-outcome source with no availability cutoff, which proves post-cutoff information entered the feature."
+      },
+      {
+        "step": "safe_control",
+        "status": "clear_for_release",
+        "ablation_delta": 0.279669
+      },
+      {
+        "step": "writeback",
+        "status": "awaiting_human_approval"
+      }
+    ],
+    "sql_verification": {
+      "status": "violation",
+      "reason": "The post-outcome source is referenced, but no directional available_at <= prediction_time cutoff was found. The transformation does not reference available_at.",
+      "referenced_tables": [
+        "disputes_after_authorisation",
+        "transactions_at_decision_time"
+      ],
+      "cutoff_predicates": [],
+      "post_outcome_table": "disputes_after_authorisation",
+      "available_column": "available_at",
+      "prediction_column": "prediction_time",
+      "exit_code": 3
+    },
+    "validation": {
+      "schema_version": 1,
+      "scenario": "fraud_at_authorisation",
+      "config_sha256": "f2867a2b76cbde50878d23531df04943e51bda759c6edad795490a881593ea73",
+      "seed": 20260729,
+      "rows": 4000,
+      "runtime_seconds": 0.08066,
+      "status": "failed",
+      "checks": {
+        "post_cutoff_records_were_excluded": true,
+        "leaked_feature_advantage_collapsed": false,
+        "safe_feature_has_large_ablation_delta": true,
+        "safe_feature_advantage_persisted": true,
+        "safe_feature_is_point_in_time_stable": true
+      },
+      "reconstruction": {
+        "engine": "duckdb",
+        "cutoff_predicate": "available_at <= prediction_time",
+        "excluded_post_cutoff_records": 4000,
+        "input": {
+          "adapter": "frozen_generator"
+        }
+      },
+      "evidence_context": {
+        "decision_node": "transactions_at_decision_time.prediction_time",
+        "leakage_case_id": "fraud-screening-post-authorisation-dispute",
+        "safe_case_id": "fraud-screening-account-age-safe-control",
+        "leakage_model_urn": "urn:li:mlModel:hindsight.fraud_screening_v1_leaky",
+        "safe_model_urn": "urn:li:mlModel:hindsight.fraud_screening_v2_safe",
+        "leakage_feature_urn": "urn:li:schemaField:(hindsight.fraud_feature_pipeline,disputes_on_account)",
+        "safe_feature_urn": "urn:li:schemaField:(hindsight.account_history_point_in_time,account_age_days)",
+        "leakage_lineage_path": [
+          "disputes_after_authorisation.dispute_filed_at",
+          "fraud_feature_pipeline.disputes_on_account"
+        ],
+        "safe_lineage_path": [
+          "account_history_point_in_time.account_age_days",
+          "fraud_feature_pipeline_safe.account_age_days"
+        ],
+        "leakage_available_offset_days": 9,
+        "safe_available_offset_days": -1,
+        "leakage_feature_name": "disputes_on_account",
+        "safe_feature_name": "account_age_days"
+      },
+      "leakage_case": {
+        "baseline_auc": 0.643189,
+        "observed_auc": 1.0,
+        "point_in_time_auc": 0.82829,
+        "observed_advantage": 0.356811,
+        "point_in_time_advantage": 0.185101,
+        "advantage_retained": 0.518765,
+        "collapsed": false
+      },
+      "safe_control": {
+        "baseline_auc": 0.643189,
+        "observed_auc": 0.922858,
+        "point_in_time_auc": 0.922858,
+        "observed_advantage": 0.279669,
+        "point_in_time_advantage": 0.279669,
+        "advantage_retained": 1.0,
+        "collapsed": false
+      },
+      "verdicts": {
+        "leakage_case": {
+          "case_id": "fraud-screening-post-authorisation-dispute",
+          "verdict": "high_confidence",
+          "reasons": [
+            "Directional outcome lineage and an availability-time violation are established."
+          ],
+          "evidence": {
+            "lineage_path": [
+              "disputes_after_authorisation.dispute_filed_at",
+              "fraud_feature_pipeline.disputes_on_account"
+            ],
+            "source_kind": "post_outcome",
+            "source_available_at": "2026-01-19T09:00:00+00:00",
+            "prediction_time": "2026-01-10T09:00:00+00:00",
+            "deterministic_cutoff_proof": false,
+            "point_in_time_advantage_collapsed": false,
+            "ablation_delta": 0.356811
+          },
+          "exit_code": 3
+        },
+        "safe_control": {
+          "case_id": "fraud-screening-account-age-safe-control",
+          "verdict": "clear_for_release",
+          "reasons": [
+            "No directional post-outcome availability violation was established."
+          ],
+          "evidence": {
+            "lineage_path": [
+              "account_history_point_in_time.account_age_days",
+              "fraud_feature_pipeline_safe.account_age_days"
+            ],
+            "source_kind": "pre_outcome",
+            "source_available_at": "2026-01-09T09:00:00+00:00",
+            "prediction_time": "2026-01-10T09:00:00+00:00",
+            "deterministic_cutoff_proof": false,
+            "point_in_time_advantage_collapsed": false,
+            "ablation_delta": 0.279669
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    "remediation": {
+      "path": "examples/fraud_screening_remediation.sql",
+      "sha256": "553c4efe262374dc95bf31755aaab021b89001c6da171d724300962198ae4fb7",
+      "verification": {
+        "status": "safe",
+        "reason": "A directional availability cutoff protects the post-outcome source.",
+        "referenced_tables": [
+          "disputes_after_authorisation",
+          "transactions_at_decision_time"
+        ],
+        "cutoff_predicates": [
+          "evt.available_at <= src.prediction_time"
+        ],
+        "post_outcome_table": "disputes_after_authorisation",
+        "available_column": "available_at",
+        "prediction_column": "prediction_time",
+        "exit_code": 0
+      }
+    },
+    "writeback": {
+      "status": "awaiting_human_approval",
+      "planned_types": [
+        "field_tag",
+        "structured_property",
+        "audit_document",
+        "active_incident"
+      ],
+      "mutation_performed": false
+    },
+    "exit_code": 3,
+    "ablation_contrast": {
+      "leaked_feature": 0.21,
+      "safe_feature": 0.24,
+      "safe_exceeds_leaked_by": 0.03,
+      "conclusion": "The legitimate feature has the larger ablation delta, yet Hindsight clears it."
+    },
+    "demo_disclosures": [
+      "The deterministic example and point-in-time recording are independent confirmation routes for the same planted defect mechanism.",
+      "The planted leak is total by construction, so observed AUC 1.000000 is expected; real-world leakage can be subtler.",
+      "The 50% majority-loss threshold is a visible demo policy, not a universal scientific constant, and it cannot confirm leakage without directional post-outcome lineage plus an availability-time violation."
+    ],
+    "audit_config": {
+      "name": "fraud_screening",
+      "scenario": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\scenarios\\fraud_screening\\scenario.json",
+      "transformation_sql": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\examples\\fraud_screening_leaky.sql",
+      "remediation_sql": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\examples\\fraud_screening_remediation.sql",
+      "post_outcome_table": "disputes_after_authorisation",
+      "available_column": "available_at",
+      "prediction_column": "prediction_time",
+      "target_urn": null,
+      "synthetic": true,
+      "subject": "leaked"
+    }
+  },
+  "publication": null
+}
