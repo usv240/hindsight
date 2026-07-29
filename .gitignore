@@ -10,4 +10,18 @@ build/
 *.egg-info/
 .env
 *.local.json
+
+# Audit history is local product state, so it is not committed - except the five
+# seeded runs, one per scenario. Those are tracked deliberately: without them a
+# fresh clone opens the console on an empty page.
+#
+# The negations are not cosmetic. `railway up` builds its upload archive by
+# respecting .gitignore, so an ignored file never reaches the build context and
+# .dockerignore never gets a say. The deployed demo came up with zero runs until
+# these lines existed.
 evidence/runs/*.json
+!evidence/runs/20260728T174522-89d397.json
+!evidence/runs/20260728T175344-81df34.json
+!evidence/runs/20260729T044318-0be937.json
+!evidence/runs/20260729T050141-dc73ad.json
+!evidence/runs/20260729T050250-693684.json

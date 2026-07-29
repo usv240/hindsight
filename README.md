@@ -8,6 +8,10 @@ The model was never good — one of its features quietly contained the answer. S
 
 **Hindsight proves whether that happened, before the model is released.**
 
+**[See it running](https://hindsight-production-abf8.up.railway.app)** - a read-only demo serving five real audits, no setup.
+Running new audits and writing to a catalog are disabled there; clone and run
+`uv run hindsight serve` to do either.
+
 ---
 
 ## Why this needs DataHub
