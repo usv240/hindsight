@@ -11,7 +11,7 @@
   "files": [
     {
       "path": "ground_truth.json",
-      "sha256": "3c38aa5fd6397d4416e5654339b792f8546fac80ce854350d01b6b890d55082a"
+      "sha256": "ccddce80695e38a032de3b2b6c3e6caa424a6940ccda48066310c2d352fd67b5"
     },
     {
       "path": "remediation.sql",
