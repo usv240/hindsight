@@ -104,7 +104,7 @@ def build_timeline(bundle: dict[str, Any], scenario: dict[str, Any]) -> Timeline
             start_pct=pct(start),
             end_pct=CUTOFF_PCT,
             kind="source",
-            note="entirely pre-cutoff",
+            note="all of it existed before the decision",
         ),
         Track(
             label=safe_feature_asset,
@@ -112,7 +112,7 @@ def build_timeline(bundle: dict[str, Any], scenario: dict[str, Any]) -> Timeline
             start_pct=pct(start + timedelta(days=6)),
             end_pct=CUTOFF_PCT,
             kind="safe",
-            note="stops at the cutoff - cleared for release",
+            note="stops at the decision - cleared for release",
         ),
         Track(
             label=leak_feature_asset,
@@ -123,7 +123,7 @@ def build_timeline(bundle: dict[str, Any], scenario: dict[str, Any]) -> Timeline
             crosses=True,
             reach_pct=pct(leak_reach),
             days_after=days_after,
-            note=f"reaches {days_after} days past the decision",
+            note=f"still collecting data {days_after} days after the decision",
         ),
     ]
 

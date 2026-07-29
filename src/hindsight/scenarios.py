@@ -98,7 +98,10 @@ SCENARIOS: dict[str, Scenario] = {
             },
             {
                 "when": "Later",
-                "what": "Someone builds a training set and joins in all payment history.",
+                "what": (
+                    "Someone gathers examples to teach the model, and attaches "
+                    "every payment on record."
+                ),
                 "note": "The model can now see Day 31 while pretending to sit on Day 0.",
             },
             {
@@ -146,8 +149,10 @@ SCENARIOS: dict[str, Scenario] = {
             },
             {
                 "when": "Later",
-                "what": "The training set is rebuilt with the availability guard in place.",
-                "note": "Only pre-decision facts survive the join.",
+                "what": (
+                    "The examples are gathered again, keeping only what was on record at the time."
+                ),
+                "note": "Only facts that already existed survive.",
             },
             {
                 "when": "Testing",
@@ -244,7 +249,7 @@ SCENARIOS: dict[str, Scenario] = {
             },
             {
                 "when": "Later",
-                "what": "The training set joins in all appointments, whenever they happened.",
+                "what": "The examples attach every appointment, whenever it was booked.",
                 "note": "The model reads Day 22 while pretending to sit on Day 0.",
             },
             {

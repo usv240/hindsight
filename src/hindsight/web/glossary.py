@@ -59,6 +59,38 @@ GLOSSARY: dict[str, dict[str, str]] = {
             "information originated."
         ),
     },
+    "urn": {
+        "term": "URN",
+        "short": "DataHub's name for one specific thing.",
+        "body": (
+            "Every table, column and model in the catalog gets one unique identifier, "
+            "so two teams talking about 'the payments table' can be sure they mean the "
+            "same one. It reads left to right: the kind of thing, then where it lives, "
+            "then its name. You never have to type one - it is shown so that a finding "
+            "can be traced to exactly one asset and no other."
+        ),
+    },
+    "pipeline": {
+        "term": "Pipeline",
+        "short": "The code that builds one table from others.",
+        "body": (
+            "Data rarely arrives ready to use. A pipeline is the step that reads some "
+            "tables, does something to them, and writes a new one. The defect this tool "
+            "looks for is usually created inside a pipeline, long before anyone starts "
+            "training a model - which is why looking only at the model misses it."
+        ),
+    },
+    "confirmation-policy": {
+        "term": "Confirmation policy",
+        "short": "How much collapse counts as proof.",
+        "body": (
+            "Rebuilding a model without the future always lowers its score a little. "
+            "The policy is the line, written down in advance, above which that drop "
+            "counts as proof rather than noise. Choosing it after seeing the result "
+            "would let anyone prove anything, so it is fixed first and the measured "
+            "margin against it is published either way."
+        ),
+    },
     "prediction-cutoff": {
         "term": "Prediction cutoff",
         "short": "The moment the model must decide.",

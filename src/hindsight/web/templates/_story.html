@@ -117,8 +117,9 @@
         <div>
           <strong>We read the code that built it</strong>
           <span>
-            The query pulls from a table whose rows only appear after the decision, with
-            nothing stopping it. That is proof, not an estimate &mdash; no retraining needed.
+            The code that builds the feature reads from a table whose rows only appear
+            after the decision, with nothing stopping it. That is proof, not an estimate
+            &mdash; no retraining needed.
           </span>
         </div>
       </div>
@@ -131,10 +132,10 @@
           <span>
             {% if bundle.validation.leakage_case.collapsed %}
             With the future removed, the model lost enough of its edge to cross the configured
-            confirmation policy.
+            confirmation policy{{ info('confirmation-policy') }}.
             {% else %}
             Performance fell when future data was removed, but not far enough to cross the
-            configured confirmation policy. This route is supporting evidence only.
+            configured confirmation policy{{ info('confirmation-policy') }}. This route is supporting evidence only.
             {% endif %}
           </span>
         </div>
@@ -176,8 +177,8 @@
         <p class="trust-q">&ldquo;The numbers were tuned to look good.&rdquo;</p>
         <p class="trust-a">
           The data generator is <strong>frozen</strong> and its seed committed. Whatever it
-          produces is published &mdash; including a threshold that was missed by
-          <strong>5.1 points</strong>, disclosed rather than hidden.
+          produces is published &mdash; including a confirmation policy{{ info('confirmation-policy') }} that was missed
+          by <strong>5.1 points</strong>, disclosed rather than hidden.
         </p>
       </article>
       <article class="trust-item">

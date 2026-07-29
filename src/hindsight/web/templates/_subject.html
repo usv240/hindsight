@@ -25,7 +25,13 @@
       <p class="subject-label">Model</p>
       <p class="subject-name">{{ subject.model.name }}</p>
       <p class="subject-sub">{{ subject.model.note }}</p>
-      <code class="subject-urn" title="{{ subject.model.urn }}">{{ subject.model.urn }}</code>
+      {#- A bare urn:li:... string is meaningless to anyone who has not seen one.
+          It stays, because it is what makes the finding traceable, but it now
+          says what it is. -#}
+      <p class="subject-urn-row">
+        <span class="subject-urn-label">Its id in DataHub{{ info('urn') }}</span>
+        <code class="subject-urn" title="{{ subject.model.urn }}">{{ subject.model.urn }}</code>
+      </p>
     </div>
     {% endif %}
 
@@ -34,7 +40,8 @@
       <p class="subject-label">Feature examined</p>
       <p class="subject-name">{{ subject.feature.name }}</p>
       <p class="subject-sub">
-        in <code>{{ subject.feature.table }}</code> &mdash; {{ subject.feature.note | lower }}
+        built by the pipeline{{ info('pipeline') }}
+        <code>{{ subject.feature.table }}</code> &mdash; {{ subject.feature.note | lower }}
       </p>
     </div>
     {% endif %}
@@ -45,7 +52,7 @@
       dates are shown as a span with the gap called out between them. -#}
   <div class="subject-when{% if subject.timing.late %} is-late{% endif %}">
     <div class="when-point">
-      <span class="when-label">Decision made</span>
+      <span class="when-label">Decision made{{ info('prediction-cutoff') }}</span>
       <span class="when-date">{{ subject.timing.cutoff }}</span>
       <span class="when-note">Nothing after this was knowable</span>
     </div>
