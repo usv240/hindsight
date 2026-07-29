@@ -875,10 +875,84 @@ pre.sql {
   .log-line .src { display: none; }
 }
 
+/* -- Print ----------------------------------------------------------------
+   A release audit is a record, and records get printed, attached to a change
+   request, or filed as a PDF. That page should look deliberate rather than
+   like a web page someone hit Ctrl+P on.
+
+   It prints what is on screen: whichever reading level you chose is the one
+   you get, because a printout that silently differs from the page you were
+   reading is worse than no printout.
+------------------------------------------------------------------------- */
+
 @media print {
-  .topbar, .log-controls, .theme-toggle, form { display: none; }
-  .panel { break-inside: avoid; box-shadow: none; }
+  /* Dark mode on paper is unreadable and empties a cartridge. Force the light
+     token set regardless of the visitor's theme. */
+  :root, :root[data-theme="dark"], :root[data-theme="light"] {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #ffffff;
+    --border: #c8cdd8;
+    --border-strong: #9aa2b4;
+    --text: #000000;
+    --text-muted: #33384a;
+    --text-faint: #4a5164;
+    --accent: #2a2f8f;
+    --accent-ink: #ffffff;
+    --accent-soft: #eeeefb;
+    --shadow: none;
+    --grid-line: transparent;
+  }
+
+  /* Verdict colour is evidence, not decoration - a printed BLOCK that came out
+     grey has lost the thing the reader needs first. */
+  * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+
+  @page { margin: 16mm 14mm; }
+
+  html, body { background: #fff; font-size: 10.5pt; }
+
+  /* Navigation, controls and anything that only exists to be clicked. */
+  .sidebar, .topbar, .jumpnav, .mode-switch, .theme-toggle,
+  .log-controls, .btn, form, .info, .scenario-picker, .skip-link { display: none !important; }
+
+  .app { display: block; }
+  .content { display: block; max-width: none; padding: 0; }
+  .content > * { animation: none !important; margin-bottom: 10mm; }
+
+  /* Panels are the natural page unit; keep each one whole where it fits. */
+  .panel, .story-verdict, .analogy, .how-we-knew, .routes, .trust-item,
+  .story-card, .beat, .card, .story-timeline {
+    break-inside: avoid;
+    box-shadow: none;
+  }
+  .panel::before, .story-verdict::before, .analogy::before,
+  .how-we-knew::before, .routes::before, .trust::before,
+  .story-timeline::before { display: none; }
+
+  h1, h2, h3 { break-after: avoid; }
+
+  /* Collapsed detail is invisible on paper, and the timeline's table twin is
+     the accessible copy of the chart - it should be in the record. */
+  details { display: block; }
+  details > summary { display: none; }
+  details > *:not(summary) { display: revert; }
+
+  /* A citation the reader cannot follow is not a citation. */
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 8.5pt;
+    color: #33384a;
+    word-break: break-all;
+  }
+
+  /* Loose pages need to say which run they came from. */
+  .print-slug { display: block !important; }
 }
+
+/* On screen this is redundant with the breadcrumb; on paper it is the only
+   thing tying the sheet to a run. */
+.print-slug { display: none; }
 
 /* -- App shell responsive -------------------------------------------------- */
 
@@ -1959,3 +2033,15 @@ h3 { letter-spacing: -0.015em; }
   color: var(--accent-ink);
 }
 .jumpnav a.is-current:hover { background: var(--accent); color: var(--accent-ink); }
+
+.print-slug {
+  font-size: 9.5pt;
+  color: var(--text-muted);
+  padding-bottom: 3mm;
+  margin-bottom: 6mm;
+  border-bottom: 1px solid var(--border);
+}
+
+.head-controls { display: grid; gap: var(--sp-2); justify-items: end; }
+.btn.is-print { font-size: var(--step--1); padding: var(--sp-2) var(--sp-4); }
+@media (max-width: 640px) { .head-controls { justify-items: start; } }

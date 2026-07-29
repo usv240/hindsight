@@ -12,15 +12,28 @@
 
 {% block content %}
 
+{#- Print only. A sheet that leaves the printer with no run id is not evidence. -#}
+<p class="print-slug">
+  Hindsight release audit &middot; run <code>{{ run.run_id if run else "live" }}</code>
+  &middot; case <code>{{ bundle.case_id }}</code>
+  &middot; verdict <strong>{{ bundle.verdict }}</strong>
+  &middot; decision <strong>{{ bundle.release_decision | upper }}</strong>
+</p>
+
 <section class="page-head">
   <div>
     <p class="eyebrow">{{ scenario.domain }} &middot; {{ scenario.name }}</p>
     <h1>{{ scenario.question }}</h1>
     <p class="lede">{{ scenario.situation }}</p>
   </div>
-  <div class="mode-switch" role="group" aria-label="Reading level">
-    <button type="button" data-mode="plain" aria-pressed="true">Plain English</button>
-    <button type="button" data-mode="technical" aria-pressed="false">Technical</button>
+  <div class="head-controls">
+    <div class="mode-switch" role="group" aria-label="Reading level">
+      <button type="button" data-mode="plain" aria-pressed="true">Plain English</button>
+      <button type="button" data-mode="technical" aria-pressed="false">Technical</button>
+    </div>
+    {#- Nobody discovers Ctrl+P on a web app, and this record is meant to be
+        filed against a change request. -#}
+    <button type="button" class="btn ghost is-print" data-print>Save as PDF</button>
   </div>
 </section>
 

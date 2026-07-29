@@ -475,8 +475,22 @@
     update();
   }
 
+  /* -- 9. Print ------------------------------------------------------------
+     The print stylesheet does the work; this is only so the affordance exists
+     for someone who would never think to press Ctrl+P on a web app.
+  --------------------------------------------------------------------------- */
+
+  function initPrint() {
+    var button = document.querySelector("[data-print]");
+    if (!button) return;
+    button.addEventListener("click", function () {
+      window.print();
+    });
+  }
+
   function boot() {
     initTheme();
+    initPrint();
     initModeSwitch();
     initSectionSpy();
     initPopovers();
