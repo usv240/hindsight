@@ -12,7 +12,7 @@
   "rows": 4000,
   "target_urn": null,
   "published": false,
-  "evidence_sha256": "a24289cb1578127e3bd2398bdc7490bd74ba40b3328dbebd98d3835d85d699ec",
+  "evidence_sha256": "9443da3beb019eeb25d8e1ddfd652884463b838dd55b8260e68cc81be248f5b0",
   "evidence_bundle": {
     "schema_version": 1,
     "case_id": "credit-default-leaked-payment-event",
@@ -93,8 +93,8 @@
         "decision_node": "applications_at_decision_time.prediction_time",
         "leakage_case_id": "credit-default-leaked-payment-event",
         "safe_case_id": "credit-default-prior-delinquencies-safe-control",
-        "leakage_model_urn": "urn:li:mlModel:hindsight.credit_default_v1_leaky",
-        "safe_model_urn": "urn:li:mlModel:hindsight.credit_default_v2_safe",
+        "leakage_model_urn": "urn:li:mlModel:(urn:li:dataPlatform:mlflow,hindsight.credit_default_v1_leaky,PROD)",
+        "safe_model_urn": "urn:li:mlModel:(urn:li:dataPlatform:mlflow,hindsight.credit_default_v2_safe,PROD)",
         "leakage_feature_urn": "urn:li:schemaField:(hindsight.feature_pipeline_leaky,days_since_last_payment)",
         "safe_feature_urn": "urn:li:schemaField:(hindsight.customer_history_point_in_time,prior_delinquencies)",
         "leakage_lineage_path": [
@@ -214,9 +214,9 @@
     ],
     "audit_config": {
       "name": "credit_default",
-      "scenario": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\scenarios\\credit_default\\scenario.json",
-      "transformation_sql": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\examples\\leaky_feature.sql",
-      "remediation_sql": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\examples\\remediation.sql",
+      "scenario": "scenarios/credit_default/scenario.json",
+      "transformation_sql": "examples/leaky_feature.sql",
+      "remediation_sql": "examples/remediation.sql",
       "post_outcome_table": "payment_events_after_decision",
       "available_column": "available_at",
       "prediction_column": "prediction_time",

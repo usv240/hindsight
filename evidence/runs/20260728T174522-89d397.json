@@ -12,7 +12,7 @@
   "rows": 4000,
   "target_urn": null,
   "published": false,
-  "evidence_sha256": "adb628d33bbc83387b56ab65b9697be6ba158314f67317e38e9c1238392edecf",
+  "evidence_sha256": "f9347ff86c2ead115133dca79fad7412d5dfc151bb8514e04325fdb81e88ec53",
   "evidence_bundle": {
     "schema_version": 1,
     "case_id": "readmission-post-discharge-followup",
@@ -90,8 +90,8 @@
         "decision_node": "discharges_at_decision_time.prediction_time",
         "leakage_case_id": "readmission-post-discharge-followup",
         "safe_case_id": "readmission-prior-admissions-safe-control",
-        "leakage_model_urn": "urn:li:mlModel:hindsight.readmission_v1_leaky",
-        "safe_model_urn": "urn:li:mlModel:hindsight.readmission_v2_safe",
+        "leakage_model_urn": "urn:li:mlModel:(urn:li:dataPlatform:mlflow,hindsight.readmission_v1_leaky,PROD)",
+        "safe_model_urn": "urn:li:mlModel:(urn:li:dataPlatform:mlflow,hindsight.readmission_v2_safe,PROD)",
         "leakage_feature_urn": "urn:li:schemaField:(hindsight.readmission_feature_pipeline,followup_appointments_booked)",
         "safe_feature_urn": "urn:li:schemaField:(hindsight.patient_history_point_in_time,prior_admissions_12m)",
         "leakage_lineage_path": [
@@ -211,9 +211,9 @@
     ],
     "audit_config": {
       "name": "hospital_readmission",
-      "scenario": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\scenarios\\hospital_readmission\\scenario.json",
-      "transformation_sql": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\examples\\hospital_readmission_leaky.sql",
-      "remediation_sql": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\examples\\hospital_readmission_remediation.sql",
+      "scenario": "scenarios/hospital_readmission/scenario.json",
+      "transformation_sql": "examples/hospital_readmission_leaky.sql",
+      "remediation_sql": "examples/hospital_readmission_remediation.sql",
       "post_outcome_table": "followup_appointments_after_discharge",
       "available_column": "available_at",
       "prediction_column": "prediction_time",

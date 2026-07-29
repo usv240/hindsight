@@ -12,7 +12,7 @@
   "rows": 4000,
   "target_urn": null,
   "published": false,
-  "evidence_sha256": "27e6eb32306393bf63fe4f6565fa83cc4fe8229f62b4b4aae1df460ebbad8d1a",
+  "evidence_sha256": "9794f0c3613345488566584cf40b7cc8abc35cbc8e99c2b194b72993804503a7",
   "evidence_bundle": {
     "schema_version": 1,
     "case_id": "fraud-screening-post-authorisation-dispute",
@@ -93,8 +93,8 @@
         "decision_node": "transactions_at_decision_time.prediction_time",
         "leakage_case_id": "fraud-screening-post-authorisation-dispute",
         "safe_case_id": "fraud-screening-account-age-safe-control",
-        "leakage_model_urn": "urn:li:mlModel:hindsight.fraud_screening_v1_leaky",
-        "safe_model_urn": "urn:li:mlModel:hindsight.fraud_screening_v2_safe",
+        "leakage_model_urn": "urn:li:mlModel:(urn:li:dataPlatform:mlflow,hindsight.fraud_screening_v1_leaky,PROD)",
+        "safe_model_urn": "urn:li:mlModel:(urn:li:dataPlatform:mlflow,hindsight.fraud_screening_v2_safe,PROD)",
         "leakage_feature_urn": "urn:li:schemaField:(hindsight.fraud_feature_pipeline,disputes_on_account)",
         "safe_feature_urn": "urn:li:schemaField:(hindsight.account_history_point_in_time,account_age_days)",
         "leakage_lineage_path": [
@@ -214,9 +214,9 @@
     ],
     "audit_config": {
       "name": "fraud_screening",
-      "scenario": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\scenarios\\fraud_screening\\scenario.json",
-      "transformation_sql": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\examples\\fraud_screening_leaky.sql",
-      "remediation_sql": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\examples\\fraud_screening_remediation.sql",
+      "scenario": "scenarios/fraud_screening/scenario.json",
+      "transformation_sql": "examples/fraud_screening_leaky.sql",
+      "remediation_sql": "examples/fraud_screening_remediation.sql",
       "post_outcome_table": "disputes_after_authorisation",
       "available_column": "available_at",
       "prediction_column": "prediction_time",

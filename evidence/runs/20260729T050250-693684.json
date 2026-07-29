@@ -12,7 +12,7 @@
   "rows": 4000,
   "target_urn": null,
   "published": false,
-  "evidence_sha256": "f97cac6367bd108a637a83b121a891edc1e34a7fef3105054ba62a19a3229d8d",
+  "evidence_sha256": "0bb7e0c3a4a6ef21e0fc52c2f0b987dbbe8c4acfa47daf8c6b284417091e550a",
   "evidence_bundle": {
     "schema_version": 1,
     "case_id": "credit-default-prior-delinquencies-safe-control",
@@ -95,8 +95,8 @@
         "decision_node": "applications_at_decision_time.prediction_time",
         "leakage_case_id": "credit-default-leaked-payment-event",
         "safe_case_id": "credit-default-prior-delinquencies-safe-control",
-        "leakage_model_urn": "urn:li:mlModel:hindsight.credit_default_v1_leaky",
-        "safe_model_urn": "urn:li:mlModel:hindsight.credit_default_v2_safe",
+        "leakage_model_urn": "urn:li:mlModel:(urn:li:dataPlatform:mlflow,hindsight.credit_default_v1_leaky,PROD)",
+        "safe_model_urn": "urn:li:mlModel:(urn:li:dataPlatform:mlflow,hindsight.credit_default_v2_safe,PROD)",
         "leakage_feature_urn": "urn:li:schemaField:(hindsight.feature_pipeline_leaky,days_since_last_payment)",
         "safe_feature_urn": "urn:li:schemaField:(hindsight.customer_history_point_in_time,prior_delinquencies)",
         "leakage_lineage_path": [
@@ -216,9 +216,9 @@
     ],
     "audit_config": {
       "name": "credit_default_fixed",
-      "scenario": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\scenarios\\credit_default\\scenario.json",
-      "transformation_sql": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\examples\\remediation.sql",
-      "remediation_sql": "C:\\Hackathons\\Build with DataHub The Agent Hackathon\\hindsight\\examples\\remediation.sql",
+      "scenario": "scenarios/credit_default/scenario.json",
+      "transformation_sql": "examples/remediation.sql",
+      "remediation_sql": "examples/remediation.sql",
       "post_outcome_table": "payment_events_after_decision",
       "available_column": "available_at",
       "prediction_column": "prediction_time",
