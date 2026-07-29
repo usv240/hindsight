@@ -8,7 +8,7 @@ Checked line-by-line against the official rules. Status as of 2026-07-28.
 |---|---|---|
 | 1 | Working software application using DataHub | ✅ 168 tests, CI green, live end-to-end proof in `evidence/live/` |
 | 2 | Addresses a challenge track | ✅ Production ML Agents |
-| 3 | URL judges can use to test functionality | ✅ Public repo + `uv run hindsight demo` (no Docker, <1 min) |
+| 3 | URL judges can use to test functionality | ⬜ **Blocked until repo is public**; then `uv run hindsight demo` works with no Docker in <1 min |
 | 4 | Public code repository | ⬜ **Repo is private — flip at submission** (see below) |
 | 5 | Repo contains all source, assets, full instructions | ✅ `README.md`, `QUICKSTART.md`, `audits/README.md`, `docs/img/README.md` |
 | 6 | Apache 2.0 licence, detectable in the About section | ✅ Verified: GitHub reports `{"licenseInfo":{"key":"apache-2.0"}}` |
