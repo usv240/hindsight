@@ -283,10 +283,13 @@ def _render_detail(
             # which model, which feature, and as of when.
             "subject": describe_subject(
                 root,
-                scenario_slug or config.name,
+                # The scenario directory the config declares, not the URL slug:
+                # credit_default_fixed audits the credit_default scenario.
+                config.scenario_path.parent.name,
                 bundle=bundle,
                 run=run,
                 subject=config.subject,
+                scenario_cutoff=str(scenario_data.get("prediction_time") or ""),
             ),
             "timeline": build_timeline(bundle, scenario_data),
             "leakage": leakage,

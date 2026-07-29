@@ -18,6 +18,25 @@ BUNDLE = {"validation": {"rows": 4000}, "audit_config": {"synthetic": True}}
 RUN = {"started_at": "2026-07-29T16:28:16Z", "run_id": "20260729T162816-ce1cd1"}
 
 
+CONTEXT = json.loads(
+    (PROJECT_ROOT / "fixtures/credit_default/ground_truth.json").read_text(encoding="utf-8")
+)
+
+
+def _bundle(prefix: str, model: str, feature: str) -> dict:
+    """A bundle shaped like the real one, carrying per-scenario URNs."""
+    return {
+        "validation": {
+            "rows": 4000,
+            "evidence_context": {
+                f"{prefix}model_urn": model,
+                f"{prefix}feature_urn": feature,
+            },
+        },
+        "audit_config": {"synthetic": True},
+    }
+
+
 def _facts(subject: str) -> dict[str, dict[str, str]]:
     described = describe(PROJECT_ROOT, "credit_default", bundle=BUNDLE, run=RUN, subject=subject)
     return {fact["label"]: fact for fact in described["facts"]}
@@ -87,3 +106,74 @@ def test_missing_run_drops_rows_rather_than_inventing_them() -> None:
 def test_unknown_scenario_degrades_without_raising() -> None:
     described = describe(PROJECT_ROOT, "not_a_scenario", bundle=BUNDLE, run=RUN, subject="leaked")
     assert isinstance(described["facts"], list)
+
+
+# --- The regression that made all of this necessary -------------------------
+#
+# The first version read fixtures/<slug>/ground_truth.json and fell back to
+# fixtures/credit_default when a scenario had no fixture of its own. Only
+# credit_default has one, so every scenario rendered the credit model: a fraud
+# audit claimed to examine days_since_last_payment on credit_default_v1_leaky.
+# The tests above all passed, because they only ever exercised credit_default.
+
+
+def _live(slug: str) -> dict[str, dict[str, str]]:
+    """Describe a scenario the way the app does, from its real config and run."""
+    import glob
+
+    from hindsight.web.app import _audit_config
+
+    config = _audit_config(PROJECT_ROOT, slug)
+    scenario = json.loads(Path(config.scenario_path).read_text(encoding="utf-8"))
+    for path in sorted(glob.glob(str(PROJECT_ROOT / "evidence/runs/*.json")), reverse=True):
+        run = json.loads(Path(path).read_text(encoding="utf-8"))
+        if not isinstance(run, dict) or (run.get("scenario") or run.get("audit")) != slug:
+            continue
+        described = describe(
+            PROJECT_ROOT,
+            Path(config.scenario_path).parent.name,
+            bundle=run.get("evidence_bundle") or {},
+            run=run,
+            subject=config.subject,
+            scenario_cutoff=scenario.get("prediction_time", ""),
+        )
+        return {fact["label"]: fact for fact in described["facts"]}
+    raise AssertionError(f"no committed run for {slug}; the seeded runs should cover it")
+
+
+def test_every_scenario_names_its_own_model_and_feature() -> None:
+    expected = {
+        "credit_default": ("credit_default_v1_leaky", "days_since_last_payment"),
+        "credit_default_subtle": ("credit_default_v1_leaky", "days_since_last_payment"),
+        "credit_default_fixed": ("credit_default_v2_safe", "prior_delinquencies"),
+        "fraud_screening": ("fraud_screening_v1_leaky", "disputes_on_account"),
+        "hospital_readmission": ("readmission_v1_leaky", "followup_appointments_booked"),
+    }
+    for slug, (model, feature) in expected.items():
+        facts = _live(slug)
+        assert facts["Model under audit"]["value"] == model, slug
+        assert facts["Feature examined"]["value"] == feature, slug
+
+
+def test_no_two_scenario_families_share_a_model() -> None:
+    """The bug was every scenario showing one model. Assert they are distinct."""
+    models = {
+        slug: _live(slug)["Model under audit"]["value"]
+        for slug in ("credit_default", "fraud_screening", "hospital_readmission")
+    }
+    assert len(set(models.values())) == 3, models
+
+
+def test_every_scenario_reports_its_own_reach() -> None:
+    """9, 22 and 31 days are different defects; one number for all would be a tell."""
+    reaches = {
+        slug: _live(slug)["That fact became knowable"]["detail"]
+        for slug in ("credit_default", "fraud_screening", "hospital_readmission")
+    }
+    assert all("too late" in value for value in reaches.values()), reaches
+    assert len(set(reaches.values())) == 3, reaches
+
+
+def test_a_scenario_without_a_fixture_still_gets_every_row() -> None:
+    """Dates come from the scenario definition and bundle, not only the fixture."""
+    assert len(_live("fraud_screening")) == len(_live("credit_default"))

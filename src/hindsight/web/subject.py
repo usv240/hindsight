@@ -5,19 +5,26 @@ which of its features, or as of when. For a demo that reads as vague; for a
 release gate it is the difference between an audit record and an anecdote. A
 reviewer's first question is always "of what, exactly".
 
-Everything here is read from the recorded ground-truth fixture and the scenario
-definition. Nothing is invented for display: the model and feature URNs are the
-same ones the audit resolved lineage against, and the two timestamps are the ones
-the temporal check compares. If a field is missing the row is dropped rather than
-filled in, because a plausible-looking identifier is worse than an absent one.
+Everything here comes from the evidence bundle the audit produced, which carries
+its own ``validation.evidence_context``. That matters: the first version of this
+module read ``fixtures/<scenario>/ground_truth.json`` and fell back to
+``fixtures/credit_default`` when a scenario had no fixture of its own. Only
+credit_default has one, so every scenario displayed the credit model - a fraud
+audit claimed to examine ``days_since_last_payment`` on
+``credit_default_v1_leaky``. Confidently naming the wrong artifact is worse than
+naming none, so there is no cross-scenario fallback any more.
+
+If a field is absent its row is dropped rather than filled in.
 """
 
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
+
+from hindsight.web.timeline import _days_after
 
 
 def _read(path: Path) -> dict[str, Any]:
@@ -50,6 +57,13 @@ def _dataset_from_field_urn(urn: str) -> str:
     return inner.rsplit(".", 1)[-1] if "." in inner else inner
 
 
+def _parse(value: str) -> datetime | None:
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return None
+
+
 def _human_time(value: str) -> str:
     try:
         moment = datetime.fromisoformat(value.replace("Z", "+00:00"))
@@ -74,40 +88,50 @@ def _days_between(later: str, earlier: str) -> int | None:
 
 def describe(
     project_root: Path,
-    scenario_slug: str,
+    scenario_family: str,
     *,
     bundle: dict[str, Any],
     run: dict[str, Any] | None,
     subject: str = "leaked",
+    scenario_cutoff: str = "",
 ) -> dict[str, Any]:
     """Identity of the audited artifact, for the header of the audit page.
+
+    ``scenario_family`` is the directory the audit config's scenario path points
+    at, not the URL slug. ``credit_default_fixed`` audits the ``credit_default``
+    scenario, so it legitimately shares that fixture; ``fraud_screening`` has no
+    fixture and must get nothing rather than somebody else's. Taking it from the
+    declared config makes that distinction structural instead of a guess.
 
     ``subject`` follows the audit config: a scenario auditing its safe control
     describes a different model to the one auditing the planted defect, and
     showing the leaky model's identity above a clean verdict would be a lie.
     """
-    fixture_dir = project_root / "fixtures" / scenario_slug.split("_")[0]
-    # Scenario slugs like credit_default_fixed share the base fixture.
-    for candidate in (
-        project_root / "fixtures" / scenario_slug,
-        project_root / "fixtures" / "credit_default",
-        fixture_dir,
-    ):
-        truth = _read(candidate / "ground_truth.json")
-        if truth:
-            break
-    else:  # pragma: no cover - defensive
-        truth = {}
+    # The bundle is per-run and per-scenario, so it cannot name another
+    # scenario's model. The scenario's own fixture is consulted only for the
+    # timestamps the bundle does not carry, and never another scenario's.
+    context = ((bundle.get("validation") or {}).get("evidence_context")) or {}
+    truth = _read(project_root / "fixtures" / scenario_family / "ground_truth.json")
 
-    # The safe control is a different model with its own URNs, nested one level
-    # down. Auditing it and showing the leaky model's name would be wrong.
-    if subject != "leaked" and isinstance(truth.get("safe_control"), dict):
+    leaked = subject == "leaked"
+    prefix = "leakage_" if leaked else "safe_"
+
+    if not leaked and isinstance(truth.get("safe_control"), dict):
         truth = {**truth, **truth["safe_control"]}
 
-    model_urn = str(truth.get("model_urn") or "")
-    feature_urn = str(truth.get("feature_urn") or "")
-    cutoff = str(truth.get("prediction_time") or "")
+    model_urn = str(context.get(f"{prefix}model_urn") or truth.get("model_urn") or "")
+    feature_urn = str(context.get(f"{prefix}feature_urn") or truth.get("feature_urn") or "")
+
+    # Only credit_default ships a ground-truth fixture, but every scenario
+    # defines prediction_time and every bundle records how far the defect
+    # reaches. Deriving both from the same source the timeline chart uses means
+    # the panel and the chart on one page cannot contradict each other.
+    cutoff = str(scenario_cutoff or truth.get("prediction_time") or "")
     available = str(truth.get("source_available_at") or "")
+    if not available and cutoff and leaked:
+        moment = _parse(cutoff)
+        if moment is not None:
+            available = (moment + timedelta(days=_days_after(bundle, default=31))).isoformat()
 
     facts: list[dict[str, str]] = []
 
