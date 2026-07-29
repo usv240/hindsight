@@ -16,6 +16,63 @@
   </div>
 </section>
 
+<!-- Which DataHub surfaces are used ---------------------------------------- -->
+<section class="panel">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Integration</p>
+      <h2>Which parts of DataHub this uses{{ info('datahub') }}</h2>
+    </div>
+    <span class="finding ok">5 of 6 surfaces</span>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr><th scope="col">Surface</th><th scope="col">Used</th><th scope="col">How</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">Context graph</th><td><span class="finding ok">yes</span></td>
+          <td>Column-level lineage{{ info('column-lineage') }}, ML entities, schema, profiles</td>
+        </tr>
+        <tr>
+          <th scope="row">MCP Server</th><td><span class="finding ok">yes</span></td>
+          <td>Discovery, lineage reads, governed mutations{{ info('mcp') }}</td>
+        </tr>
+        <tr>
+          <th scope="row">Agent Context Kit</th><td><span class="finding ok">yes</span></td>
+          <td><code>get_lineage_paths_between</code> &mdash; the column-level directional path query this whole audit rests on</td>
+        </tr>
+        <tr>
+          <th scope="row">DataHub Skills</th><td><span class="finding ok">yes</span></td>
+          <td><code>datahub-ml-release-audit</code>, contributed upstream</td>
+        </tr>
+        <tr>
+          <th scope="row">DataHub Actions</th><td><span class="finding ok">yes</span></td>
+          <td>Audits a model the moment it appears, with nobody triggering it</td>
+        </tr>
+        <tr>
+          <th scope="row">Analytics Agent</th><td><span class="finding">n/a</span></td>
+          <td>Not applicable; this is not a text-to-SQL product</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="prose" style="margin-top: var(--sp-5);">
+    <strong>It can watch instead of waiting.</strong> The release gate subscribes to DataHub's
+    event stream and audits a model on creation. It may raise an incident to notify &mdash; it
+    never publishes the evidence record itself, because a process that silently rewrites
+    governed metadata is the thing this project argues against.
+  </p>
+  <pre class="artifact"><code>datahub actions -c docker/hindsight-action.yml</code></pre>
+  <p class="fine">
+    Proven end to end against a live instance: a model was emitted, DataHub published the change
+    to Kafka, the event was consumed off the bus, and the gate audited it and returned
+    <code>block</code>. Full record in <code>evidence/integrations/</code>.
+  </p>
+</section>
+
 <!-- What lands in the catalog --------------------------------------------- -->
 <section class="panel">
   <div class="section-heading">
