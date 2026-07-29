@@ -488,9 +488,53 @@
     });
   }
 
+  /* -- 10. Evidence record ------------------------------------------------
+     Fetched on first open from the same endpoint the download button serves,
+     so what you read and what you save cannot drift apart. Without JS the
+     "Open raw" link still works, which is why the fetch is an enhancement
+     rather than the only route to the data.
+  --------------------------------------------------------------------------- */
+
+  function initEvidenceRecord() {
+    var toggle = document.querySelector("[data-evidence-toggle]");
+    var panel = document.getElementById("evidence-record");
+    if (!toggle || !panel) return;
+
+    var body = panel.querySelector("[data-evidence-body]");
+    var loaded = false;
+
+    toggle.addEventListener("click", function () {
+      var opening = panel.hidden;
+      panel.hidden = !opening;
+      toggle.setAttribute("aria-expanded", String(opening));
+      toggle.textContent = opening ? "Hide evidence" : "View evidence";
+
+      if (!opening || loaded || !body) return;
+      loaded = true;
+
+      fetch(body.getAttribute("data-src"))
+        .then(function (response) {
+          if (!response.ok) throw new Error("HTTP " + response.status);
+          return response.text();
+        })
+        .then(function (text) {
+          body.textContent = text;
+        })
+        .catch(function (error) {
+          loaded = false;  /* let a retry happen on the next open */
+          body.textContent =
+            "Could not load the record (" + error.message + "). " +
+            "Use Open raw or Download instead.";
+        });
+
+      if (panel.scrollIntoView) panel.scrollIntoView({ block: "nearest" });
+    });
+  }
+
   function boot() {
     initTheme();
     initPrint();
+    initEvidenceRecord();
     initModeSwitch();
     initSectionSpy();
     initPopovers();

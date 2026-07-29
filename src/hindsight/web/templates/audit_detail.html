@@ -35,15 +35,37 @@
         filed against a change request. -#}
     <div class="head-actions">
       <button type="button" class="btn ghost is-print" data-print>Save as PDF</button>
-      {#- Anyone doubting the argument should be able to take the record away
-          and check it, rather than trust this rendering of it. -#}
+      {#- Anyone doubting the argument should be able to read the record here, or
+          take it away, rather than trust this rendering of it. -#}
       {% if run %}
+      <button type="button" class="btn ghost is-print" data-evidence-toggle
+              aria-expanded="false" aria-controls="evidence-record">View evidence</button>
       <a class="btn ghost is-print" href="/audits/{{ run.run_id }}/evidence.json"
-         download>Download evidence</a>
+         download>Download</a>
       {% endif %}
     </div>
   </div>
 </section>
+
+{% if run %}
+{#- Filled on first open from the same endpoint the download serves, so the
+    thing you read and the thing you save cannot differ. Hidden until asked
+    for: it is 9 KB of JSON and nobody wants it by default. -#}
+<section class="evidence-record" id="evidence-record" hidden aria-label="Full evidence record">
+  <div class="evidence-record-head">
+    <div>
+      <p class="eyebrow">The record this page argues from</p>
+      <p class="fine">
+        Every number above is read from this. Nothing is computed in the browser.
+      </p>
+    </div>
+    <a class="btn ghost" href="/audits/{{ run.run_id }}/evidence.json?inline=1"
+       target="_blank" rel="noopener">Open raw</a>
+  </div>
+  <pre class="artifact"><code data-evidence-body
+    data-src="/audits/{{ run.run_id }}/evidence.json?inline=1">Loading the record...</code></pre>
+</section>
+{% endif %}
 
 {% include "_subject.html" %}
 

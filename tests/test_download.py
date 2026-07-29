@@ -49,3 +49,26 @@ def test_traversal_in_the_run_id_is_refused() -> None:
     """run ids are generated, so anything path-shaped is hostile."""
     for hostile in ("../../pyproject.toml", "..%2F..%2Fpyproject.toml"):
         assert _client().get(f"/audits/{hostile}/evidence.json").status_code in (404, 400)
+
+
+def test_inline_mode_is_viewable_rather_than_downloaded() -> None:
+    """Same bytes, no attachment header, so a browser renders it."""
+    client = _client()
+    run_id = _a_run_id(client)
+
+    viewed = client.get(f"/audits/{run_id}/evidence.json?inline=1")
+    saved = client.get(f"/audits/{run_id}/evidence.json")
+
+    assert viewed.status_code == 200
+    assert "content-disposition" not in viewed.headers
+    assert "attachment" in saved.headers["content-disposition"]
+    # What you read and what you save must not differ.
+    assert viewed.text == saved.text
+
+
+def test_the_record_carries_no_absolute_paths() -> None:
+    """It is served to anyone; the host's directory layout is not theirs."""
+    client = _client()
+    text = client.get(f"/audits/{_a_run_id(client)}/evidence.json?inline=1").text
+    assert "C:\\\\" not in text
+    assert ":/" not in text.replace("http://", "").replace("https://", "")

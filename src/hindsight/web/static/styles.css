@@ -2384,3 +2384,28 @@ h3 { letter-spacing: -0.015em; }
 
 .head-actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; justify-content: flex-end; }
 @media (max-width: 640px) { .head-actions { justify-content: flex-start; } }
+
+/* -- The evidence record, in place ---------------------------------------- */
+
+.evidence-record {
+  display: grid;
+  gap: var(--sp-4);
+  padding: var(--sp-5) var(--sp-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.evidence-record[hidden] { display: none; }
+.evidence-record-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+.evidence-record-head .eyebrow { margin: 0 0 var(--sp-1); }
+.evidence-record-head .fine { margin: 0; }
+/* Tall enough to be worth opening, short enough not to bury the page. */
+.evidence-record .artifact { max-height: 460px; }
+
+@media (max-width: 640px) { .evidence-record { padding: var(--sp-5) var(--sp-4); } }
