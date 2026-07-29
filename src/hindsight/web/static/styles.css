@@ -77,12 +77,12 @@
 /* Light theme */
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg: #f7f8fa;
+  --bg: #eaeef5;
   --bg-elev: #ffffff;
   --surface: #ffffff;
-  --surface-2: #f1f3f8;
-  --border: #e0e4ed;
-  --border-strong: #c7cddb;
+  --surface-2: #f4f6fb;
+  --border: #d3dae7;
+  --border-strong: #b6bfd2;
 
   --text: #0f1420;
   --text-muted: #4f5771;
@@ -99,7 +99,7 @@
   --ok: #067a4a;
   --ok-soft: #e3f5eb;
 
-  --shadow: 0 1px 2px rgb(15 20 32 / 0.05), 0 12px 28px -14px rgb(15 20 32 / 0.2);
+  --shadow: 0 1px 2px rgb(15 20 32 / 0.07), 0 10px 24px -12px rgb(15 20 32 / 0.20);
   --grid-line: rgb(79 70 229 / 0.05);
 }
 
@@ -107,12 +107,12 @@
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
     color-scheme: light;
-    --bg: #f7f8fa;
+    --bg: #eaeef5;
     --bg-elev: #ffffff;
     --surface: #ffffff;
-    --surface-2: #f1f3f8;
-    --border: #e0e4ed;
-    --border-strong: #c7cddb;
+    --surface-2: #f4f6fb;
+    --border: #d3dae7;
+    --border-strong: #b6bfd2;
     --text: #0f1420;
     --text-muted: #4f5771;
     --text-faint: #5d647a;
@@ -125,7 +125,7 @@
     --warn-soft: #fdf3e0;
     --ok: #067a4a;
     --ok-soft: #e3f5eb;
-    --shadow: 0 1px 2px rgb(15 20 32 / 0.05), 0 12px 28px -14px rgb(15 20 32 / 0.2);
+    --shadow: 0 1px 2px rgb(15 20 32 / 0.07), 0 10px 24px -12px rgb(15 20 32 / 0.20);
     --grid-line: rgb(79 70 229 / 0.05);
   }
 }
@@ -1432,7 +1432,14 @@ body[data-mode="technical"] .plain-only { display: none; }
 
 /* -- Scenario picker ------------------------------------------------------- */
 
-.scenarios { display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: var(--sp-4); }
+/* Capped at three: with five scenarios an auto-fit grid put four in a row and
+   left the fifth alone in a wide empty band. */
+.scenarios {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+  gap: var(--sp-4);
+}
+@media (min-width: 1100px) { .scenarios { grid-template-columns: repeat(3, 1fr); } }
 .scenario-card {
   display: grid;
   gap: var(--sp-3);
@@ -1903,7 +1910,7 @@ h3 { letter-spacing: -0.015em; }
   --shadow: 0 1px 2px rgb(0 0 0 / 0.28), 0 8px 24px -14px rgb(0 0 0 / 0.55);
 }
 :root[data-theme="light"] {
-  --shadow: 0 1px 2px rgb(15 20 32 / 0.04), 0 8px 20px -14px rgb(15 20 32 / 0.14);
+  --shadow: 0 1px 2px rgb(15 20 32 / 0.07), 0 10px 24px -12px rgb(15 20 32 / 0.20);
 }
 
 .panel, .story-verdict, .analogy, .how-we-knew, .routes, .trust, .story-timeline {
@@ -2439,4 +2446,105 @@ h3 { letter-spacing: -0.015em; }
 }
 @media (max-width: 720px) {
   .pagebar { justify-content: flex-start; }
+}
+
+/* -- Light mode depth ------------------------------------------------------
+   A dark UI gets depth for free: a lighter panel on a darker page reads as
+   raised. A light UI cannot do that, because a panel is already white. So the
+   canvas has to sit back and the shadow has to carry the lift - previously the
+   page was #f7f8fa against white panels, a ratio of 1.06, which is no
+   separation at all, and the shadow was too faint to make up for it.
+------------------------------------------------------------------------- */
+
+:root[data-theme="light"] .panel,
+:root[data-theme="light"] .subject,
+:root[data-theme="light"] .story-verdict,
+:root[data-theme="light"] .analogy,
+:root[data-theme="light"] .how-we-knew,
+:root[data-theme="light"] .routes,
+:root[data-theme="light"] .story-timeline,
+:root[data-theme="light"] .evidence-record,
+:root[data-theme="light"] .story-card,
+:root[data-theme="light"] .card,
+:root[data-theme="light"] .trust-item,
+:root[data-theme="light"] .scenario-card {
+  box-shadow: var(--shadow);
+}
+
+/* The top highlight is a dark-mode idea - a surface catching light from above.
+   On white it just muddies the edge. */
+:root[data-theme="light"] .panel::before,
+:root[data-theme="light"] .subject::before,
+:root[data-theme="light"] .story-verdict::before,
+:root[data-theme="light"] .analogy::before,
+:root[data-theme="light"] .how-we-knew::before,
+:root[data-theme="light"] .routes::before,
+:root[data-theme="light"] .story-timeline::before {
+  display: none;
+}
+
+/* The sticky bars sit over a tinted canvas now, so they need to be opaque
+   enough to read as chrome rather than as a smudge of the content behind. */
+:root[data-theme="light"] .topbar,
+:root[data-theme="light"] .jumpnav,
+:root[data-theme="light"] .pagebar .mode-switch {
+  background: color-mix(in srgb, #ffffff 82%, transparent);
+}
+
+@media (prefers-color-scheme: light) {
+/* Same, for visitors who never touch the toggle ------------------------------------------------------
+   A dark UI gets depth for free: a lighter panel on a darker page reads as
+   raised. A light UI cannot do that, because a panel is already white. So the
+   canvas has to sit back and the shadow has to carry the lift - previously the
+   page was #f7f8fa against white panels, a ratio of 1.06, which is no
+   separation at all, and the shadow was too faint to make up for it.
+------------------------------------------------------------------------- */
+
+:root:not([data-theme="dark"]) .panel,
+:root:not([data-theme="dark"]) .subject,
+:root:not([data-theme="dark"]) .story-verdict,
+:root:not([data-theme="dark"]) .analogy,
+:root:not([data-theme="dark"]) .how-we-knew,
+:root:not([data-theme="dark"]) .routes,
+:root:not([data-theme="dark"]) .story-timeline,
+:root:not([data-theme="dark"]) .evidence-record,
+:root:not([data-theme="dark"]) .story-card,
+:root:not([data-theme="dark"]) .card,
+:root:not([data-theme="dark"]) .trust-item,
+:root:not([data-theme="dark"]) .scenario-card {
+  box-shadow: var(--shadow);
+}
+
+/* The top highlight is a dark-mode idea - a surface catching light from above.
+   On white it just muddies the edge. */
+:root:not([data-theme="dark"]) .panel::before,
+:root:not([data-theme="dark"]) .subject::before,
+:root:not([data-theme="dark"]) .story-verdict::before,
+:root:not([data-theme="dark"]) .analogy::before,
+:root:not([data-theme="dark"]) .how-we-knew::before,
+:root:not([data-theme="dark"]) .routes::before,
+:root:not([data-theme="dark"]) .story-timeline::before {
+  display: none;
+}
+
+/* The sticky bars sit over a tinted canvas now, so they need to be opaque
+   enough to read as chrome rather than as a smudge of the content behind. */
+:root:not([data-theme="dark"]) .topbar,
+:root:not([data-theme="dark"]) .jumpnav,
+:root:not([data-theme="dark"]) .pagebar .mode-switch {
+  background: color-mix(in srgb, #ffffff 82%, transparent);
+}
+
+}
+
+/* A card you can click should answer the pointer. Kept to a lift and a border
+   change so it reads as pressable without moving the page around it. */
+@media (prefers-reduced-motion: no-preference) {
+  .scenario-card { transition: transform var(--transition), box-shadow var(--transition),
+                               border-color var(--transition); }
+  .scenario-card:hover { transform: translateY(-2px); border-color: var(--border-strong); }
+}
+:root[data-theme="light"] .scenario-card:hover,
+:root:not([data-theme="dark"]) .scenario-card:hover {
+  box-shadow: 0 2px 4px rgb(15 20 32 / 0.08), 0 16px 32px -14px rgb(15 20 32 / 0.26);
 }
