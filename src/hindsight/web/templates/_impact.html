@@ -1,0 +1,120 @@
+{#- How common this is, who it costs, and what it takes to use this.
+
+    Placed high because a visitor's second question, after "what is it", is "does
+    this matter to me". The numbers are citations rather than claims: this
+    project's credibility comes from not overstating, and a hype block here would
+    undercut every honest disclosure further down. The "what you need" table is
+    part of the same bargain - naming who this does not serve is what makes the
+    rest believable. -#}
+
+<section class="impact" aria-labelledby="impact-heading">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Why this matters</p>
+      <h2 id="impact-heading">How often does this actually happen?</h2>
+    </div>
+  </div>
+
+  <div class="impact-figures">
+    <article class="impact-fig">
+      <p class="impact-value">294</p>
+      <p class="impact-label">published papers found to be affected by leakage</p>
+      <p class="impact-source">across 17 disciplines &mdash; Kapoor &amp; Narayanan, <em>Patterns</em>, 2023</p>
+    </article>
+    <article class="impact-fig">
+      <p class="impact-value">100k+</p>
+      <p class="impact-label">public notebooks where leakage was found to be pervasive</p>
+      <p class="impact-source">Yang, Brower-Sinning, Lewis &amp; K&auml;stner, <em>ASE</em>, 2022</p>
+    </article>
+    {#- Two citations and one of our own measurements, labelled as ours. An
+        earlier draft claimed "0 of those studies looked upstream", which is not
+        defensible: one of them is a literature survey, and asserting what it did
+        not examine would be exactly the kind of overreach this page argues
+        against. -#}
+    <article class="impact-fig">
+      <p class="impact-value">0</p>
+      <p class="impact-label">false positives across 21 legitimate queries</p>
+      <p class="impact-source">our own benchmark, measured &mdash; <a href="/evidence">see the evidence</a></p>
+    </article>
+  </div>
+
+  <p class="prose">
+    Yang et al. analysed the code that <em>trains</em> the model. The leak Hindsight
+    targets is usually made earlier, in a pipeline the person training the model never
+    opens &mdash; so it survives checks that happen inside the notebook, and it survives
+    testing, because in testing the answer really is there.
+  </p>
+
+  {#- Naming who this does not help is what makes the rest of the page credible. -#}
+  <div class="impact-fit">
+    <div class="impact-fit-col is-good">
+      <p class="impact-fit-head">Built for decisions with a clock</p>
+      <ul>
+        <li>Lending and credit approval</li>
+        <li>Fraud and payment authorisation</li>
+        <li>Insurance underwriting</li>
+        <li>Clinical readmission and triage</li>
+        <li>Churn and retention intervention</li>
+      </ul>
+      <p class="fine">
+        Each has an instant after which nothing was knowable, and a wrong model costs
+        money or causes harm.
+      </p>
+    </div>
+    <div class="impact-fit-col">
+      <p class="impact-fit-head">Not built for</p>
+      <ul>
+        <li>Recommendation and ranking</li>
+        <li>Most language and vision work</li>
+      </ul>
+      <p class="fine">
+        Usually no per-row decision moment to reason about, so the central question
+        this asks does not apply.
+      </p>
+    </div>
+  </div>
+
+  {#- The widening story: one tier genuinely needs nothing, and saying so is the
+      difference between a tool people admire and one they run. -#}
+  <h3 class="impact-sub">What you need to use it on your own work</h3>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">What you get</th><th scope="col">What it needs</th>
+          <th scope="col">Who that is</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">Find post-decision sources in your SQL</th>
+          <td><span class="finding ok">nothing</span> &mdash; no DataHub, no config</td>
+          <td>Anyone with a dbt project or a folder of SQL</td>
+        </tr>
+        <tr>
+          <th scope="row">Rebuild a feature as of the decision and re-test it</th>
+          <td>A timestamp recording when each value became known</td>
+          <td>Teams with event history or dated snapshots</td>
+        </tr>
+        <tr>
+          <th scope="row">The full lineage trace and catalog write-back</th>
+          <td>DataHub with <strong>column-level</strong> lineage populated{{ info('column-lineage') }}</td>
+          <td>Teams whose connectors emit fine-grained lineage</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <p>
+      <strong>The first row needs nothing at all.</strong> Point it at a folder of SQL and
+      it reports which models read a post-decision source with no availability guard.
+      Exit code <code>3</code> blocks a pull request.
+    </p>
+    <pre class="artifact"><code>uv run hindsight scan-sql path/to/dbt/models --post-outcome-table payments_after_decision</code></pre>
+    <p class="fine">
+      Files it cannot parse are reported as <strong>unchecked</strong>, never as clean.
+      A file that was never examined has not passed.
+    </p>
+  </div>
+</section>
