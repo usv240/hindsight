@@ -64,11 +64,18 @@ def test_the_recorded_sweep_still_matches_a_fresh_run(recorded: dict) -> None:
 
 
 def test_the_recorded_file_list_matches_what_is_on_disk(recorded: dict) -> None:
-    """A judge downloads these, so a missing one is a broken promise."""
+    """A judge downloads these, so a missing one is a broken promise.
+
+    Compared by line count, not byte count. These are text files and git
+    normalises their line endings on checkout, so a size recorded on Windows
+    does not match the same file in a clean clone - which is exactly how this
+    assertion failed in CI while passing locally.
+    """
     for entry in recorded["dataset"]["files"]:
         path = EXAMPLE / entry["name"]
         assert path.is_file(), entry["name"]
-        assert path.stat().st_size == entry["bytes"], entry["name"]
+        lines = len(path.read_text(encoding="utf-8").splitlines())
+        assert lines == entry["lines"], entry["name"]
 
 
 def test_the_commands_shown_are_real_commands(recorded: dict) -> None:
@@ -113,7 +120,8 @@ def test_every_advertised_file_downloads(recorded: dict) -> None:
         response = client.get(f"/examples/adapter/{entry['name']}")
         assert response.status_code == 200, entry["name"]
         assert entry["name"] in response.headers["content-disposition"]
-        assert len(response.content) == entry["bytes"], entry["name"]
+        served = len(response.text.splitlines())
+        assert served == entry["lines"], entry["name"]
 
 
 def test_the_download_route_serves_only_the_allowlist() -> None:
