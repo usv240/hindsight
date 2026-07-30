@@ -19,3 +19,5 @@ evidence/runs/*
 !evidence/runs/20260729T050141-dc73ad.json
 !evidence/runs/20260729T050250-693684.json
 
+# Raw machine reports, not deliverables.
+**/*.local.json

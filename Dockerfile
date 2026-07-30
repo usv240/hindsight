@@ -46,6 +46,10 @@ COPY --chown=hindsight:hindsight fixtures ./fixtures
 COPY --chown=hindsight:hindsight audits ./audits
 COPY --chown=hindsight:hindsight scenarios ./scenarios
 COPY --chown=hindsight:hindsight examples ./examples
+# The committed benchmark the evidence page charts. Left out once, and the
+# section silently hid itself in production because the template guards on
+# the file existing - graceful, and invisible.
+COPY --chown=hindsight:hindsight evaluations ./evaluations
 COPY --chown=hindsight:hindsight pyproject.toml README.md LICENSE ./
 
 ENV PATH="/app/.venv/bin:$PATH" \
