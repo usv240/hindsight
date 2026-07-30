@@ -1,0 +1,92 @@
+{#- What this is built on, and the one detail that is genuinely unusual.
+
+    The lineage trace is the centrepiece rather than the surface checklist,
+    because a list of integrations proves breadth and one real answer proves
+    depth. The query-entity hop is the strongest thing this project does with
+    DataHub and it lived only in a markdown file until now. -#}
+
+<section class="stack" aria-labelledby="stack-heading">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Built on DataHub</p>
+      <h2 id="stack-heading">What the catalog actually answers</h2>
+    </div>
+    <span class="finding ok">5 of 6 surfaces</span>
+  </div>
+
+  <p class="prose">
+    Hindsight does not guess which feature is suspicious and it does not read your
+    warehouse. It asks DataHub one question, through the
+    <strong>Agent Context Kit</strong>: <em>is there a path from this column to that
+    one, and which way does it run?</em>
+  </p>
+
+  {% if trace %}
+  <div class="stack-trace">
+    <p class="stack-trace-cmd"><code>{{ trace.command }}</code></p>
+    <ol class="stack-path">
+      <li class="stack-node">
+        <span class="stack-kind">Source column</span>
+        <code>{{ trace.path[0] }}</code>
+      </li>
+      <li class="stack-hop" aria-hidden="true">&rarr;</li>
+      <li class="stack-node is-query">
+        <span class="stack-kind">DataHub query entity</span>
+        <code title="{{ trace.path[1] }}">{{ trace.path[1][:34] }}&hellip;</code>
+      </li>
+      <li class="stack-hop" aria-hidden="true">&rarr;</li>
+      <li class="stack-node">
+        <span class="stack-kind">Feature column</span>
+        <code>{{ trace.path[2] }}</code>
+      </li>
+    </ol>
+    <p class="prose">
+      <strong>Look at the middle.</strong> {{ trace.why_the_middle_hop_matters }}
+    </p>
+    <p class="fine">{{ trace.why_two_flags_not_one }}</p>
+  </div>
+  {% endif %}
+
+  <div class="stack-grid">
+    <article class="stack-item">
+      <p class="stack-head">Agent Context Kit</p>
+      <p><code>get_lineage_paths_between</code> is the core primitive, not a bolt-on. Column-level and directional, which is exactly the question an audit needs.</p>
+    </article>
+    <article class="stack-item">
+      <p class="stack-head">MCP Server</p>
+      <p>Discovery, lineage reads, and governed mutations{{ info('mcp') }} against a real instance.</p>
+    </article>
+    <article class="stack-item">
+      <p class="stack-head">Context graph</p>
+      <p>Column-level lineage{{ info('column-lineage') }}, ML entities, schema and profiles &mdash; the map nothing else in the stack has.</p>
+    </article>
+    <article class="stack-item">
+      <p class="stack-head">DataHub Actions</p>
+      <p>Audits a model the moment it appears on the event stream, with nobody triggering it. It may raise an incident; it never publishes evidence itself.</p>
+    </article>
+    <article class="stack-item">
+      <p class="stack-head">DataHub Skills</p>
+      <p><code>datahub-ml-release-audit</code> packages the verdict contract so any agent can run this workflow.</p>
+    </article>
+    <article class="stack-item">
+      <p class="stack-head">Written back, then re-read</p>
+      <p>A tag, a structured property, an audit document and an incident{{ info('writeback-types') }}. Each one is read back afterwards &mdash; a write that cannot be re-read is treated as a failure{{ info('reread') }}.</p>
+    </article>
+  </div>
+
+  <div class="callout">
+    <p>
+      <strong>We gave something back.</strong> Building this turned up a gap in DataHub's
+      own documentation: the incidents guide lists <code>CUSTOM</code> as a supported type
+      without mentioning that <code>customType</code> is required with it, so the guide as
+      written fails. The fix is
+      <a href="https://github.com/datahub-project/datahub/pull/18705">merged into
+      datahub-project/datahub</a>.
+    </p>
+    <p class="fine">
+      A second pull request, adding the release-audit skill to
+      <a href="https://github.com/datahub-project/datahub-skills/pull/68">datahub-skills</a>,
+      is open and awaiting review.
+    </p>
+  </div>
+</section>

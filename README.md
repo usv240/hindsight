@@ -280,7 +280,38 @@ than a leaked one.
 
 ---
 
-## Which DataHub surfaces this uses
+## Built on DataHub
+
+### The one question it asks
+
+Hindsight does not guess which feature is suspicious, and it does not read your
+warehouse. It asks DataHub one thing, through the **Agent Context Kit**: *is there a
+path from this column to that one, and which way does it run?*
+
+```
+hindsight trace-lineage --source-column payment_recorded_at                         --target-column days_since_last_payment
+```
+
+```json
+{ "available": true, "found": true, "hops": 2,
+  "path": ["payment_recorded_at",
+           "urn:li:query:d47c395f75a3ca4422cf5f44739b620e001eeb455358b323ff42161e4acc9377",
+           "days_since_last_payment"],
+  "resolved_by": "agent_context_kit" }
+```
+
+**Look at the middle hop.** It is a DataHub *query entity*. The catalog does not only
+say these two columns are connected — it identifies the transformation that connects
+them. So the evidence chain cites the catalog's own record of the SQL, rather than a
+file someone pointed the tool at. Recorded live against DataHub Core v1.5.0.6;
+committed at [evidence/integrations/lineage-trace.json](evidence/integrations/lineage-trace.json).
+
+**`available` and `found` are separate fields.** "The catalog says there is no path" is
+evidence against leakage. "We could not reach the catalog" is not evidence at all.
+Collapsing them would let an outage read as a clean bill of health — the first version
+did exactly that, and it was fixed.
+
+### Which surfaces this uses
 
 | Surface | Used | How |
 |---|:--:|---|

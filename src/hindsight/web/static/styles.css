@@ -2735,3 +2735,80 @@ h3 { letter-spacing: -0.015em; }
 @media (max-width: 640px) {
   .impact-fig, .impact-fit-col { padding: var(--sp-4); }
 }
+
+/* -- Built on DataHub -----------------------------------------------------
+   A surface checklist proves breadth; one real answer proves depth. The trace
+   is the centrepiece for that reason.
+------------------------------------------------------------------------- */
+
+.stack { display: grid; gap: var(--sp-5); }
+
+.stack-trace {
+  display: grid;
+  gap: var(--sp-4);
+  padding: var(--sp-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.stack-trace-cmd { margin: 0; font-size: var(--step--1); color: var(--text-muted); }
+.stack-trace-cmd code { overflow-wrap: anywhere; }
+
+.stack-path {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.stack-node {
+  flex: 1 1 190px;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+/* The query entity is the point of the diagram, so it is the one that is marked. */
+.stack-node.is-query {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.stack-kind {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--text-faint);
+}
+.stack-node code { font-size: var(--step--1); overflow-wrap: anywhere; }
+.stack-hop {
+  display: flex;
+  align-items: center;
+  color: var(--text-faint);
+  font-size: var(--step-0);
+}
+
+.stack-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--sp-4);
+}
+.stack-item {
+  padding: var(--sp-4) var(--sp-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.stack-head { margin: 0 0 var(--sp-2); font-weight: 700; font-size: var(--step-0); }
+.stack-item p:last-child { margin: 0; font-size: var(--step--1); color: var(--text-muted); }
+
+@media (max-width: 760px) {
+  .stack-path { flex-direction: column; }
+  .stack-hop { transform: rotate(90deg); justify-content: flex-start; padding-left: var(--sp-4); }
+}

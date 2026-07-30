@@ -20,7 +20,7 @@ from hindsight.scenarios import SCENARIOS, get_scenario, list_scenarios
 from hindsight.web import demo_mode
 from hindsight.web.activity import build_activity
 from hindsight.web.artifacts import collect as collect_artifacts
-from hindsight.web.artifacts import external_proof
+from hindsight.web.artifacts import external_proof, lineage_trace
 from hindsight.web.benchmark import load as load_benchmark
 from hindsight.web.explain import explain
 from hindsight.web.glossary import GLOSSARY
@@ -98,6 +98,7 @@ def create_app(project_root: Path | None = None) -> FastAPI:
             | {
                 "latest": runs[0] if runs else None,
                 "scenarios": [s.to_dict() for s in list_scenarios()],
+                "trace": lineage_trace(root),
             },
         )
 

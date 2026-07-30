@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "what_this_is": "One real answer from DataHub, recorded from a live Core v1.5.0.6 instance via the Agent Context Kit. It is the primitive the whole audit rests on, so it is committed rather than described.",
+  "command": "hindsight trace-lineage --source-column payment_recorded_at --target-column days_since_last_payment",
+  "resolved_by": "agent_context_kit",
+  "api": "get_lineage_paths_between(source_urn, target_urn, source_column=..., target_column=..., direction=...)",
+  "available": true,
+  "found": true,
+  "hops": 2,
+  "path": [
+    "payment_recorded_at",
+    "urn:li:query:d47c395f75a3ca4422cf5f44739b620e001eeb455358b323ff42161e4acc9377",
+    "days_since_last_payment"
+  ],
+  "why_the_middle_hop_matters": "The middle element is a DataHub query entity. The catalog does not only say these two columns are connected - it identifies the transformation that connects them. The evidence chain can therefore cite the catalog's own record of the SQL rather than a file someone pointed us at.",
+  "why_two_flags_not_one": "available and found are separate. 'The catalog says there is no path' is evidence against leakage. 'We could not reach the catalog' is not evidence at all. Collapsing them would let an outage read as a clean bill of health.",
+  "exit_code": 3
+}

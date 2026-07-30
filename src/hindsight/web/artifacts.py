@@ -32,6 +32,27 @@ def external_proof(project_root: Path) -> dict[str, Any] | None:
     return payload if isinstance(payload, dict) else None
 
 
+def lineage_trace(project_root: Path) -> dict[str, Any] | None:
+    """One recorded answer from DataHub, for the landing page.
+
+    Committed rather than described: it is the primitive the whole audit rests
+    on, and it previously existed only inside a markdown file and a gitignored
+    local report, so neither a clone nor the deployed image had it.
+    """
+    path = project_root / "evidence" / "integrations" / "lineage-trace.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    path_nodes = payload.get("path")
+    # The template indexes three nodes; anything else is not this shape.
+    if not isinstance(path_nodes, list) or len(path_nodes) != 3:
+        return None
+    return payload
+
+
 def collect(project_root: Path) -> dict[str, Any]:
     root = Path(project_root)
     return {
