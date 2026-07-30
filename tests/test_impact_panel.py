@@ -73,3 +73,35 @@ def test_unparseable_files_are_never_called_clean_on_the_page(page: str) -> None
 def test_it_does_not_claim_what_a_survey_did_not_examine(page: str) -> None:
     """Guards the specific overreach that was removed."""
     assert "of those studies looked upstream" not in page
+
+
+# --- Prior art --------------------------------------------------------------
+#
+# "Does this already exist?" is the first question an originality judgement asks.
+# Answering it with citations, and conceding where existing tools are the better
+# answer, is more convincing than claiming novelty.
+
+
+@pytest.fixture(scope="module")
+def evidence_page() -> str:
+    return TestClient(create_app(PROJECT_ROOT)).get("/evidence").text
+
+
+def test_prior_art_is_named_with_citations(evidence_page: str) -> None:
+    assert "Does this already exist?" in evidence_page
+    for work in ("2209.03345", "2503.14723", "2603.10742"):
+        assert work in evidence_page, work
+
+
+def test_it_concedes_where_feature_stores_are_the_better_answer(evidence_page: str) -> None:
+    """A tool that cannot name its own alternative is not credible."""
+    assert "Feast" in evidence_page
+    assert "prevents it" in evidence_page
+    assert "better answer than detecting it" in evidence_page
+
+
+def test_the_gap_is_stated_precisely_not_vaguely(evidence_page: str) -> None:
+    """The claim is about a taxonomy, not about being generally superior."""
+    assert "Overlap, Multi-test" in evidence_page
+    assert "notebook-internal" in evidence_page
+    assert "manual feature derivation before split" in evidence_page

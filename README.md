@@ -241,6 +241,38 @@ statistical route's collapse, the absence of false positives across 21 guarded q
 the vanishing AUC delta. Full caveats in
 [evidence/benchmark/2026-07-28.md](evidence/benchmark/2026-07-28.md).
 
+### How this differs from what already exists
+
+Leakage detection is an active field. Everything below is real, works, and is worth
+using — the point of this table is to be precise about the gap, not to dismiss any of it.
+
+| Prior work | What it analyses | Covers upstream temporal leakage? |
+|---|---|---|
+| [Yang et al., ASE 2022](https://arxiv.org/abs/2209.03345) | Static analysis of notebook code | No — notebook scope |
+| [LeakageDetector, ICSME 2025](https://arxiv.org/abs/2503.14723) | PyCharm plugin over Python ML code | No — detects Overlap, Multi-test, Preprocessing |
+| [LeakageDetector 2.0, ICSME 2025](https://arxiv.org/abs/2509.15971) | The same, extended to Jupyter | No |
+| [A Grammar of ML Workflows, 2026](https://arxiv.org/abs/2603.10742) | Type system rejecting leakage at call time | Partly — has `split_temporal` with embargo, but scoped to one execution context |
+| Feature stores (Feast, Tecton, Azure ML) | As-of joins at retrieval time | **Prevents** it, if every feature goes through the store |
+
+Two things follow, and both are worth stating plainly.
+
+**The three leakage types current tooling detects are all notebook-internal.** Overlap,
+Multi-test and Preprocessing are mistakes made while splitting and fitting. The class
+Hindsight targets — a feature whose *values* were computed from records that did not exist
+at the decision — is not in that taxonomy. The 2026 grammar paper comes closest and names
+the boundary itself: it explicitly lists "manual feature derivation before split" among its
+enforcement gaps, and scopes itself to "one notebook session, one pipeline run".
+
+**A feature store with correct as-of joins prevents this by construction, and that is a
+better answer than detecting it.** If every feature your model uses is retrieved through
+point-in-time joins, you do not need Hindsight for this class of defect. It is for the very
+common case where features are assembled in SQL upstream with no such guarantee — and for
+the separate problem of *proving*, after the fact and to someone else, that a specific model
+was clean.
+
+That second part is why the output is an evidence record with a re-read write-back rather
+than a warning in an IDE.
+
 ### Validated against a real dbt project
 
 Run against [dbt-labs/jaffle-shop](https://github.com/dbt-labs/jaffle-shop), a public project

@@ -339,6 +339,75 @@
 </section>
 {% endif %}
 
+<!-- Prior art ------------------------------------------------------------- -->
+{#- A judge assessing originality will ask "does this already exist". Answering
+    precisely, with citations, and conceding where existing tools are the better
+    answer, is more convincing than claiming novelty. -#}
+<section class="panel" aria-labelledby="prior-heading">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Prior art</p>
+      <h2 id="prior-heading">Does this already exist?</h2>
+    </div>
+  </div>
+
+  <p class="prose">
+    Leakage detection is an active field. Everything below is real and worth using.
+    The point is to be precise about the gap, not to dismiss any of it.
+  </p>
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Prior work</th><th scope="col">What it analyses</th>
+          <th scope="col">Covers upstream temporal leakage?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row"><a href="https://arxiv.org/abs/2209.03345">Yang et al., ASE 2022</a></th>
+          <td>Static analysis of notebook code</td>
+          <td><span class="finding">no &mdash; notebook scope</span></td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://arxiv.org/abs/2503.14723">LeakageDetector, ICSME 2025</a></th>
+          <td>PyCharm plugin over Python ML code</td>
+          <td><span class="finding">no &mdash; Overlap, Multi-test, Preprocessing</span></td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://arxiv.org/abs/2603.10742">A Grammar of ML Workflows, 2026</a></th>
+          <td>Type system rejecting leakage at call time</td>
+          <td><span class="finding">partly &mdash; one execution context</span></td>
+        </tr>
+        <tr>
+          <th scope="row">Feature stores (Feast, Tecton)</th>
+          <td>As-of joins at retrieval time</td>
+          <td><span class="finding ok">prevents it, if every feature goes through the store</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <p>
+      <strong>The three leakage types current tooling detects are all notebook-internal.</strong>
+      Overlap, Multi-test and Preprocessing are mistakes made while splitting and fitting.
+      A feature whose <em>values</em> came from records that did not exist at the decision is
+      not in that taxonomy. The 2026 grammar paper comes closest and names the boundary
+      itself &mdash; it lists &ldquo;manual feature derivation before split&rdquo; among its
+      enforcement gaps.
+    </p>
+    <p class="fine">
+      <strong>And a feature store with correct as-of joins prevents this by construction,
+      which is a better answer than detecting it.</strong> Hindsight is for the common case
+      where features are assembled in SQL upstream with no such guarantee &mdash; and for the
+      separate problem of proving, afterwards and to someone else, that a specific model was
+      clean. That is why the output is an evidence record rather than a warning in an IDE.
+    </p>
+  </div>
+</section>
+
 <!-- What went back upstream ------------------------------------------------ -->
 <section class="panel">
   <div class="section-heading">
