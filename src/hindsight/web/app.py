@@ -21,6 +21,7 @@ from hindsight.web import demo_mode
 from hindsight.web.activity import build_activity
 from hindsight.web.artifacts import collect as collect_artifacts
 from hindsight.web.artifacts import external_proof
+from hindsight.web.benchmark import load as load_benchmark
 from hindsight.web.explain import explain
 from hindsight.web.glossary import GLOSSARY
 from hindsight.web.health import datahub_health
@@ -207,6 +208,7 @@ def create_app(project_root: Path | None = None) -> FastAPI:
                 "runs": runs,
                 "artifacts": collect_artifacts(root),
                 "external": external_proof(root),
+                "bench": load_benchmark(root),
             },
         )
 

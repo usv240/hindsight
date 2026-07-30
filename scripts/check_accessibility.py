@@ -71,9 +71,22 @@ CONTRAST_JS = r"""
     return out;
   }
 
+  /* Text clipped to a 1px box is for screen readers and is never seen, so its
+     contrast against whatever sits behind it is meaningless. offsetParent is not
+     null for these, so they have to be excluded explicitly. */
+  const srOnly = el => {
+    const cs = getComputedStyle(el);
+    if (cs.position !== 'absolute') return false;
+    const clipped = cs.clip === 'rect(0px, 0px, 0px, 0px)' ||
+                    cs.clipPath === 'inset(50%)';
+    const tiny = parseFloat(cs.width) <= 1 && parseFloat(cs.height) <= 1;
+    return clipped || tiny;
+  };
+
   const bad = [];
   document.querySelectorAll('*').forEach(el => {
     if (el.offsetParent === null) return;
+    if (srOnly(el)) return;
     if (![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return;
     const cs = getComputedStyle(el);
     if (cs.opacity !== '' && +cs.opacity < 0.4) return;

@@ -1,0 +1,123 @@
+{#- The 42-case sweep, drawn.
+
+    Part-to-whole, not two lines: every case the statistical route catches is also
+    caught overall, so they are not independent series. One bar per reach band,
+    always full, whose composition shifts from "statistics found it" to "only the
+    deterministic proof found it". The bar staying full while the indigo segment
+    vanishes is the entire argument for two routes.
+
+    Two categorical hues, validated with the dataviz palette checker: CVD ΔE 29.1
+    (dark) and 31.7 (light) against a target of 8. A legend is always present and
+    the table below repeats every value, so identity is never colour alone. -#}
+
+<section class="panel" aria-labelledby="bench-heading">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Measured, not asserted</p>
+      <h2 id="bench-heading">What happens as the defect gets subtler</h2>
+    </div>
+    <span class="finding ok">{{ bench.cases }} cases &middot; 0 false positives</span>
+  </div>
+
+  <p class="prose">
+    The same planted defect, swept from reaching every record down to reaching
+    {{ bench.faintest.reach_pct }}% of them, with a matched clean query for every case.
+    Each bar is one band. <strong>Every bar is full</strong> &mdash; the defect was caught
+    every time. What changes is <em>which route caught it</em>.
+  </p>
+
+  <figure class="bench">
+    <div class="bench-plot" role="group" aria-label="Detection route by defect reach">
+      {% for row in bench.rows %}
+      <div class="bench-band">
+        <div class="bench-bar"
+             title="{{ row.reach_pct }}% reach: {{ row.statistical }} of {{ row.cases }} caught by statistics, {{ row.deterministic_only }} by the deterministic proof only">
+          {%- if row.statistical_pct -%}
+          <span class="bench-seg is-statistical" style="height: {{ row.statistical_pct }}%">
+            <span class="sr-only">{{ row.statistical_pct }}% caught by statistics</span>
+          </span>
+          {%- endif -%}
+          {%- if row.deterministic_only_pct -%}
+          <span class="bench-seg is-deterministic" style="height: {{ row.deterministic_only_pct }}%">
+            <span class="sr-only">{{ row.deterministic_only_pct }}% caught by the deterministic proof only</span>
+          </span>
+          {%- endif -%}
+        </div>
+        <span class="bench-reach">{{ row.reach_pct }}%</span>
+        <span class="bench-delta">{{ "%.3f"|format(row.auc_delta) }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="bench-axis">
+      <span>Defect reaches this share of records</span>
+      <span class="bench-axis-note">mean AUC delta, first and last shown</span>
+    </div>
+
+    <div class="bench-legend">
+      <span class="bench-key">
+        <span class="bench-swatch is-statistical" aria-hidden="true"></span>
+        Caught by retraining and comparing
+      </span>
+      <span class="bench-key">
+        <span class="bench-swatch is-deterministic" aria-hidden="true"></span>
+        Caught only by reading the code
+      </span>
+    </div>
+
+    <figcaption>
+      {% if bench.blind_from_pct %}
+      Below {{ bench.blind_from_pct }}% reach the statistical route stops firing entirely.
+      At {{ bench.faintest.reach_pct }}% the performance difference is
+      <strong>{{ "%.4f"|format(bench.faintest.auc_delta) }} of AUC</strong> &mdash; invisible to
+      any threshold anyone would realistically set &mdash; and the deterministic proof still
+      catches it. That is the argument for two routes, measured rather than claimed.
+      {% endif %}
+    </figcaption>
+  </figure>
+
+  <details class="bench-table">
+    <summary>Table view of every band</summary>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Reach</th><th scope="col">Cases</th>
+            <th scope="col">Caught by statistics</th>
+            <th scope="col">Caught by code only</th>
+            <th scope="col">Missed</th><th scope="col">Mean AUC delta</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in bench.rows %}
+          <tr>
+            <th scope="row">{{ row.reach_pct }}%</th>
+            <td>{{ row.cases }}</td>
+            <td>{{ row.statistical }}</td>
+            <td>{{ row.deterministic_only }}</td>
+            <td>{{ row.missed }}</td>
+            <td>{{ "%.4f"|format(row.auc_delta) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  {#- The disclosure is load-bearing. A perfect score that is partly true by
+      construction must say so on the page, not only in a file. -#}
+  {% if bench.how_to_read_this %}
+  <div class="callout">
+    <p>
+      <strong>Read the perfect score with care.</strong>
+      {{ bench.how_to_read_this.the_headline_is_partly_tautological }}
+    </p>
+    <p class="fine">
+      What is measured honestly: the statistical route's decay as the defect gets
+      subtler, <strong>zero false positives</strong> across {{ bench.clean_cases }} guarded
+      queries that could have been flagged, and the AUC delta shrinking toward
+      invisibility.
+    </p>
+  </div>
+  {% endif %}
+</section>

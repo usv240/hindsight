@@ -2548,3 +2548,127 @@ h3 { letter-spacing: -0.015em; }
 :root:not([data-theme="dark"]) .scenario-card:hover {
   box-shadow: 0 2px 4px rgb(15 20 32 / 0.08), 0 16px 32px -14px rgb(15 20 32 / 0.26);
 }
+
+/* -- The benchmark sweep --------------------------------------------------
+   Part-to-whole columns: one band per defect reach, every bar full because the
+   defect was always caught, the composition showing which route caught it.
+
+   Two categorical hues, chosen with the dataviz palette validator rather than by
+   eye - CVD deltaE 29.1 dark, 31.7 light, against a target of 8. Deliberately not
+   the status colours: these are two methods, not two states, and reusing
+   green/red here would say "good route / bad route" which is false.
+------------------------------------------------------------------------- */
+
+:root, :root[data-theme="dark"] {
+  --series-statistical: #7c86ff;
+  --series-deterministic: #c9762a;
+}
+:root[data-theme="light"] {
+  --series-statistical: #4f46e5;
+  --series-deterministic: #b45309;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --series-statistical: #4f46e5;
+    --series-deterministic: #b45309;
+  }
+}
+
+.bench { margin: var(--sp-5) 0 0; }
+
+.bench-plot {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--sp-2);
+  align-items: end;
+}
+.bench-band { display: grid; justify-items: center; gap: var(--sp-2); min-width: 0; }
+
+/* Thin marks, anchored to a baseline. */
+.bench-bar {
+  display: flex;
+  flex-direction: column-reverse;   /* statistics grows from the baseline */
+  width: 100%;
+  /* Thin marks: a 54px column of saturated fill reads loud at this size, and
+     saturated fills belong on small marks rather than large blocks. */
+  max-width: 34px;
+  height: 150px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  /* A 2px surface gap between stacked segments, per the mark spec. */
+  gap: 2px;
+  background: var(--surface-2);
+}
+.bench-seg { display: block; width: 100%; }
+.bench-seg.is-statistical { background: var(--series-statistical); }
+.bench-seg.is-deterministic { background: var(--series-deterministic); }
+
+.bench-reach { font-size: var(--step--1); font-weight: 700; color: var(--text); }
+/* A second measure, in text ink - never in a series colour. Only the endpoints
+   are labelled: a number under all seven bands is a number on every data point,
+   which goes unread. The table view carries the rest. */
+.bench-delta {
+  font-size: 11px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+  visibility: hidden;
+}
+.bench-band:first-child .bench-delta,
+.bench-band:last-child .bench-delta { visibility: visible; }
+
+.bench-axis {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  margin-top: var(--sp-3);
+  font-size: var(--step--1);
+  color: var(--text-muted);
+}
+.bench-axis-note { color: var(--text-faint); }
+
+/* A legend is always present for two series, so identity is never colour alone. */
+.bench-legend {
+  display: flex;
+  gap: var(--sp-5);
+  flex-wrap: wrap;
+  margin-top: var(--sp-4);
+  font-size: var(--step--1);
+  color: var(--text-muted);
+}
+.bench-key { display: inline-flex; align-items: center; gap: var(--sp-2); }
+.bench-swatch { width: 12px; height: 12px; border-radius: 3px; flex: 0 0 auto; }
+.bench-swatch.is-statistical { background: var(--series-statistical); }
+.bench-swatch.is-deterministic { background: var(--series-deterministic); }
+
+.bench figcaption {
+  margin-top: var(--sp-4);
+  font-size: var(--step--1);
+  color: var(--text-muted);
+  max-width: var(--measure-tight);
+}
+.bench-table { margin-top: var(--sp-5); }
+.bench-table summary {
+  cursor: pointer;
+  font-size: var(--step--1);
+  color: var(--text-muted);
+  width: fit-content;
+}
+.bench-table summary:hover { color: var(--text); }
+.bench-table .table-wrap { margin-top: var(--sp-3); }
+
+/* Forced-colors and print: colour is gone, so the segments need a texture to
+   stay distinguishable. The legend and table carry the rest. */
+@media (forced-colors: active), print {
+  .bench-seg.is-deterministic {
+    background: repeating-linear-gradient(135deg, currentColor 0 2px, transparent 2px 5px);
+    border: 1px solid currentColor;
+  }
+  .bench-seg.is-statistical { border: 1px solid currentColor; }
+}
+
+@media (max-width: 640px) {
+  .bench-bar { height: 110px; }
+  .bench-plot { gap: 4px; }
+  .bench-delta { display: none; }   /* keeps the band labels legible */
+}
