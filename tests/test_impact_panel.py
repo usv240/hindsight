@@ -105,3 +105,49 @@ def test_the_gap_is_stated_precisely_not_vaguely(evidence_page: str) -> None:
     assert "Overlap, Multi-test" in evidence_page
     assert "notebook-internal" in evidence_page
     assert "manual feature derivation before split" in evidence_page
+
+
+# --- The demo script --------------------------------------------------------
+#
+# The video is the only unmet judging criterion, and a script that names a beat
+# the console no longer has wastes a take. The previous script went stale without
+# anyone noticing: it predated the sweep, the external dataset, the benchmark
+# chart and the lineage trace, so following it would have produced a video that
+# missed the strongest material.
+
+
+def test_every_beat_the_script_names_exists_on_the_page_it_names() -> None:
+    script = (PROJECT_ROOT / "docs" / "DEMO_SCRIPT.md").read_text(encoding="utf-8")
+    client = TestClient(create_app(PROJECT_ROOT))
+    home = client.get("/").text
+    evidence = client.get("/evidence").text
+    audit = client.get("/audits/latest", follow_redirects=True).text
+
+    # Each entry: the phrase the script tells the presenter to point at, and the
+    # page it says to be on.
+    beats = [
+        ("What the catalog actually answers", home),
+        ("Not built for", home),
+        ("What is being audited", audit),
+        ("What happens as the defect gets subtler", evidence),
+        ("Does it work on data we did not create", evidence),
+        ("Does this already exist?", evidence),
+    ]
+    for phrase, page in beats:
+        assert phrase in script or phrase.lower() in script.lower(), f"script drifted: {phrase}"
+        assert phrase in page, f"console no longer has: {phrase}"
+
+
+def test_the_script_maps_beats_to_judging_criteria() -> None:
+    """Three minutes is less than the material, so the cut has to be deliberate."""
+    script = (PROJECT_ROOT / "docs" / "DEMO_SCRIPT.md").read_text(encoding="utf-8")
+    for criterion in ("Use of DataHub", "Originality", "Technical Execution", "Real-World"):
+        assert criterion in script, criterion
+    assert "Beats to protect if you run long" in script
+
+
+def test_the_script_still_forbids_the_claims_the_readme_disclaims() -> None:
+    script = (PROJECT_ROOT / "docs" / "DEMO_SCRIPT.md").read_text(encoding="utf-8")
+    assert "Do not say" in script
+    assert "availability timestamp" in script
+    assert "visibility public" in script
