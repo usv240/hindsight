@@ -1,31 +1,30 @@
-"""A DataHub Action that audits a model the moment it appears in the catalog.
+"""A DataHub Action that audits an exact-bound model when its metadata changes.
 
-Everything else here is something a person runs. This is the version that runs
-itself: it subscribes to DataHub's metadata event stream, and when a new ML model
-version is created it audits it and records the finding - without anyone
-remembering to.
+It subscribes to DataHub's metadata event stream and audits the configured ML
+model without relying on a person to trigger the release check.
 
 That is the difference between a tool and a gate. A release check nobody triggers
 is a release check that does not happen.
 
-Deploy with `docker/hindsight-action.yml`:
+Deploy in the isolated official runtime with:
 
-    datahub actions -c docker/hindsight-action.yml
+    docker compose -f docker/hindsight-action.compose.yml up
 
-The action deliberately does **not** publish to the catalog on its own. It raises
-an incident describing what it found, because an autonomous process that silently
-mutates governed metadata is exactly the thing this project argues against. The
-incident is the notification; a human still approves the write-back.
+The action does **not** publish governed evidence on its own. Incident notification
+is optional; the proof deployment is observe-only, and a human still approves any
+catalog write-back.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 # The Actions framework is an optional, deployment-time dependency. Importing it
 # at module scope would make the package unusable for anyone who only wants the
@@ -51,18 +50,22 @@ WATCHED_ENTITY_TYPES = frozenset({"mlModel", "mlModelGroup", "dataset"})
 
 
 class HindsightReleaseGate(Action):
-    """Audit newly created models and record what was found.
+    """Audit exact-bound model changes and record what was found.
 
     Configuration (from the pipeline YAML):
 
     ``audit``
         Path to the audit config describing what to run. Defaults to the
         repository's own credit-default audit.
+    ``target_urn``
+        Exact model URN this Action is permitted to audit.
     ``entity_types``
         Which entity types to react to. Defaults to ML models.
     ``raise_incident``
         Whether to raise a DataHub incident when a release is blocked.
         Defaults to true; the incident is a notification, never an approval.
+    ``proof_log_path``
+        Optional append-only JSONL path for machine-readable local results.
     ``project_root``
         Where scenarios and audit configs live. Defaults to the process CWD.
     """
@@ -76,7 +79,9 @@ class HindsightReleaseGate(Action):
             self.config.get("entity_types", ["mlModel"]) or WATCHED_ENTITY_TYPES
         )
         self.raise_incident = bool(self.config.get("raise_incident", True))
+        self.target_urn = self.config.get("target_urn")
         self.audited: list[dict[str, Any]] = []
+        self._seen_events: set[str] = set()
 
     @classmethod
     def create(cls, config_dict: dict[str, Any], ctx: PipelineContext) -> HindsightReleaseGate:
@@ -88,11 +93,24 @@ class HindsightReleaseGate(Action):
         urn, entity_type = self._extract(event)
         if not urn:
             return
+        logger.info(
+            "Hindsight: event observed urn=%s entity_type=%s bound_target=%s",
+            urn,
+            entity_type,
+            self.target_urn or "<audit-config>",
+        )
         if entity_type and entity_type not in self.entity_types:
             logger.debug("Hindsight: ignoring %s (%s)", urn, entity_type)
             return
+        if self.target_urn and urn != self.target_urn:
+            logger.debug("Hindsight: ignoring unbound asset %s", urn)
+            return
 
-        logger.info("Hindsight: auditing newly created %s", urn)
+        event_key = self._event_key(event, urn)
+        if event_key in self._seen_events:
+            logger.debug("Hindsight: ignoring an exact redelivery for %s", urn)
+            return
+        logger.info("Hindsight: auditing changed model %s", urn)
         try:
             result = self.audit(urn)
         except Exception:  # noqa: BLE001 - an action must never take the pipeline down
@@ -100,6 +118,8 @@ class HindsightReleaseGate(Action):
             return
 
         self.audited.append(result)
+        self._seen_events.add(event_key)
+        self._record_proof(result)
         logger.info(
             "Hindsight: %s -> %s (%s)",
             urn,
@@ -113,15 +133,29 @@ class HindsightReleaseGate(Action):
         from hindsight.workflow import run_demo_audit
 
         config = AuditConfig.load(self.project_root / self.audit_path, self.project_root)
+        configured_target = self.target_urn or config.target_urn
+        if not configured_target:
+            raise ValueError("DataHub Action requires an exact target_urn binding")
+        if configured_target != urn:
+            raise ValueError(f"Action is bound to {configured_target}, not incoming asset {urn}")
         bundle = run_demo_audit(
             scenario_path=config.scenario_path,
             transformation_path=config.transformation_path,
             remediation_path=config.remediation_path,
             post_outcome_table=config.post_outcome_table,
+            available_column=config.available_column,
+            prediction_column=config.prediction_column,
             subject=config.subject,
         )
+        evidence_model_urn = bundle["validation"]["evidence_context"]["leakage_model_urn"]
+        if evidence_model_urn != configured_target:
+            raise ValueError(
+                "Audit evidence describes "
+                f"{evidence_model_urn}, not bound model {configured_target}"
+            )
         result = {
             "urn": urn,
+            "evidence_model_urn": evidence_model_urn,
             "audit": config.name,
             "verdict": bundle["verdict"],
             "release_decision": bundle["release_decision"],
@@ -159,13 +193,40 @@ class HindsightReleaseGate(Action):
             blocked,
         )
 
+    def _record_proof(self, result: dict[str, Any]) -> None:
+        """Append a machine-readable local proof when explicitly configured."""
+        proof_path = self.config.get("proof_log_path")
+        if not proof_path:
+            return
+        path = Path(proof_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(result, sort_keys=True) + "\n")
+
+    @staticmethod
+    def _event_key(event: Any, urn: str) -> str:
+        """Stable identity for one Kafka delivery, without suppressing later changes."""
+        payload = getattr(event, "event", event)
+        if hasattr(payload, "as_json"):
+            body = payload.as_json()
+        elif isinstance(payload, str):
+            body = payload
+        else:
+            body = json.dumps(payload, sort_keys=True, default=str)
+        material = json.dumps(
+            {"urn": urn, "event": body, "meta": getattr(event, "meta", None)},
+            sort_keys=True,
+            default=str,
+        )
+        return hashlib.sha256(material.encode()).hexdigest()
+
     # -- event parsing -----------------------------------------------------
 
     @staticmethod
     def _extract(event: Any) -> tuple[str | None, str | None]:
         """Pull the URN and entity type out of an event envelope.
 
-        Handles both `EntityChangeEvent_v1` and `MetadataChangeLog_v1`, and
+        Handles both `EntityChangeEvent_v1` and `MetadataChangeLogEvent_v1`, and
         tolerates a plain dict so the logic is testable without Kafka.
         """
         payload = getattr(event, "event", event)

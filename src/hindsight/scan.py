@@ -1,8 +1,8 @@
 """Scan a directory of SQL for post-outcome sources used without a time guard.
 
-The point-in-time reconstruction needs data shaped like the seeded scenario, so
-it cannot run against an arbitrary warehouse yet. The *transformation* check has
-no such limitation: it is pure SQL analysis, and it is the half of the evidence
+Point-in-time reconstruction can map external CSV or Parquet snapshots, but it does
+not query arbitrary warehouse engines directly yet. The *transformation* check needs
+no data adapter: it is pure SQL analysis, and it is the half of the evidence
 that produces a deterministic proof rather than a statistical signal.
 
 So this exists to be genuinely usable on day one. Point it at a dbt `models/`

@@ -1,0 +1,20 @@
+services:
+  hindsight-release-gate:
+    build:
+      context: ..
+      dockerfile: docker/HindsightAction.Dockerfile
+    image: hindsight-action:local
+    environment:
+      DATAHUB_GMS_URL: http://datahub-gms:8080
+      HINDSIGHT_ACTION_TARGET_URN: ${HINDSIGHT_ACTION_TARGET_URN:?set exact model URN}
+      HINDSIGHT_ACTION_PIPELINE_NAME: ${HINDSIGHT_ACTION_PIPELINE_NAME:-hindsight_release_gate}
+      KAFKA_BOOTSTRAP_SERVER: broker:29092
+      SCHEMA_REGISTRY_URL: http://datahub-gms:8080/schema-registry/api/
+    networks:
+      - datahub
+    restart: "no"
+
+networks:
+  datahub:
+    external: true
+    name: datahub_network

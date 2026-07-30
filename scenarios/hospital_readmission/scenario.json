@@ -23,8 +23,8 @@
                            "decision_node":  "discharges_at_decision_time.prediction_time",
                            "leakage_case_id":  "readmission-post-discharge-followup",
                            "safe_case_id":  "readmission-prior-admissions-safe-control",
-                           "leakage_model_urn":  "urn:li:mlModel:hindsight.readmission_v1_leaky",
-                           "safe_model_urn":  "urn:li:mlModel:hindsight.readmission_v2_safe",
+                           "leakage_model_urn":  "urn:li:mlModel:(urn:li:dataPlatform:mlflow,hindsight.readmission_v1_leaky,PROD)",
+                           "safe_model_urn":  "urn:li:mlModel:(urn:li:dataPlatform:mlflow,hindsight.readmission_v2_safe,PROD)",
                            "leakage_feature_urn":  "urn:li:schemaField:(hindsight.readmission_feature_pipeline,followup_appointments_booked)",
                            "safe_feature_urn":  "urn:li:schemaField:(hindsight.patient_history_point_in_time,prior_admissions_12m)",
                            "leakage_lineage_path":  [

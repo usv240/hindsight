@@ -1,0 +1,10 @@
+{
+  "audit": "credit_default",
+  "confirmation_route": "point_in_time_collapse",
+  "evidence_model_urn": "urn:li:mlModel:(urn:li:dataPlatform:mlflow,hindsight.credit_default_v1_leaky,PROD)",
+  "exit_code": 3,
+  "incident_raised": false,
+  "release_decision": "block",
+  "urn": "urn:li:mlModel:(urn:li:dataPlatform:mlflow,hindsight.credit_default_v1_leaky,PROD)",
+  "verdict": "confirmed"
+}

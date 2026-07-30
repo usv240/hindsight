@@ -1,9 +1,7 @@
 # Audit configs
 
-An audit config tells Hindsight three things: **what data to reconstruct**, **which SQL
-built the feature**, and **which catalog asset the resulting evidence is about**.
-
-Pass one with `--audit`:
+An audit config tells Hindsight what data to reconstruct, which SQL built the
+feature, and which catalog asset the evidence describes.
 
 ```powershell
 uv run hindsight demo-audit --audit audits/credit_default.json
@@ -13,40 +11,84 @@ uv run hindsight serve --audit audits/my_pipeline.json --target-urn "<exact-data
 
 The console also reads `HINDSIGHT_AUDIT`.
 
-## Fields
+## Audit fields
 
 | Key | Required | Meaning |
-|---|---|---|
-| `name` | no | Label used in output. Defaults to the filename. |
-| `scenario` | **yes** | Path to the scenario data config used for point-in-time reconstruction. |
-| `transformation_sql` | **yes** | The SQL that builds the suspect feature. Parsed for an availability cutoff. |
-| `remediation_sql` | **yes** | The proposed repair, verified independently. |
-| `post_outcome_table` | **yes** | The table whose rows only exist after the prediction cutoff. |
-| `available_column` | no | Column carrying availability time. Default `available_at`. |
-| `prediction_column` | no | Column carrying the prediction cutoff. Default `prediction_time`. |
-| `target_urn` | no | The DataHub asset this evidence describes. **Set this.** See below. |
-| `synthetic` | no | Whether the underlying data is synthetic. Default `true`. |
+|---|---:|---|
+| `name` | no | Output label; defaults to the filename. |
+| `scenario` | yes | Scenario policy plus generated or external point-in-time inputs. |
+| `transformation_sql` | yes | Suspect transformation, parsed for an availability cutoff. |
+| `remediation_sql` | yes | Proposed repair, verified independently. |
+| `post_outcome_table` | yes | Relation whose rows exist only after prediction. |
+| `available_column` | no | Availability-time column; default `available_at`. |
+| `prediction_column` | no | Decision-time column; default `prediction_time`. |
+| `target_urn` | no | Exact DataHub asset the evidence describes. Set this for write-back. |
+| `synthetic` | no | Whether the input is synthetic; default `true`. |
 
-## Why `target_urn` matters
+## Exact target binding
 
-An unbound audit may be evaluated and previewed, but it cannot perform approved write-back.
-Bind the exact asset in the JSON config, set `HINDSIGHT_TARGET_URN`, or pass
-`--target-urn` to `hindsight serve`. The web console then refuses every other target.
+An unbound audit may be evaluated and previewed, but it cannot perform approved
+write-back. Bind the exact asset in JSON, set `HINDSIGHT_TARGET_URN`, or pass
+`--target-urn` to `hindsight serve`. The console refuses every other target.
+The CLI has a conspicuous `--allow-urn-mismatch` emergency override and records
+its use; do not use it in normal operation.
 
-The CLI exposes `--allow-urn-mismatch` as a conspicuous emergency override for approved
-automation. Hindsight records use of that override. Do not use it for the demo or normal operation:
-writing a correct verdict onto the wrong asset creates false catalog evidence.
+## Point-in-time reconstruction on your files
 
-## Pointing this at your own pipeline
+A scenario can keep the frozen generator or map arbitrary CSV/Parquet column
+names into Hindsight's canonical reconstruction contract. Use two relations:
 
-Current honest status: the reconstruction engine expects the scenario-data shape used by
-the seeded scenario, so adapting it to your warehouse means producing a scenario config
-that the validation runner can load. The SQL verification, verdict lattice, approval gate
-and DataHub write-back are already generic and work against any asset.
+- `applications`: one row per decision, with a unique entity ID, decision time,
+  binary label, explicit `train`/`test` split, one or more numeric base`r`n  features, and a safe-control feature.
+- `feature_records`: long-form history with entity ID, availability time, and the
+  suspect feature value. Each decision needs at least one record available by
+  its decision time.
 
-If you only want the SQL and lineage checks against your own transformation, `verify-sql`
-runs standalone today:
+Add this object to the scenario JSON:
+
+```json
+{
+  "train_rows": 160,
+  "test_rows": 40,
+  "point_in_time_adapter": {
+    "kind": "files",
+    "applications": {"path": "decisions.parquet", "format": "parquet"},
+    "feature_records": {"path": "feature_history.csv", "format": "csv"},
+    "columns": {
+      "entity_id": "loan key",
+      "prediction_time": "decision timestamp",
+      "label": "did default",
+      "split": "evaluation split",
+      "base_features": ["debt ratio", "account tenure"],
+      "safe_feature": "prior missed payments",
+      "record_entity_id": "record loan",
+      "available_time": "recorded timestamp",
+      "feature_value": "days since payment"
+    }
+  }
+}
+```
+
+Paths are relative to the scenario file unless absolute. Run:
 
 ```powershell
-uv run hindsight verify-sql path/to/your_feature.sql --post-outcome-table your_events_table
+uv run hindsight validate-point-in-time --scenario path/to/scenario.json
+```
+
+DuckDB maps the user-defined columns, selects the latest observed record and the
+latest record available at decision time, and counts excluded post-cutoff
+records. Hindsight fails closed on row-count or declared split mismatch,`r`nduplicate decision IDs,
+null or unparseable required/base values, non-binary outcomes, malformed
+history, or a decision with no pre-cutoff record. The report records the full
+column mapping plus SHA-256 and byte size for both source files.
+
+Current honest boundary: the adapter reads local CSV/Parquet snapshots; it does
+not yet issue direct queries against arbitrary warehouse engines. Exported
+relations are real external inputs, not the seeded generator, and their hashes
+make the run reproducible.
+
+For SQL-only temporal checks, no data adapter is required:
+
+```powershell
+uv run hindsight verify-sql path/to/feature.sql --post-outcome-table events_after_decision
 ```

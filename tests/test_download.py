@@ -67,8 +67,38 @@ def test_inline_mode_is_viewable_rather_than_downloaded() -> None:
 
 
 def test_the_record_carries_no_absolute_paths() -> None:
-    """It is served to anyone; the host's directory layout is not theirs."""
+    """Every record shipped in the public image must be portable on disk and over HTTP."""
     client = _client()
-    text = client.get(f"/audits/{_a_run_id(client)}/evidence.json?inline=1").text
-    assert "C:\\\\" not in text
-    assert ":/" not in text.replace("http://", "").replace("https://", "")
+    includes = [
+        line.removeprefix("!evidence/runs/")
+        for line in (PROJECT_ROOT / ".dockerignore").read_text(encoding="utf-8").splitlines()
+        if line.startswith("!evidence/runs/") and line.endswith(".json")
+    ]
+    assert includes
+    for filename in includes:
+        raw = (PROJECT_ROOT / "evidence" / "runs" / filename).read_text(encoding="utf-8")
+        run_id = Path(filename).stem
+        served = client.get(f"/audits/{run_id}/evidence.json?inline=1").text
+        for text in (raw, served):
+            assert "C:\\\\" not in text, run_id
+            assert ":/" not in text.replace("http://", "").replace("https://", ""), run_id
+
+
+def test_recording_makes_internal_and_external_paths_portable(tmp_path: Path) -> None:
+    from hindsight.web.runs import get_run, record_run
+
+    bundle = {
+        "audit_config": {
+            "name": "portable",
+            "scenario": str(tmp_path / "audits" / "scenario.json"),
+            "external_snapshot": r"D:\private\warehouse\snapshot.parquet",
+        },
+        "verdict": "clear_for_release",
+    }
+    recorded = record_run(tmp_path, bundle)
+    loaded = get_run(tmp_path, recorded["run_id"])
+
+    assert loaded is not None
+    config = loaded["evidence_bundle"]["audit_config"]
+    assert config["scenario"] == "audits/scenario.json"
+    assert config["external_snapshot"] == "<external>/snapshot.parquet"

@@ -10,16 +10,59 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import uuid
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any
 
 RUNS_DIRNAME = "evidence/runs"
+_WINDOWS_ABSOLUTE = re.compile(r"^(?:[A-Za-z]:[\\/]|\\\\)")
 
 
 def runs_dir(project_root: Path) -> Path:
     return Path(project_root) / RUNS_DIRNAME
+
+
+def _portable_string(value: str, project_root: Path) -> str:
+    """Remove host-specific prefixes from path-shaped evidence values."""
+    if value.startswith(("http://", "https://", "urn:")):
+        return value
+
+    root = Path(project_root).resolve()
+    if _WINDOWS_ABSOLUTE.match(value):
+        candidate = PureWindowsPath(value)
+        windows_root = PureWindowsPath(str(root))
+        try:
+            return candidate.relative_to(windows_root).as_posix()
+        except ValueError:
+            return f"<external>/{candidate.name}"
+
+    candidate = Path(value)
+    if candidate.is_absolute():
+        try:
+            return candidate.resolve().relative_to(root).as_posix()
+        except ValueError:
+            return f"<external>/{candidate.name}"
+    return value
+
+
+def portable_record(value: Any, project_root: Path) -> Any:
+    """Return JSON-compatible evidence with no machine-specific absolute paths."""
+    if isinstance(value, dict):
+        return {key: portable_record(item, project_root) for key, item in value.items()}
+    if isinstance(value, list):
+        return [portable_record(item, project_root) for item in value]
+    if isinstance(value, tuple):
+        return [portable_record(item, project_root) for item in value]
+    if isinstance(value, str):
+        return _portable_string(value, project_root)
+    return value
+
+
+def _bundle_hash(bundle: dict[str, Any]) -> str:
+    canonical = json.dumps(bundle, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode()).hexdigest()
 
 
 def record_run(
@@ -34,7 +77,8 @@ def record_run(
     directory.mkdir(parents=True, exist_ok=True)
 
     now = datetime.now(UTC)
-    canonical_bundle = json.dumps(bundle, sort_keys=True, separators=(",", ":"))
+    bundle = portable_record(bundle, project_root)
+    publication = portable_record(publication, project_root)
     run = {
         "schema_version": 2,
         "run_id": f"{now.strftime('%Y%m%dT%H%M%S')}-{uuid.uuid4().hex[:6]}",
@@ -49,7 +93,7 @@ def record_run(
         "rows": bundle.get("validation", {}).get("rows"),
         "target_urn": bundle.get("audit_config", {}).get("target_urn"),
         "published": bool(publication and publication.get("mutation_performed")),
-        "evidence_sha256": hashlib.sha256(canonical_bundle.encode()).hexdigest(),
+        "evidence_sha256": _bundle_hash(bundle),
         "evidence_bundle": bundle,
         "publication": publication,
     }
@@ -79,6 +123,7 @@ def list_runs(project_root: Path, limit: int | None = 50) -> list[dict[str, Any]
         # the type check has to come before any dict operation.
         if not isinstance(payload, dict):
             continue
+        payload = portable_record(payload, project_root)
         payload.pop("evidence_bundle", None)
         payload.pop("publication", None)
         runs.append(payload)
@@ -98,7 +143,13 @@ def get_run(project_root: Path, run_id: str) -> dict[str, Any] | None:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError, UnicodeDecodeError):
         return None
-    return payload if isinstance(payload, dict) else None
+    if not isinstance(payload, dict):
+        return None
+    payload = portable_record(payload, project_root)
+    bundle = payload.get("evidence_bundle")
+    if isinstance(bundle, dict):
+        payload["evidence_sha256"] = _bundle_hash(bundle)
+    return payload
 
 
 def group_by_scenario(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:

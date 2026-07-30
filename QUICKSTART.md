@@ -57,6 +57,26 @@ property, linked audit Document, and active incident, then rereads all four.
 
 Never enable approved mutation against a production catalog for the demo.
 
+## External point-in-time data
+
+Map arbitrary CSV or Parquet column names in a scenario's
+`point_in_time_adapter`, then run:
+
+```powershell
+uv run hindsight validate-point-in-time --scenario path/to/scenario.json
+```
+
+The input contract and complete mapping example are in
+[`audits/README.md`](audits/README.md). Reports include both input hashes and the
+exact mapping used.
+
+## Event-driven DataHub Action
+
+The Action is isolated on DataHub's official compatible runtime. With the local
+DataHub quickstart running, bind it to one exact model URN and follow
+[`docker/ACTION.md`](docker/ACTION.md). It consumes model-property changes,
+deduplicates exact event redeliveries, and emits a machine-readable local proof without
+autonomously mutating governed metadata.
 ## CI release-gate path
 
 ```powershell

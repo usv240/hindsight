@@ -23,8 +23,8 @@
                            "decision_node":  "transactions_at_decision_time.prediction_time",
                            "leakage_case_id":  "fraud-screening-post-authorisation-dispute",
                            "safe_case_id":  "fraud-screening-account-age-safe-control",
-                           "leakage_model_urn":  "urn:li:mlModel:hindsight.fraud_screening_v1_leaky",
-                           "safe_model_urn":  "urn:li:mlModel:hindsight.fraud_screening_v2_safe",
+                           "leakage_model_urn":  "urn:li:mlModel:(urn:li:dataPlatform:mlflow,hindsight.fraud_screening_v1_leaky,PROD)",
+                           "safe_model_urn":  "urn:li:mlModel:(urn:li:dataPlatform:mlflow,hindsight.fraud_screening_v2_safe,PROD)",
                            "leakage_feature_urn":  "urn:li:schemaField:(hindsight.fraud_feature_pipeline,disputes_on_account)",
                            "safe_feature_urn":  "urn:li:schemaField:(hindsight.account_history_point_in_time,account_age_days)",
                            "leakage_lineage_path":  [

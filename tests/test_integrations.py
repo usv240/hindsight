@@ -7,12 +7,17 @@ to a stated reason rather than an exception.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
 
 from hindsight.actions import HindsightReleaseGate
 from hindsight.lineage import PathResolution, kit_available, resolve_column_path
+
+CREDIT_MODEL_URN = (
+    "urn:li:mlModel:(urn:li:dataPlatform:mlflow,hindsight.credit_default_v1_leaky,PROD)"
+)
 
 # -- Agent Context Kit ------------------------------------------------------
 
@@ -98,18 +103,67 @@ def test_the_action_ignores_entity_types_it_does_not_watch() -> None:
     assert action.audited == [], "a dashboard must not trigger a model release audit"
 
 
-def test_the_action_audits_a_watched_entity_and_records_the_verdict() -> None:
+def test_the_action_audits_a_watched_entity_and_records_the_verdict(tmp_path: Path) -> None:
     action = HindsightReleaseGate.create(
-        {"project_root": str(Path.cwd()), "raise_incident": False},
+        {
+            "project_root": str(Path.cwd()),
+            "raise_incident": False,
+            "target_urn": CREDIT_MODEL_URN,
+            "proof_log_path": str(tmp_path / "proof.jsonl"),
+        },
         None,
     )
-    action.act({"entityUrn": "urn:li:mlModel:(p,credit,PROD)", "entityType": "mlModel"})
+    action.act(
+        {
+            "entityUrn": CREDIT_MODEL_URN,
+            "entityType": "mlModel",
+        }
+    )
 
     assert len(action.audited) == 1
     result = action.audited[0]
     assert result["release_decision"] == "block"
     assert result["verdict"] == "confirmed"
+    assert result["urn"] == result["evidence_model_urn"]
     assert result["incident_raised"] is False, "notification was disabled for this run"
+
+    action.act(
+        {
+            "entityUrn": CREDIT_MODEL_URN,
+            "entityType": "mlModel",
+        }
+    )
+    assert len(action.audited) == 1, "an exact redelivery must not duplicate an audit"
+    action.act(
+        {
+            "entityUrn": CREDIT_MODEL_URN,
+            "entityType": "mlModel",
+            "aspectName": "mlModelProperties",
+        }
+    )
+    assert len(action.audited) == 2, "a later metadata change must trigger a new audit"
+    proof = (tmp_path / "proof.jsonl").read_text(encoding="utf-8").splitlines()
+    assert len(proof) == 2
+    assert json.loads(proof[0])["release_decision"] == "block"
+
+
+def test_the_action_refuses_an_unbound_or_different_asset() -> None:
+    unbound = HindsightReleaseGate.create(
+        {"project_root": str(Path.cwd()), "raise_incident": False}, None
+    )
+    unbound.act({"entityUrn": "urn:li:mlModel:(p,m,PROD)", "entityType": "mlModel"})
+    assert unbound.audited == []
+
+    bound = HindsightReleaseGate.create(
+        {
+            "project_root": str(Path.cwd()),
+            "raise_incident": False,
+            "target_urn": "urn:li:mlModel:(p,expected,PROD)",
+        },
+        None,
+    )
+    bound.act({"entityUrn": "urn:li:mlModel:(p,other,PROD)", "entityType": "mlModel"})
+    assert bound.audited == []
 
 
 def test_a_failing_audit_never_takes_the_pipeline_down() -> None:
@@ -135,7 +189,9 @@ def test_the_action_never_publishes_on_its_own() -> None:
 
 def test_the_pipeline_config_filters_before_the_action_runs() -> None:
     config = Path("docker/hindsight-action.yml").read_text(encoding="utf-8")
-    assert "EntityChangeEvent_v1" in config
-    assert 'operation: "CREATE"' in config
-    assert 'entityType: "mlModel"' in config
+    assert "MetadataChangeLogEvent_v1" in config
     assert "hindsight.actions.release_gate:HindsightReleaseGate" in config
+    assert "HINDSIGHT_ACTION_TARGET_URN" in config
+    assert 'changeType: "UPSERT"' in config
+    assert 'entityType: "mlModel"' in config
+    assert 'aspectName: "mlModelProperties"' in config

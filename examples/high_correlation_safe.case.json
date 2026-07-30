@@ -1,6 +1,6 @@
 {
   "case_id": "credit-default-high-correlation-safe-control",
-  "model_urn": "urn:li:mlModel:(hindsight,credit_default_v2_safe,PROD)",
+  "model_urn": "urn:li:mlModel:(urn:li:dataPlatform:mlflow,hindsight.credit_default_v2_safe,PROD)",
   "feature_urn": "urn:li:schemaField:(urn:li:dataset:(urn:li:dataPlatform:duckdb,feature_pipeline_safe,PROD),prior_delinquency_count)",
   "lineage_path": [
     "customer_history_point_in_time.prior_delinquency_count",

@@ -8,7 +8,7 @@
 # The DataHub Core quickstart already provides Kafka and the actions runtime, so
 # there is nothing extra to stand up.
 
-name: hindsight_release_gate
+name: ${HINDSIGHT_ACTION_PIPELINE_NAME:-hindsight_release_gate}
 
 source:
   type: kafka
@@ -17,23 +17,25 @@ source:
       bootstrap: ${KAFKA_BOOTSTRAP_SERVER:-localhost:9092}
       schema_registry_url: ${SCHEMA_REGISTRY_URL:-http://localhost:8081}
 
-# Only newly created models. Filtering here rather than in the action keeps the
-# pipeline cheap: irrelevant events are discarded before deserialization.
+# DataHub emits metadata-change-log events for model upserts. The action applies
+# entity-type and exact-URN filters before it runs an audit.
 filter:
-  event_type: "EntityChangeEvent_v1"
+  event_type: "MetadataChangeLogEvent_v1"
   event:
-    category: "LIFECYCLE"
-    operation: "CREATE"
+    changeType: "UPSERT"
     entityType: "mlModel"
+    aspectName: "mlModelProperties"
+    entityUrn: ${HINDSIGHT_ACTION_TARGET_URN}
 
 action:
   type: "hindsight.actions.release_gate:HindsightReleaseGate"
   config:
     audit: audits/credit_default.json
+    target_urn: ${HINDSIGHT_ACTION_TARGET_URN}
     entity_types: ["mlModel"]
-    # Raise an incident describing the finding. Never publishes the full
-    # evidence write-back on its own - a person still approves that.
-    raise_incident: true
+    # Observe-only proof: no incident and no autonomous governed write-back.
+    raise_incident: false
+    proof_log_path: /tmp/hindsight-action-proof.jsonl
     server: ${DATAHUB_GMS_URL:-http://localhost:8080}
 
 datahub:
