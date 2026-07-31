@@ -225,6 +225,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(rendered, encoding="utf-8")
         print(rendered, end="")
+        # A bad config must never look like a clean sweep. Without this, a
+        # misconfigured sweep in CI exits 0 and the pipeline goes green having
+        # audited nothing.
+        if report.get("status") == "invalid_input":
+            return 2
         # Exit 3 matches the release gate: something was flagged for review.
         return 3 if report.get("flagged") else 0
 

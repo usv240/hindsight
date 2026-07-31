@@ -446,7 +446,7 @@ that `customType` is required alongside it. Following the guide as written fails
 | `hindsight validate-point-in-time --scenario ...` | Reconstruct one scenario, generated or external |
 | `hindsight sweep-features --scenario ...` | Audit every candidate feature and rank them |
 | `hindsight scan-sql <dir> --post-outcome-table ...` | Walk a dbt project. Exit `3` blocks a PR |
-| `hindsight verify-sql --sql <file>` | Check one transformation for a cutoff guard |
+| `hindsight verify-sql <file> --post-outcome-table ...` | Check one transformation for a cutoff guard |
 | `hindsight benchmark` | The 42-case sweep |
 | `hindsight trace-lineage ...` | Column-level path query via the Agent Context Kit |
 | `hindsight publish-audit --approve-writeback` | Write the finding into DataHub |

@@ -119,3 +119,45 @@ def test_the_safe_control_is_not_audited_against_itself() -> None:
 def test_no_scratch_files_are_left_behind() -> None:
     sweep(WIDE)
     assert not list(WIDE.parent.glob(".sweep-*")), "temporary variants must be cleaned up"
+
+
+# --- Exit codes are the CI contract -----------------------------------------
+
+
+def _cli(*args: str) -> int:
+    import subprocess
+    import sys
+
+    return subprocess.run(
+        [sys.executable, "-m", "hindsight.cli", *args],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=600,
+    ).returncode
+
+
+def test_an_invalid_config_does_not_report_success() -> None:
+    """A misconfigured sweep exiting 0 is a false negative wearing a pass.
+
+    That is the exact failure this project exists to prevent, and it was in our
+    own CLI: sweeping a long-form scenario printed "invalid_input" and returned
+    0, so a pipeline would go green having audited nothing.
+    """
+    assert _cli("sweep-features", "--scenario", "examples/adapter/scenario.json") == 2
+
+
+def test_a_flagged_feature_blocks_the_pipeline() -> None:
+    assert _cli("sweep-features", "--scenario", "examples/adapter/scenario_wide.json") == 3
+
+
+def test_the_readme_documents_a_real_verify_sql_invocation() -> None:
+    """The README told judges to pass --sql, which argparse rejects."""
+    from hindsight.cli import build_parser
+
+    verify = build_parser()._subparsers._group_actions[0].choices["verify-sql"]  # noqa: SLF001
+    flags = {option for action in verify._actions for option in action.option_strings}  # noqa: SLF001
+    assert "--sql" not in flags, "if this flag is added, update the README row too"
+
+    readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+    assert "verify-sql --sql" not in readme
