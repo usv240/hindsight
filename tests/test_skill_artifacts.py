@@ -67,3 +67,37 @@ def test_valid_confirmed_and_clear_bundles() -> None:
     }
     assert validate(confirmed) == []
     assert validate(clear) == []
+
+
+def test_a_collapsed_safe_control_cannot_confirm_via_point_in_time() -> None:
+    """A reconstruction that also collapses a legitimate feature proves nothing.
+
+    This bundle claims the suspect feature collapsed under point-in-time
+    reconstruction, and in the same breath reports that the known-good control
+    collapsed too. That means the reconstruction is producing false positives, so
+    the collapse is not evidence. The validator accepted it as consistent, which
+    is a false positive wearing a confirmation - the exact failure this project
+    exists to prevent.
+    """
+    validate = _validator().validate
+    bundle = {
+        "verdict": "confirmed",
+        "model_urn": "urn:li:mlModel:credit_default_v4",
+        "prediction_time": "2026-07-27T12:00:00Z",
+        "directional_outcome_lineage": True,
+        "availability_violation": True,
+        "deterministic_cutoff_proof": False,
+        "point_in_time": {
+            "performed": True,
+            "advantage_retained": 0.01,
+            "collapse_threshold": 0.05,
+        },
+        "safe_control": {"performed": True, "remained_safe": False},
+    }
+    assert (
+        "PIT collapse cannot confirm without a predictive pre-cutoff control that remained safe"
+        in validate(bundle)
+    )
+
+    # The deterministic route does not depend on the reconstruction, so it still stands.
+    assert validate({**bundle, "deterministic_cutoff_proof": True}) == []

@@ -1,23 +1,14 @@
 # ML leakage verdict contract
 
-Grounded in Kaufman, Rosset & Perlich, "Leakage in Data Mining: Formulation, Detection,
-and Avoidance" (KDD 2011; TKDD 6(4), 2012), which defines leakage through **legitimacy** -
-a feature is legitimate only if its information was available at prediction time. The
-point-in-time route below is their "learn-predict separation" applied as a test.
-
-This contract covers **leaking features**. Their second class, leakage in training
-*examples*, requires record-level provenance and is out of scope; say so rather than
-implying coverage.
-
 Use the least certain verdict supported by the evidence. Statistical importance is context only and never changes a verdict by itself.
 
-| Verdict | Minimum evidence | Release action |
-|---|---|---|
-| `insufficient_metadata` | Model scope, prediction cutoff, column lineage, transformation semantics, or authoritative availability time is missing | Hold |
-| `needs_review` | Suspicious outcome ancestry exists, but direction or the availability-time violation is unresolved | Hold |
-| `high_confidence` | Exact directional outcome/post-outcome lineage and `available_at > prediction_time` are established | Block |
-| `confirmed` | `high_confidence` evidence plus either deterministic transformation/cutoff proof or a policy-qualified point-in-time collapse | Block |
-| `clear_for_release` | Required metadata is complete, no availability violation is present, configured tests pass, and a predictive pre-cutoff control remains allowed | Allow |
+| Verdict                 | Minimum evidence                                                                                                                                | Release action |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `insufficient_metadata` | Model scope, prediction cutoff, column lineage, transformation semantics, or authoritative availability time is missing                         | Hold           |
+| `needs_review`          | Suspicious outcome ancestry exists, but direction or the availability-time violation is unresolved                                              | Hold           |
+| `high_confidence`       | Exact directional outcome/post-outcome lineage and `available_at > prediction_time` are established                                             | Block          |
+| `confirmed`             | `high_confidence` evidence plus either deterministic transformation/cutoff proof or a policy-qualified point-in-time collapse                   | Block          |
+| `clear_for_release`     | Required metadata is complete, no availability violation is present, configured tests pass, and a predictive pre-cutoff control remains allowed | Allow          |
 
 ## Confirmation routes
 
@@ -54,5 +45,7 @@ The bundled validator accepts a JSON object with:
 - `deterministic_cutoff_proof`: boolean;
 - `point_in_time`: object with `performed`, `advantage_retained`, and `collapse_threshold`;
 - `safe_control`: object with `performed` and `remained_safe`.
+
+`safe_control` is required whenever `confirmed` rests on the point-in-time route, not only for `clear_for_release`. A reconstruction that collapses a feature known to be legitimate is producing false positives, so its collapse of the suspect feature confirms nothing.
 
 The validator checks logical consistency. It does not determine truth and cannot replace DataHub rereads or human review.
