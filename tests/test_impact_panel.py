@@ -147,15 +147,17 @@ def test_every_quoted_screen_phrase_exists_somewhere_in_the_console() -> None:
         ]
     )
 
-    # Bold section names the script tells the presenter to scroll or click to.
-    cues = set(re.findall(r'"([A-Z][^"]{12,60})"', script))
-    checked = 0
+    # Only the stage directions point at the screen. Quoted text anywhere else is
+    # something the presenter says, and a spoken line has no business existing in
+    # the console. An earlier version scanned the whole file and failed on the cut
+    # list, which quotes a line of narration.
+    directions = [line for line in script.splitlines() if line.startswith("**On screen:**")]
+    assert directions, "the script must tell the presenter what is on screen"
+
+    cues = {cue for line in directions for cue in re.findall(r'"([^"]{12,60})"', line)}
     for cue in cues:
-        if cue.startswith("http") or cue.endswith((".md", ".json", ".yml")):
-            continue
-        checked += 1
         assert _flat(cue) in _flat(console), f"script points at something the console lacks: {cue}"
-    assert checked >= 3, "expected the script to name several on-screen sections"
+    assert len(cues) >= 3, "expected the script to name several on-screen sections"
 
 
 def test_the_script_maps_its_beats_to_the_judging_criteria() -> None:
