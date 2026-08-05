@@ -9,7 +9,7 @@ answer. Nobody caught it, because the mistake happened earlier, deep in a pipeli
 team never opens, where only the catalog can see. Hindsight asks the catalog one question,
 proves the model was cheating, and writes the proof back so nobody has to solve it twice.
 
-Six beats. Each one sets up the next. Do not reorder them, because the payoff at 1:07 only
+Six beats. Each one sets up the next. Do not reorder them, because the payoff at 1:10 only
 lands if the setup at 0:12 has happened.
 
 | Beat | What it earns |
@@ -52,8 +52,8 @@ Do one silent dry run first. The timings assume you are not hunting for a click.
 
 Say the lines in your own words. They are written to be spoken, not read.
 
-**Pace check.** 365 spoken words plus nine marked pauses. That is about **2:40** at a normal
-pace, and **2:50** if you speak slowly. Both fit, but the second leaves little room.
+**Pace check.** 373 spoken words plus nine marked pauses. That is about **2:43** at a normal
+pace, and **2:54** if you speak slowly. Both fit, but the second leaves very little room.
 
 If your dry run passes 2:50, do not speed up and do not swallow the pauses. The pauses are
 doing real work. Take the first item off the cut list and run it again.
@@ -103,22 +103,22 @@ Move the cursor first, wait a beat, then talk. Their eyes arrive before your sen
 
 > The catalog.
 
-### 3. The trace (0:47 to 1:07)
+### 3. The trace (0:47 to 1:10)
 
 **Stay on the landing page.** Do not click a scenario yet, the trace lives here.
 **Scroll** to "What the catalog actually answers".
 
-> So instead of guessing, Hindsight asks DataHub to reconstruct exactly where this
-> feature came from.
+> So instead of guessing, Hindsight asks DataHub one question, through its Agent
+> Context Kit: where did this feature actually come from?
 
 **Point at the middle hop of the path**, the long `urn:li:query:...` node. **Wait one beat.**
 
 > This right here.
 >
-> This is where the answer leaked in. DataHub doesn't just tell us these two columns
-> are connected. It tells us exactly what turned one into the other.
+> This is where the answer leaked in. DataHub's column-level lineage doesn't just tell
+> us these two columns are connected. It tells us exactly what turned one into the other.
 
-### 4. The inversion (1:07 to 1:37)
+### 4. The inversion (1:10 to 1:40)
 
 This is the beat that wins. Slow down. Let the two bars sit on screen.
 
@@ -137,7 +137,7 @@ This is the beat that wins. Slow down. Let the two bars sit on screen.
 > this exactly backwards. Importance tells you what the model leaned on. It cannot
 > tell you whether the model was allowed to know it.
 
-### 5. It holds up (1:37 to 2:11)
+### 5. It holds up (1:40 to 2:14)
 
 Two ideas only: forty-two, and two percent. Everything else on this screen is visual.
 
@@ -158,7 +158,7 @@ Two ideas only: forty-two, and two percent. Everything else on this screen is vi
 > Then we ran it on data we did not create. Same conclusion. And when you do not know
 > which feature is guilty, it checks all of them at once.
 
-### 6. The loop closes (2:11 to 2:36)
+### 6. The loop closes (2:14 to 2:39)
 
 **Switch back** to the audit tab from beat 4.
 **Scroll** to "Publish evidence to DataHub".
@@ -176,7 +176,7 @@ Two ideas only: forty-two, and two percent. Everything else on this screen is vi
 
 > The same mistake never has to be solved twice.
 
-### Close (2:36 to 2:43)
+### Close (2:39 to 2:46)
 
 **Switch** to the `/evidence` tab, the contributions row near the bottom.
 
