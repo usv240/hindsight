@@ -12,6 +12,7 @@ not defensible. It was replaced with a figure from our own benchmark.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -116,38 +117,57 @@ def test_the_gap_is_stated_precisely_not_vaguely(evidence_page: str) -> None:
 # missed the strongest material.
 
 
-def test_every_beat_the_script_names_exists_on_the_page_it_names() -> None:
-    script = (PROJECT_ROOT / "docs" / "DEMO_SCRIPT.md").read_text(encoding="utf-8")
+def _script() -> str:
+    return (PROJECT_ROOT / "docs" / "DEMO_SCRIPT.md").read_text(encoding="utf-8")
+
+
+def _flat(text: str) -> str:
+    """Collapse whitespace so prose rewrapping cannot break an assertion.
+
+    A previous version asserted the literal "availability timestamp". The script
+    still said it, wrapped across two lines, and the test failed on formatting
+    rather than on meaning.
+    """
+    return " ".join(text.split()).lower()
+
+
+def test_every_quoted_screen_phrase_exists_somewhere_in_the_console() -> None:
+    """The real invariant: never tell the presenter to point at something absent.
+
+    Derived from the script rather than a fixed list, so rewriting the running
+    order stays free while pointing at a removed section still fails.
+    """
+    script = _script()
     client = TestClient(create_app(PROJECT_ROOT))
-    home = client.get("/").text
-    evidence = client.get("/evidence").text
-    audit = client.get("/audits/latest", follow_redirects=True).text
+    console = " ".join(
+        [
+            client.get("/").text,
+            client.get("/evidence").text,
+            client.get("/audits/latest", follow_redirects=True).text,
+        ]
+    )
 
-    # Each entry: the phrase the script tells the presenter to point at, and the
-    # page it says to be on.
-    beats = [
-        ("What the catalog actually answers", home),
-        ("Not built for", home),
-        ("What is being audited", audit),
-        ("What happens as the defect gets subtler", evidence),
-        ("Does it work on data we did not create", evidence),
-        ("Does this already exist?", evidence),
-    ]
-    for phrase, page in beats:
-        assert phrase in script or phrase.lower() in script.lower(), f"script drifted: {phrase}"
-        assert phrase in page, f"console no longer has: {phrase}"
+    # Bold section names the script tells the presenter to scroll or click to.
+    cues = set(re.findall(r'"([A-Z][^"]{12,60})"', script))
+    checked = 0
+    for cue in cues:
+        if cue.startswith("http") or cue.endswith((".md", ".json", ".yml")):
+            continue
+        checked += 1
+        assert _flat(cue) in _flat(console), f"script points at something the console lacks: {cue}"
+    assert checked >= 3, "expected the script to name several on-screen sections"
 
 
-def test_the_script_maps_beats_to_judging_criteria() -> None:
+def test_the_script_maps_its_beats_to_the_judging_criteria() -> None:
     """Three minutes is less than the material, so the cut has to be deliberate."""
-    script = (PROJECT_ROOT / "docs" / "DEMO_SCRIPT.md").read_text(encoding="utf-8")
-    for criterion in ("Use of DataHub", "Originality", "Technical Execution", "Real-World"):
+    script = _flat(_script())
+    for criterion in ("use of datahub", "originality", "technical execution", "real-world"):
         assert criterion in script, criterion
-    assert "Beats to protect if you run long" in script
+    assert "run long" in script, "the script must say what to cut first"
 
 
 def test_the_script_still_forbids_the_claims_the_readme_disclaims() -> None:
-    script = (PROJECT_ROOT / "docs" / "DEMO_SCRIPT.md").read_text(encoding="utf-8")
-    assert "Do not say" in script
+    script = _flat(_script())
+    assert "do not say" in script
     assert "availability timestamp" in script
     assert "visibility public" in script

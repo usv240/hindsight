@@ -413,12 +413,12 @@
   <div class="section-heading">
     <div>
       <p class="eyebrow">Contributed back</p>
-      <h2>Two pull requests to DataHub</h2>
+      <h2>Three pull requests to DataHub</h2>
     </div>
-    <span class="finding">2 open</span>
+    <span class="finding">1 merged</span>
   </div>
   <p class="prose">
-    Both came out of building this rather than out of looking for something to contribute.
+    All three came out of building this rather than out of looking for something to contribute.
   </p>
   <div class="table-wrap">
     <table class="table">
@@ -436,6 +436,17 @@
             <code>customType is required</code>.
           </td>
           <td><span class="finding ok">merged</span></td>
+        </tr>
+        <tr>
+          <th scope="row">
+            <a href="https://github.com/datahub-project/datahub/pull/18822"><code>datahub#18822</code></a>
+          </th>
+          <td>
+            Stops <code>docker quickstart</code> raising <code>UnicodeEncodeError</code> on legacy
+            Windows code pages. We hit it bringing DataHub up: the stack was already healthy, so a
+            working install reported failure.
+          </td>
+          <td><span class="finding">open</span></td>
         </tr>
         <tr>
           <th scope="row">
