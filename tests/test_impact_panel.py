@@ -151,8 +151,12 @@ def test_every_quoted_screen_phrase_exists_somewhere_in_the_console() -> None:
     # something the presenter says, and a spoken line has no business existing in
     # the console. An earlier version scanned the whole file and failed on the cut
     # list, which quotes a line of narration.
-    directions = [line for line in script.splitlines() if line.startswith("**On screen:**")]
-    assert directions, "the script must tell the presenter what is on screen"
+    directions = [
+        line
+        for line in script.splitlines()
+        if re.match(r"\*\*(Tab|Click|Scroll|Point at|Switch|Stay|Tick)\b", line)
+    ]
+    assert directions, "the script must tell the presenter what to click and where to point"
 
     cues = {cue for line in directions for cue in re.findall(r'"([^"]{12,60})"', line)}
     for cue in cues:

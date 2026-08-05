@@ -30,7 +30,16 @@ curl http://127.0.0.1:8100/audits/latest    # warm the cache so no beat waits
 ```
 
 Browser at 1600x1000, 100% zoom, dark theme. Hide bookmarks and extensions.
-Tabs in order: `/`, `/evidence`, a DataHub tab searching `hindsight`.
+
+Three tabs, left to right:
+
+| Tab | Opens on | Becomes |
+|---|---|---|
+| 1 | `http://127.0.0.1:8100/` | the audit, once you click a scenario in beat 4 |
+| 2 | `http://127.0.0.1:8100/evidence` | unchanged |
+| 3 | DataHub, searching `hindsight` | shows the tag after you publish |
+
+You only ever move right, except once: beat 6 comes back to tab 1.
 
 Record locally, not against the hosted demo. The hosted one is read-only by design, so it
 cannot show the write-back. Mention the URL at the end instead.
@@ -49,9 +58,14 @@ pace, and **2:50** if you speak slowly. Both fit, but the second leaves little r
 If your dry run passes 2:50, do not speed up and do not swallow the pauses. The pauses are
 doing real work. Take the first item off the cut list and run it again.
 
+Every beat is the same three lines: what to click, where to put the cursor, what to say.
+Move the cursor first, wait a beat, then talk. Their eyes arrive before your sentence does.
+
 ### 1. The hook (0:00 to 0:12)
 
-**On screen:** the landing page. Headline and the 100% to 83% cards.
+**Tab** `/` (landing page). You start here, nothing to click.
+**Point at** the headline, then the two exam cards: **Scored in testing 100%** and
+**Scored honestly 83%**.
 
 > This model scored one hundred percent at predicting who would repay a loan.
 >
@@ -67,7 +81,8 @@ doing real work. Take the first item off the cut list and run it again.
 
 ### 2. Why nobody catches it (0:12 to 0:47)
 
-**On screen:** scroll slowly to "How can software know a model cheated?"
+**Scroll** down the same page to "How can software know a model cheated?"
+**Point at** the four steps as you reach them. Do not read them out.
 
 > The model was never good. One fact it was shown could only be known *after* the
 > decision had already been made.
@@ -90,12 +105,13 @@ doing real work. Take the first item off the cut list and run it again.
 
 ### 3. The trace (0:47 to 1:07)
 
-**On screen:** click **The hard case**, scroll to "What the catalog actually answers".
+**Stay on the landing page.** Do not click a scenario yet, the trace lives here.
+**Scroll** to "What the catalog actually answers".
 
 > So instead of guessing, Hindsight asks DataHub to reconstruct exactly where this
 > feature came from.
 
-**Point at the middle of the path. Wait one beat.**
+**Point at the middle hop of the path**, the long `urn:li:query:...` node. **Wait one beat.**
 
 > This right here.
 >
@@ -106,11 +122,13 @@ doing real work. Take the first item off the cut list and run it again.
 
 This is the beat that wins. Slow down. Let the two bars sit on screen.
 
-**On screen:** open the audit, toggle **Technical**, the ablation comparison.
+**Click** the **The hard case** scenario card. Say the first line while it loads.
+**Click** the **Technical** toggle.
+**Scroll** to "Importance gets this exactly backwards".
 
 > Until now we have only been following the evidence. Here is the surprising part.
 
-**Pause. Then:**
+**Pause. Point at the two bars, longer one first. Then:**
 
 > Two features. The legitimate one has the *higher* importance score. Hindsight
 > clears that one, and blocks the lower one.
@@ -123,30 +141,35 @@ This is the beat that wins. Slow down. Let the two bars sit on screen.
 
 Two ideas only: forty-two, and two percent. Everything else on this screen is visual.
 
-**On screen:** `/evidence`, "What happens as the defect gets subtler".
+**Switch** to the `/evidence` tab.
+**Scroll** to "What happens as the defect gets subtler".
 
 > We tested this forty-two different ways. Even when the flaw touched only two
 > percent of the data, Hindsight still caught it.
 
-**Point at the colour change. Wait.**
+**Point at the colour change in the chart. Wait.**
 
 > Watch what happens next. Past a certain point, performance alone can't tell the
 > difference anymore. Only reading the code still finds it. That is why there are
 > two independent checks.
 
-**On screen:** scroll to "Does it work on data we did not create?" and the sweep table.
+**Scroll** to "Does it work on data we did not create?", then the sweep table below it.
 
 > Then we ran it on data we did not create. Same conclusion. And when you do not know
 > which feature is guilty, it checks all of them at once.
 
 ### 6. The loop closes (2:11 to 2:36)
 
-**On screen:** back to the audit, tick approval, publish, then the DataHub tab showing the tag.
+**Switch back** to the audit tab from beat 4.
+**Scroll** to "Publish evidence to DataHub".
+**Tick** the approval checkbox, then **click** publish. Keep talking while it runs.
 
 > When a person approves, and only then, it writes the finding back into DataHub. A
 > tag on the column, the verdict, an audit document, an incident. Then it re-reads
 > every one of them to prove it actually stuck.
->
+
+**Switch** to the DataHub tab showing the tag on the column.
+
 > So the next engineer inherits the answer instead of rediscovering it.
 
 **Pause.**
@@ -155,7 +178,7 @@ Two ideas only: forty-two, and two percent. Everything else on this screen is vi
 
 ### Close (2:36 to 2:43)
 
-**On screen:** the contributions row on `/evidence`.
+**Switch** to the `/evidence` tab, the contributions row near the bottom.
 
 > Building this turned up three fixes for DataHub itself. One is already merged.
 >
