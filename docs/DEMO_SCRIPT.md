@@ -21,20 +21,6 @@ lands if the setup at 0:12 has happened.
 | 5. It holds up | Technical execution |
 | 6. The loop closes | Real-world usefulness |
 
-## How to deliver it
-
-The project is complicated. The explanation must not be. A judge should feel clever, not
-like they are keeping up. Three habits do most of the work:
-
-- **Point before you explain.** Move the cursor to the thing, wait one beat, then talk.
-  Their eyes arrive before your sentence does.
-- **Pause where it says pause.** The silences are marked. They are not padding, they are
-  the part that makes the next line land.
-- **Say "here is the interesting part" out loud.** Curiosity beats exposition. You are
-  showing someone a discovery, not reading them a summary.
-
----
-
 ## Before you record
 
 ```powershell
@@ -57,16 +43,19 @@ Do one silent dry run first. The timings assume you are not hunting for a click.
 
 Say the lines in your own words. They are written to be spoken, not read.
 
-**Pace check.** About 370 spoken words, roughly 2:28 at 150 words a minute, plus about
-12 seconds of marked pauses. That lands near 2:43. If your dry run passes 2:50, do not
-speed up and do not swallow the pauses. Take the first item off the cut list and run again.
+**Pace check.** 365 spoken words plus nine marked pauses. That is about **2:40** at a normal
+pace, and **2:50** if you speak slowly. Both fit, but the second leaves little room.
+
+If your dry run passes 2:50, do not speed up and do not swallow the pauses. The pauses are
+doing real work. Take the first item off the cut list and run it again.
 
 ### 1. The hook (0:00 to 0:12)
 
 **On screen:** the landing page. Headline and the 100% to 83% cards.
 
-> Everyone celebrated. This model scored one hundred percent at predicting who
-> would repay a loan.
+> This model scored one hundred percent at predicting who would repay a loan.
+>
+> Everyone celebrated.
 >
 > Then it failed in production.
 
@@ -95,7 +84,7 @@ speed up and do not swallow the pauses. Take the first item off the cut list and
 
 > One thing knows where every column came from.
 
-**Pause. Then, quietly:**
+**Pause. Look at the camera. Then, quietly:**
 
 > The catalog.
 
@@ -110,8 +99,8 @@ speed up and do not swallow the pauses. Take the first item off the cut list and
 
 > This right here.
 >
-> That is the step DataHub found. It doesn't just tell us these two columns are
-> connected. It tells us exactly what turned one into the other.
+> This is where the answer leaked in. DataHub doesn't just tell us these two columns
+> are connected. It tells us exactly what turned one into the other.
 
 ### 4. The inversion (1:07 to 1:37)
 
@@ -141,9 +130,9 @@ Two ideas only: forty-two, and two percent. Everything else on this screen is vi
 
 **Point at the colour change. Wait.**
 
-> Here is the interesting part. Past a certain point, comparing performance stops
-> working. Only reading the code still finds it. That is why there are two
-> independent checks.
+> Watch what happens next. Past a certain point, performance alone can't tell the
+> difference anymore. Only reading the code still finds it. That is why there are
+> two independent checks.
 
 **On screen:** scroll to "Does it work on data we did not create?" and the sweep table.
 
