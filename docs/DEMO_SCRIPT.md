@@ -2,6 +2,22 @@
 
 Target 2:45. Hard limit 3:00.
 
+## What the rules require
+
+Checked against the official rules, not the overview page.
+
+| Rule | What it means here |
+|---|---|
+| "less than three (3) minutes. Judges are not required to watch beyond three minutes" | Going over is not a disqualification, it is worse. They simply stop, and the ending is the part they never see. |
+| "uploaded to and made publicly visible on YouTube, Vimeo, or Youku" | Public, not unlisted. |
+| "footage that shows the Project functioning on the device for which it was built" | Record the real console running, not slides. |
+| "must not include third party trademarks, or copyrighted music or other material unless the Entrant has permission" | **No music.** DataHub's own UI is the subject of the demo and is fine. Every other company's logo stays off screen, including in browser tabs, bookmarks and the OS bar. |
+| All materials in English | The script is. |
+
+The repository must also be public with an Apache 2.0 licence file, "detectable and visible
+at the top of the repository page (in the About section)". That is a submission step, not a
+recording step, but it is a hard requirement.
+
 ## The story in one breath
 
 A model scored 100%. Everyone celebrated. Then it failed, because it had been reading the
@@ -29,7 +45,9 @@ uv run hindsight serve
 curl http://127.0.0.1:8100/audits/latest    # warm the cache so no beat waits
 ```
 
-Browser at 1600x1000, 100% zoom, dark theme. Hide bookmarks and extensions.
+Browser at 1600x1000, 100% zoom, dark theme. Hide bookmarks and extensions, and close any
+tab whose favicon is another company's logo. The rules forbid third-party trademarks you do
+not have permission for, and a stray tab is the likeliest way one appears.
 
 Three tabs, left to right:
 
@@ -52,8 +70,11 @@ Do one silent dry run first. The timings assume you are not hunting for a click.
 
 Say the lines in your own words. They are written to be spoken, not read.
 
-**Pace check.** 373 spoken words plus nine marked pauses. That is about **2:43** at a normal
-pace, and **2:54** if you speak slowly. Both fit, but the second leaves very little room.
+**Pace check.** 377 spoken words plus nine marked pauses. That is about **2:45** at a normal
+pace, and **2:56** if you speak slowly. Both fit, but the second leaves almost no room.
+
+Judges are not required to watch past 3:00. So overrunning does not get you penalised, it
+gets your ending deleted, and the ending is where the write-back and the last line live.
 
 If your dry run passes 2:50, do not speed up and do not swallow the pauses. The pauses are
 doing real work. Take the first item off the cut list and run it again.
@@ -158,7 +179,7 @@ Two ideas only: forty-two, and two percent. Everything else on this screen is vi
 > Then we ran it on data we did not create. Same conclusion. And when you do not know
 > which feature is guilty, it checks all of them at once.
 
-### 6. The loop closes (2:14 to 2:39)
+### 6. The loop closes (2:14 to 2:41)
 
 **Switch back** to the audit tab from beat 4.
 **Scroll** to "Publish evidence to DataHub".
@@ -170,13 +191,14 @@ Two ideas only: forty-two, and two percent. Everything else on this screen is vi
 
 **Switch** to the DataHub tab showing the tag on the column.
 
-> So the next engineer inherits the answer instead of rediscovering it.
+> So the next engineer, or the next agent, inherits the answer instead of
+> rediscovering it.
 
 **Pause.**
 
 > The same mistake never has to be solved twice.
 
-### Close (2:39 to 2:46)
+### Close (2:41 to 2:48)
 
 **Switch** to the `/evidence` tab, the contributions row near the bottom.
 
@@ -227,7 +249,8 @@ The screen can be technical. You should not be. Each of these has a plainer twin
 ## After recording
 
 - [ ] Under 3:00. Check the file, not your estimate.
-- [ ] YouTube or Vimeo, **visibility public**. The rules say public, not unlisted.
+- [ ] YouTube, Vimeo or Youku, **visibility public**. The rules say publicly visible, not unlisted.
+- [ ] No music on the track. Copyrighted audio breaches the rules and is the easiest way to fail one.
 - [ ] Watch it once at 1.5x with the sound off. If the story still reads, the visuals carry it.
 - [ ] Paste the URL into `SUBMISSION.md` and the Devpost form.
 - [ ] Put the live demo in the description:
