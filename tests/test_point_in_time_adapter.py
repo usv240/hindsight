@@ -164,7 +164,11 @@ def test_cli_reports_invalid_mapping_without_a_traceback(
     assert (
         main(["validate-point-in-time", "--scenario", str(scenario), "--output", str(output)]) == 2
     )
-    report = json.loads(capsys.readouterr().out)
+    # The written record stays machine-readable; stdout is the human surface.
+    report = json.loads(output.read_text(encoding="utf-8"))
     assert report["status"] == "invalid_input"
     assert "columns is missing: split" in report["error"]
-    assert json.loads(output.read_text(encoding="utf-8")) == report
+
+    stdout = capsys.readouterr().out
+    assert "columns is missing: split" in stdout, "the operator must be told what is wrong"
+    assert "Traceback" not in stdout

@@ -40,7 +40,11 @@ uv run hindsight demo
 ```
 
 No Docker, no DataHub, no API key, no network. It prints the column lineage path, the
-before-and-after scores, and the verdict. Exit `3` means leakage confirmed.
+before-and-after scores, and the verdict, in about forty lines.
+
+`demo` is a self-check and exits `0` when the demo itself passed. The commands that act as
+release gates are the ones that carry the verdict in their exit code: `3` blocks, `2` means
+the evidence was insufficient, `0` clears.
 
 Or open the [live demo](https://hindsight-production-abf8.up.railway.app) and click a
 scenario.
@@ -52,21 +56,20 @@ scenario.
 Four steps. The unusual one is the first, and it is the one that needs DataHub.
 
 ```mermaid
-flowchart LR
+flowchart TB
   subgraph DH["DataHub"]
-    L["Column-level lineage<br/>which column was built from which"]
+    L["<b>Column-level lineage</b><br/>which column was built from which"]
   end
 
-  subgraph HS["Hindsight"]
-    direction TB
-    A["1 · Trace it back<br/><i>where did each fact come from?</i>"]
-    B["2 · Check the clock<br/><i>when did it become knowable?</i>"]
-    C["3 · Read the code<br/><i>is there a cutoff guard?</i>"]
-    D["4 · Rebuild and re-test<br/><i>remove the future, retrain</i>"]
+  subgraph HS["Hindsight: deterministic, no LLM in the path"]
+    A["<b>1 · Trace it back</b><br/><i>where did each fact come from?</i>"]
+    B["<b>2 · Check the clock</b><br/><i>when did it become knowable?</i>"]
+    C["<b>3 · Read the code</b><br/><i>is there a cutoff guard?</i>"]
+    D["<b>4 · Rebuild and re-test</b><br/><i>remove the future, retrain</i>"]
     A --> B --> C --> D
   end
 
-  L -->|read| A
+  L -->|"read"| A
   D --> V{"Verdict"}
   V -->|"exit 0 / 2 / 3"| CI["CI release gate"]
   V --> HA["Human approval"]
@@ -145,11 +148,19 @@ uv run hindsight validate-point-in-time --scenario examples/adapter/scenario.jso
 ```
 
 ```
-baseline, honest features only     0.825 AUC
-with the suspect feature           0.993
-rebuilt as of the decision         0.826
-advantage retained                  0.4%
-post-cutoff records excluded        664
+SUSPECT FEATURE
+  baseline, honest features only   0.825 AUC
+  with the suspect feature         0.993
+  rebuilt as of the decision       0.826
+  advantage retained                 0.4%
+  post-cutoff records excluded     664
+
+LEGITIMATE CONTROL (audited the same way, must stay clean)
+  observed 0.960 -> point-in-time 0.960
+  advantage retained               100.0%
+  collapsed                        False
+
+VERDICT: confirmed
 ```
 
 The feature looked worth 0.168 AUC. Once records that did not exist at the decision were
@@ -162,12 +173,14 @@ uv run hindsight sweep-features --scenario examples/adapter/scenario_wide.json
 ```
 
 ```
-feature                     obs AUC  pit AUC  advantage lost  collapsed
-plan_changes_to_date         0.9932   0.8257          0.1674  True
-support_tickets_snapshot     0.9601   0.9601          0.0000  False
-logins_30d                   0.8251   0.8251          0.0000  False
-tenure_snapshot              0.8252   0.8252          0.0000  False
-spend_snapshot               0.8252   0.8252          0.0000  False
+feature                       obs AUC  pit AUC  adv lost  collapsed
+plan_changes_to_date           0.9932   0.8257    0.1674  True
+support_tickets_snapshot       0.9601   0.9601    0.0000  False
+logins_30d                     0.8251   0.8251    0.0000  False
+tenure_snapshot                0.8252   0.8252    0.0000  False
+spend_snapshot                 0.8252   0.8252    0.0000  False
+
+FLAGGED (1): plan_changes_to_date
 ```
 
 Read the second row before the first. `support_tickets_snapshot` scores 0.96 against a 0.825
@@ -321,7 +334,9 @@ warehouse. It asks DataHub one thing, through the **Agent Context Kit**: *is the
 path from this column to that one, and which way does it run?*
 
 ```
-hindsight trace-lineage --source-column payment_recorded_at                         --target-column days_since_last_payment
+hindsight trace-lineage \
+  --source-column payment_recorded_at \
+  --target-column days_since_last_payment
 ```
 
 ```json
@@ -421,17 +436,23 @@ visible, configurable policy, not a universal constant.
 
 ## Contributions back to DataHub
 
-Both came out of building this, not out of looking for something to contribute.
+All three came out of building this, not out of looking for something to contribute.
 
 | | Status |
 |---|---|
 | [datahub#18705](https://github.com/datahub-project/datahub/pull/18705) — document the required `customType` on `CUSTOM` incidents | **Merged** |
+| [datahub#18822](https://github.com/datahub-project/datahub/pull/18822) — stop `docker quickstart` crashing on legacy Windows code pages | Open, awaiting review |
 | [datahub-skills#68](https://github.com/datahub-project/datahub-skills/pull/68) — add the `datahub-ml-release-audit` skill | Open, awaiting review |
 
 The first is small and worth explaining. Hindsight raises a DataHub incident during
 write-back, and the incidents tutorial lists `CUSTOM` as a supported type without mentioning
 that `customType` is required alongside it. Following the guide as written fails with
 `customType is required: Failed to create incident.` Verified against DataHub Core v1.5.0.6.
+
+The second we hit bringing DataHub up for this project. `datahub docker quickstart` printed a
+check mark through a `cp1252` console and raised `UnicodeEncodeError` *after* the stack was
+already healthy, so a successful install reported failure. The same crash reaches the strings
+that explain how to recover from a broken install.
 
 ---
 

@@ -14,6 +14,7 @@ from hindsight.fixtures import run_fixture_replay
 from hindsight.models import AuditCase
 from hindsight.netguard import EndpointError, validate_endpoint
 from hindsight.phase0.preflight import write_preflight
+from hindsight.render import render_point_in_time, render_sweep
 from hindsight.validation import run_credit_validation, run_point_in_time_validation
 from hindsight.workflow import run_demo_audit
 from hindsight.writeback import publish_audit
@@ -44,6 +45,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("scenarios/credit_default/scenario.json"),
     )
     validate.add_argument("--output", type=Path, default=Path("evaluations/results.local.json"))
+    validate.add_argument("--json", action="store_true")
     validate_pit = commands.add_parser(
         "validate-point-in-time",
         help="Reconstruct a generated or external file-backed scenario",
@@ -52,12 +54,14 @@ def build_parser() -> argparse.ArgumentParser:
     validate_pit.add_argument(
         "--output", type=Path, default=Path("evaluations/point-in-time.local.json")
     )
+    validate_pit.add_argument("--json", action="store_true")
     sweep_cmd = commands.add_parser(
         "sweep-features",
         help="Audit every candidate feature in a wide snapshot table and rank them",
     )
     sweep_cmd.add_argument("--scenario", type=Path, required=True)
     sweep_cmd.add_argument("--output", type=Path, default=Path("evaluations/sweep.local.json"))
+    sweep_cmd.add_argument("--json", action="store_true")
     trace = commands.add_parser(
         "trace-lineage",
         help="Ask DataHub for the column path between two assets (Agent Context Kit)",
@@ -211,7 +215,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         rendered = json.dumps(report, indent=2) + "\n"
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(rendered, encoding="utf-8")
-        print(rendered, end="")
+        print(rendered if args.json else render_point_in_time(report), end="")
         return 0 if report["status"] == "passed" else 2
 
     if args.command == "sweep-features":
@@ -224,7 +228,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         rendered = json.dumps(report, indent=2) + "\n"
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(rendered, encoding="utf-8")
-        print(rendered, end="")
+        print(rendered if args.json else render_sweep(report), end="")
         # A bad config must never look like a clean sweep. Without this, a
         # misconfigured sweep in CI exits 0 and the pipeline goes green having
         # audited nothing.
