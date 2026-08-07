@@ -11,8 +11,7 @@
     <p class="lede">Every audit is an event. Compare verdicts over time rather than trusting one.</p>
   </div>
   {% if not public_demo() %}
-  {% if not public_demo() %}
-<form method="post" action="/audits/run">
+  <form method="post" action="/audits/run">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <button class="btn" type="submit">Run an audit</button>
   </form>
@@ -131,11 +130,12 @@
     Audits are written to <code>evidence/runs/</code> as they happen. Run one to start the
     history &mdash; it needs no DataHub and no network.
   </p>
+  {% if not public_demo() %}
   <form method="post" action="/audits/run">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <button class="btn" type="submit">Run an audit now</button>
   </form>
-{% endif %}
+  {% endif %}
 </section>
 {% endif %}
 

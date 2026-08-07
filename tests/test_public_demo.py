@@ -7,6 +7,7 @@ assert the refusal happens and that the pages still work without them.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -134,3 +135,63 @@ def test_scenario_links_keeps_only_the_newest_run_per_scenario() -> None:
         {"scenario": "c"},
     ]
     assert demo_mode.scenario_links(runs) == {"a": "3", "b": "2"}
+
+
+# --- The demo must still show its content ------------------------------------
+#
+# Hiding a mutating control is one edit; hiding the whole page is another. A
+# duplicated `{% if not public_demo() %}` in audits.html left the first branch
+# unclosed, so it swallowed everything after it and the endif meant for a later
+# block closed it instead. Tag counts stayed balanced, Jinja never complained,
+# and every local run looked fine because the branch was true locally. On the
+# public demo the runs table rendered zero rows under a sidebar badge saying 5.
+#
+# These fetch through a helper rather than two fixtures. `demo_mode.enabled()`
+# reads the environment per request, so building a local client tears down the
+# public one's setting, and a test holding both compares local against local and
+# passes without checking anything.
+
+
+def _fetch(monkeypatch: pytest.MonkeyPatch, route: str, *, demo: bool) -> str:
+    if demo:
+        monkeypatch.setenv(demo_mode.ENV_VAR, "1")
+    else:
+        monkeypatch.delenv(demo_mode.ENV_VAR, raising=False)
+    client = TestClient(create_app(PROJECT_ROOT))
+    return client.get(route, follow_redirects=True).text
+
+
+def test_the_runs_table_is_not_empty_on_the_public_demo(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Read-only must mean "cannot run one", never "cannot see them"."""
+    public = _fetch(monkeypatch, "/audits", demo=True)
+    local = _fetch(monkeypatch, "/audits", demo=False)
+
+    assert public.count("<tr") > 1, "the public demo rendered no run rows"
+    assert public.count("<tr") == local.count("<tr"), "the demo hides runs the local tool shows"
+    assert "Decision history" in public
+
+
+def test_the_demo_hides_the_control_without_hiding_the_history(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    public = _fetch(monkeypatch, "/audits", demo=True)
+    assert 'action="/audits/run"' not in public, "the public demo must not offer to run an audit"
+    assert "Read-only demo" in public
+
+    local = _fetch(monkeypatch, "/audits", demo=False)
+    assert 'action="/audits/run"' in local
+
+
+@pytest.mark.parametrize("route", ["/", "/audits", "/evidence"])
+@pytest.mark.parametrize("demo", [True, False], ids=["public", "local"])
+def test_container_tags_stay_balanced_in_both_modes(
+    monkeypatch: pytest.MonkeyPatch, route: str, demo: bool
+) -> None:
+    """An unclosed branch shows up as a section or form that never closes."""
+    body = _fetch(monkeypatch, route, demo=demo)
+    for tag in ("section", "form"):
+        opened = len(re.findall(rf"<{tag}\b", body))
+        closed = body.count(f"</{tag}>")
+        assert opened == closed, f"{route}: {opened} <{tag}> vs {closed} </{tag}>"
