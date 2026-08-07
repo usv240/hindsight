@@ -25,7 +25,7 @@ answer. Nobody caught it, because the mistake happened earlier, deep in a pipeli
 team never opens, where only the catalog can see. Hindsight asks the catalog one question,
 proves the model was cheating, and writes the proof back so nobody has to solve it twice.
 
-Six beats. Each one sets up the next. Do not reorder them, because the payoff at 1:15 only
+Six beats. Each one sets up the next. Do not reorder them, because the payoff at 1:13 only
 lands if the setup at 0:12 has happened.
 
 | Beat | What it earns |
@@ -70,8 +70,8 @@ Do one silent dry run first. The timings assume you are not hunting for a click.
 
 Say the lines in your own words. They are written to be spoken, not read.
 
-**Pace check.** 375 spoken words plus nine marked pauses. That is **2:44** at a normal
-pace and **2:55** if you speak slowly.
+**Pace check.** 377 spoken words plus nine marked pauses. That is **2:46** at a normal
+pace and **2:57** if you speak slowly.
 
 Judges are not required to watch past 3:00, so overrunning does not get you penalised,
 it gets your ending deleted. A slow read has only four seconds of margin, so do a timed
@@ -130,13 +130,13 @@ The whole demo uses one scenario, **Loan approval**, because that is the story y
 
 > The catalog.
 
-### 3. The trace (0:47 to 1:15)
+### 3. The trace (0:47 to 1:13)
 
 **Keep scrolling.** The next section is "How can software know a model cheated?", four
 steps. Do not read them out, just let them pass under the first line below. Stop at
 "What the catalog actually answers".
 
-> Four steps, and the first one is the only one that needs a catalog.
+> Four steps, and only the first needs a catalog.
 >
 > Instead of guessing, Hindsight asks DataHub one question, through its Agent Context
 > Kit: where did this feature actually come from?
@@ -146,27 +146,35 @@ steps. Do not read them out, just let them pass under the first line below. Stop
 > This right here is where the answer leaked in. DataHub's column-level lineage doesn't
 > just tell us these two columns are connected. It tells us what turned one into the other.
 
-### 4. The inversion (1:15 to 1:45)
+### 4. The inversion (1:13 to 1:52)
 
 This is the beat that wins. Slow down. Let the two bars sit on screen.
 
 **Keep scrolling** to "Pick a situation you recognise" and **click the first card,
-Loan approval**. It runs the audit and lands on the result. Say the first line while it runs.
-**Click** the **Technical** toggle, then **scroll** to
-"Importance gets this exactly backwards".
+Loan approval**. It runs the audit and lands on the verdict.
+
+The audit page has its own nav across the top, so from here you **click, never scroll**.
+
+**Click** "What the agent did" in that nav.
+
+> Every DataHub call it made, in order. The MCP Server, the column lineage, the
+> SQL check.
+
+**Click** "The ablation trap" in the nav. **Click** the **Technical** toggle if the bars
+are not showing numbers.
 
 > Until now we have only been following the evidence. Here is the surprising part.
 
 **Pause. Point at the two bars, longer one first. Then:**
 
 > Two features. The legitimate one has the *higher* importance score. Hindsight
-> clears that one, and blocks the lower one.
+> clears that one, and blocks the shorter.
 >
 > If you ranked features by importance, which is what most tools do, you would get
 > this exactly backwards. Importance tells you what the model leaned on. It cannot
 > tell you whether the model was allowed to know it.
 
-### 5. It holds up (1:45 to 2:15)
+### 5. It holds up (1:52 to 2:20)
 
 Two ideas only: forty-two, and two percent. Everything else here is visual.
 
@@ -184,14 +192,13 @@ Two ideas only: forty-two, and two percent. Everything else here is visual.
 
 **Scroll** to "Does it work on data we did not create?"
 
-> Then we ran it on data we did not create. Same conclusion. And it can sweep every
-> feature at once.
+> Then we ran it on data we did not create. Same conclusion.
 
-### 6. The loop closes (2:15 to 2:39)
+### 6. The loop closes (2:20 to 2:44)
 
-**Switch back** to tab 1, which is now the loan audit.
-**Scroll** to "Publish evidence to DataHub".
-**Tick** the approval checkbox, then **click** publish. Keep talking while it runs.
+**Switch back** to tab 1, the loan audit.
+**Click** "Publish" in the audit nav. **Tick** the approval box, then **click** publish.
+Keep talking while it runs.
 
 > When a person approves, and only then, it writes the finding back into DataHub. A
 > tag, the verdict, an audit document, an incident. Then it re-reads every one to
@@ -206,7 +213,7 @@ Two ideas only: forty-two, and two percent. Everything else here is visual.
 
 > The same mistake never has to be solved twice.
 
-### Close (2:39 to 2:46)
+### Close (2:44 to 2:51)
 
 **Switch** to tab 2 and **scroll** to the contributions row near the bottom.
 
