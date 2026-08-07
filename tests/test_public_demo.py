@@ -195,3 +195,33 @@ def test_container_tags_stay_balanced_in_both_modes(
         opened = len(re.findall(rf"<{tag}\b", body))
         closed = body.count(f"</{tag}>")
         assert opened == closed, f"{route}: {opened} <{tag}> vs {closed} </{tag}>"
+
+
+def test_settings_does_not_read_as_a_broken_deployment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The demo has no catalog by design, which is not the same as misconfigured.
+
+    The pill was fixed first and this page was missed, so the header said
+    "Recorded from DataHub Core" while the card underneath said `not_configured`
+    and told a visitor with no shell to export two environment variables.
+    """
+    import html as html_mod
+
+    body = _fetch(monkeypatch, "/settings", demo=True)
+    visible = " ".join(html_mod.unescape(re.sub(r"<[^>]+>", " ", body)).split())
+
+    assert "not_configured" not in visible, "raw probe state leaked into the demo UI"
+    assert "read-only demo, no catalog connected" in visible
+    assert "DATAHUB_GMS_URL" not in visible, "the demo told a visitor to set env vars"
+    assert "Nothing is misconfigured here" in visible
+
+    # The attribute stays, because the neutral pill styling keys off it.
+    assert 'data-state="not_configured"' in body
+
+
+def test_settings_still_tells_a_local_operator_how_to_connect(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Locally the hint is actionable, so it must survive."""
+    body = _fetch(monkeypatch, "/settings", demo=False)
+    assert "DATAHUB_GMS_URL" in body
+    assert "not_configured" in body

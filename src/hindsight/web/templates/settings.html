@@ -16,21 +16,39 @@
 <section class="panel">
   <div class="section-heading">
     <div><p class="eyebrow">Connection</p><h2>DataHub</h2></div>
-    <span class="finding {{ 'ok' if health.state == 'connected' else 'danger' if health.state == 'offline' else 'warn' }}">
+    {#- Amber is for something you should act on. A demo that deliberately talks to
+        no catalog is not that, so it gets the neutral chip. -#}
+    <span class="finding
+      {{- '' if public_demo() else
+          ' ok' if health.state == 'connected' else
+          ' danger' if health.state == 'offline' else ' warn' }}">
       {{ health.label }}
     </span>
   </div>
   <dl class="kv">
-    <div><dt>State</dt><dd><code>{{ health.state }}</code></dd></div>
+    {#- The raw enum is useful when you own the deployment and can act on it. On
+        the public demo it reads as a fault, when the truthful statement is that
+        this deployment deliberately talks to no catalog. -#}
+    <div><dt>State</dt><dd>
+      {%- if public_demo() %}read-only demo, no catalog connected
+      {%- else %}<code>{{ health.state }}</code>{% endif -%}
+    </dd></div>
     <div><dt>Server</dt><dd><code>{{ health.server or "not set" }}</code></dd></div>
     <div><dt>Detail</dt><dd>{{ health.detail }}</dd></div>
     <div><dt>Latency</dt><dd>{{ health.latency_ms ~ " ms" if health.latency_ms else "-" }}</dd></div>
     <div><dt>Write-back</dt><dd>{{ "available" if health.can_write else "unavailable" }}</dd></div>
   </dl>
+  {% if public_demo() %}
+  <p class="fine">
+    Nothing is misconfigured here. Run the console locally against your own DataHub and this
+    card fills in, the status turns green, and write-back becomes available.
+  </p>
+  {% else %}
   <p class="fine">
     Set <code>DATAHUB_GMS_URL</code> and <code>DATAHUB_GMS_TOKEN</code> to connect. Use a service
     account rather than a personal token, ideally scoped with a Default View.
   </p>
+  {% endif %}
 </section>
 
 <section class="panel">
