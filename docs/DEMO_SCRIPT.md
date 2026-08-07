@@ -70,22 +70,24 @@ Do one silent dry run first. The timings assume you are not hunting for a click.
 
 Say the lines in your own words. They are written to be spoken, not read.
 
-**Pace check.** 377 spoken words plus nine marked pauses. That is about **2:45** at a normal
-pace, and **2:56** if you speak slowly. Both fit, but the second leaves almost no room.
+**Pace check.** 381 spoken words plus nine marked pauses. That is **2:46** at a normal
+pace and **2:56** if you speak slowly.
 
-Judges are not required to watch past 3:00. So overrunning does not get you penalised, it
-gets your ending deleted, and the ending is where the write-back and the last line live.
+Judges are not required to watch past 3:00, so overrunning does not get you penalised,
+it gets your ending deleted. A slow read has only four seconds of margin, so do a timed
+dry run before the real take. If it passes 2:50, take the first item off the cut list.
+Do not speed up and do not swallow the pauses.
 
-If your dry run passes 2:50, do not speed up and do not swallow the pauses. The pauses are
-doing real work. Take the first item off the cut list and run it again.
+The landing page is one continuous scroll, top to bottom. Say what you are passing as you
+pass it, so nothing appears without an explanation. Move the cursor first, wait a beat, then
+talk. Their eyes arrive before your sentence does.
 
-Every beat is the same three lines: what to click, where to put the cursor, what to say.
-Move the cursor first, wait a beat, then talk. Their eyes arrive before your sentence does.
+The whole demo uses one scenario, **Loan approval**, because that is the story you open with.
 
 ### 1. The hook (0:00 to 0:12)
 
-**Tab** `/` (landing page). You start here, nothing to click.
-**Point at** the headline, then the two exam cards: **Scored in testing 100%** and
+**Where** tab 1, landing page, at the top. Nothing to click.
+**Point at** the headline, then the two cards: **Scored in testing 100%** and
 **Scored honestly 83%**.
 
 > This model scored one hundred percent at predicting who would repay a loan.
@@ -100,10 +102,10 @@ Move the cursor first, wait a beat, then talk. Their eyes arrive before your sen
 
 **Let the silence sit.** Do not fill it.
 
-### 2. Why nobody catches it (0:12 to 0:47)
+### 2. Why nobody catches it (0:12 to 0:52)
 
-**Scroll** down the same page to "How can software know a model cheated?"
-**Point at** the four steps as you reach them. Do not read them out.
+**Scroll** down one section, to "How often does this actually happen?"
+**Point at** the figures as you arrive.
 
 > The model was never good. One fact it was shown could only be known *after* the
 > decision had already been made.
@@ -112,9 +114,11 @@ Move the cursor first, wait a beat, then talk. Their eyes arrive before your sen
 
 **Pause.**
 
-> And the mistake wasn't where the model was built. It happened earlier, deep inside
-> a data pipeline that nobody on the ML team ever looks at. By the time anyone
-> notices, the money is gone.
+> And it is not rare. These are the studies that found it.
+>
+> The mistake wasn't where the model was built. It happened earlier, in a data
+> pipeline nobody on the ML team ever looks at. By the time anyone notices, the
+> money is gone.
 
 **Pause. This next line is the turn.**
 
@@ -124,28 +128,30 @@ Move the cursor first, wait a beat, then talk. Their eyes arrive before your sen
 
 > The catalog.
 
-### 3. The trace (0:47 to 1:10)
+### 3. The trace (0:52 to 1:20)
 
-**Stay on the landing page.** Do not click a scenario yet, the trace lives here.
-**Scroll** to "What the catalog actually answers".
+**Keep scrolling** in the same direction. You will pass "Pick a situation you recognise",
+which holds five scenario cards. Say the first line while it goes by, then stop at
+"What the catalog actually answers".
 
-> So instead of guessing, Hindsight asks DataHub one question, through its Agent
+> Five situations here. We will run the loan one in a moment.
+>
+> Because instead of guessing, Hindsight asks DataHub one question, through its Agent
 > Context Kit: where did this feature actually come from?
 
 **Point at the middle hop of the path**, the long `urn:li:query:...` node. **Wait one beat.**
 
-> This right here.
->
-> This is where the answer leaked in. DataHub's column-level lineage doesn't just tell
-> us these two columns are connected. It tells us exactly what turned one into the other.
+> This right here is where the answer leaked in. DataHub's column-level lineage doesn't
+> just tell us these two columns are connected. It tells us what turned one into the other.
 
-### 4. The inversion (1:10 to 1:40)
+### 4. The inversion (1:20 to 1:50)
 
 This is the beat that wins. Slow down. Let the two bars sit on screen.
 
-**Click** the **The hard case** scenario card. Say the first line while it loads.
-**Click** the **Technical** toggle.
-**Scroll** to "Importance gets this exactly backwards".
+**Scroll back up** to "Pick a situation you recognise" and **click the first card,
+Loan approval**. It runs the audit and lands on the result. Say the first line while it runs.
+**Click** the **Technical** toggle, then **scroll** to
+"Importance gets this exactly backwards".
 
 > Until now we have only been following the evidence. Here is the surprising part.
 
@@ -158,12 +164,12 @@ This is the beat that wins. Slow down. Let the two bars sit on screen.
 > this exactly backwards. Importance tells you what the model leaned on. It cannot
 > tell you whether the model was allowed to know it.
 
-### 5. It holds up (1:40 to 2:14)
+### 5. It holds up (1:50 to 2:20)
 
-Two ideas only: forty-two, and two percent. Everything else on this screen is visual.
+Two ideas only: forty-two, and two percent. Everything else here is visual.
 
-**Switch** to the `/evidence` tab.
-**Scroll** to "What happens as the defect gets subtler".
+**Switch** to tab 2, `/evidence`, and **scroll** to
+"What happens as the defect gets subtler".
 
 > We tested this forty-two different ways. Even when the flaw touched only two
 > percent of the data, Hindsight still caught it.
@@ -174,22 +180,22 @@ Two ideas only: forty-two, and two percent. Everything else on this screen is vi
 > difference anymore. Only reading the code still finds it. That is why there are
 > two independent checks.
 
-**Scroll** to "Does it work on data we did not create?", then the sweep table below it.
+**Scroll** to "Does it work on data we did not create?"
 
-> Then we ran it on data we did not create. Same conclusion. And when you do not know
-> which feature is guilty, it checks all of them at once.
+> Then we ran it on data we did not create. Same conclusion. And it can sweep every
+> feature at once.
 
-### 6. The loop closes (2:14 to 2:41)
+### 6. The loop closes (2:20 to 2:44)
 
-**Switch back** to the audit tab from beat 4.
+**Switch back** to tab 1, which is now the loan audit.
 **Scroll** to "Publish evidence to DataHub".
 **Tick** the approval checkbox, then **click** publish. Keep talking while it runs.
 
 > When a person approves, and only then, it writes the finding back into DataHub. A
-> tag on the column, the verdict, an audit document, an incident. Then it re-reads
-> every one of them to prove it actually stuck.
+> tag, the verdict, an audit document, an incident. Then it re-reads every one to
+> prove it stuck.
 
-**Switch** to the DataHub tab showing the tag on the column.
+**Switch** to tab 3, DataHub, showing the tag on the column.
 
 > So the next engineer, or the next agent, inherits the answer instead of
 > rediscovering it.
@@ -198,9 +204,9 @@ Two ideas only: forty-two, and two percent. Everything else on this screen is vi
 
 > The same mistake never has to be solved twice.
 
-### Close (2:41 to 2:48)
+### Close (2:44 to 2:51)
 
-**Switch** to the `/evidence` tab, the contributions row near the bottom.
+**Switch** to tab 2 and **scroll** to the contributions row near the bottom.
 
 > Building this turned up three fixes for DataHub itself. One is already merged.
 >
@@ -212,11 +218,13 @@ Two ideas only: forty-two, and two percent. Everything else on this screen is vi
 
 Cut in this order. Never cut beats 1, 3 or 4, and never cut the marked pauses.
 
-1. The sweep sentence in beat 5, "and when you do not know which feature is guilty".
-2. "By the time anyone notices, the money is gone."
-3. The live publish. Say "already published, here is the record" and show
+1. Beat 5, "And it can sweep every feature at once." Saves about 4 seconds.
+2. Beat 2, "These are the studies that found it." Keep "And it is not rare", which is
+   what stops the figures appearing unexplained.
+3. Beat 2, "By the time anyone notices, the money is gone."
+4. The live publish. Say "already published, here is the record" and show
    `evidence/live/`. This is the riskiest live beat anyway.
-4. The closing contributions line.
+5. The closing contributions line.
 
 ## Words to avoid saying
 

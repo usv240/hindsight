@@ -151,10 +151,15 @@ def test_every_quoted_screen_phrase_exists_somewhere_in_the_console() -> None:
     # something the presenter says, and a spoken line has no business existing in
     # the console. An earlier version scanned the whole file and failed on the cut
     # list, which quotes a line of narration.
+    # Directions are whole paragraphs, not single lines. Matching line-by-line
+    # silently dropped a third of the cues when a direction wrapped onto a second
+    # line, so the block is taken intact.
     directions = [
-        line
-        for line in script.splitlines()
-        if re.match(r"\*\*(Tab|Click|Scroll|Point at|Switch|Stay|Tick)\b", line)
+        block
+        for block in script.split("\n\n")
+        if re.match(
+            r"\*\*(Where|Tab|Click|Scroll|Keep scrolling|Point at|Switch|Stay|Tick)\b", block
+        )
     ]
     assert directions, "the script must tell the presenter what to click and where to point"
 

@@ -295,12 +295,34 @@ def _require_csrf(request: Request, supplied: str) -> None:
 # ---- Rendering ----------------------------------------------------------
 
 
+def _connection_state() -> dict[str, Any]:
+    """The probe, except on the public demo, where "not configured" is misleading.
+
+    Nothing is misconfigured there. The deployment is deliberately read-only and
+    has no catalog to reach, while every audit on the page really was produced
+    against a live DataHub Core instance. Saying "not configured" reads as a
+    half-finished deploy and undersells the evidence, so the label states what is
+    actually true. The probe is untouched anywhere a catalog could exist.
+    """
+    health = datahub_health()
+    if demo_mode.enabled() and health["state"] == "not_configured":
+        return {
+            **health,
+            "label": "Recorded from DataHub Core",
+            "detail": (
+                "This deployment is read-only and connects to no catalog. Every audit "
+                "shown was produced against a live DataHub Core 1.5.0.6 instance."
+            ),
+        }
+    return health
+
+
 def _shell(root: Path, active: str, runs: list[dict[str, Any]]) -> dict[str, Any]:
     """Context every page needs: nav state, glossary, and honest connection state."""
     return {
         "active": active,
         "glossary": GLOSSARY,
-        "health": datahub_health(),
+        "health": _connection_state(),
         "run_count": len(runs),
         # In the hosted demo the run buttons become links into recorded runs,
         # so every template that offers one needs the mapping.
