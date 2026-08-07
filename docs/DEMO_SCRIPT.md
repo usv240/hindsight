@@ -25,7 +25,7 @@ answer. Nobody caught it, because the mistake happened earlier, deep in a pipeli
 team never opens, where only the catalog can see. Hindsight asks the catalog one question,
 proves the model was cheating, and writes the proof back so nobody has to solve it twice.
 
-Six beats. Each one sets up the next. Do not reorder them, because the payoff at 1:10 only
+Six beats. Each one sets up the next. Do not reorder them, because the payoff at 1:15 only
 lands if the setup at 0:12 has happened.
 
 | Beat | What it earns |
@@ -70,17 +70,19 @@ Do one silent dry run first. The timings assume you are not hunting for a click.
 
 Say the lines in your own words. They are written to be spoken, not read.
 
-**Pace check.** 381 spoken words plus nine marked pauses. That is **2:46** at a normal
-pace and **2:56** if you speak slowly.
+**Pace check.** 375 spoken words plus nine marked pauses. That is **2:44** at a normal
+pace and **2:55** if you speak slowly.
 
 Judges are not required to watch past 3:00, so overrunning does not get you penalised,
 it gets your ending deleted. A slow read has only four seconds of margin, so do a timed
 dry run before the real take. If it passes 2:50, take the first item off the cut list.
 Do not speed up and do not swallow the pauses.
 
-The landing page is one continuous scroll, top to bottom. Say what you are passing as you
-pass it, so nothing appears without an explanation. Move the cursor first, wait a beat, then
-talk. Their eyes arrive before your sentence does.
+The landing page now reads in the order you present it: the problem, how often it happens,
+how the tool works, what the catalog proves, then the scenarios. **You only ever scroll down.**
+Say what you are passing as you pass it, so nothing appears without an explanation.
+
+Move the cursor first, wait a beat, then talk. Their eyes arrive before your sentence does.
 
 The whole demo uses one scenario, **Loan approval**, because that is the story you open with.
 
@@ -102,7 +104,7 @@ The whole demo uses one scenario, **Loan approval**, because that is the story y
 
 **Let the silence sit.** Do not fill it.
 
-### 2. Why nobody catches it (0:12 to 0:52)
+### 2. Why nobody catches it (0:12 to 0:47)
 
 **Scroll** down one section, to "How often does this actually happen?"
 **Point at** the figures as you arrive.
@@ -114,7 +116,7 @@ The whole demo uses one scenario, **Loan approval**, because that is the story y
 
 **Pause.**
 
-> And it is not rare. These are the studies that found it.
+> And it is not rare.
 >
 > The mistake wasn't where the model was built. It happened earlier, in a data
 > pipeline nobody on the ML team ever looks at. By the time anyone notices, the
@@ -128,27 +130,27 @@ The whole demo uses one scenario, **Loan approval**, because that is the story y
 
 > The catalog.
 
-### 3. The trace (0:52 to 1:20)
+### 3. The trace (0:47 to 1:15)
 
-**Keep scrolling** in the same direction. You will pass "Pick a situation you recognise",
-which holds five scenario cards. Say the first line while it goes by, then stop at
+**Keep scrolling.** The next section is "How can software know a model cheated?", four
+steps. Do not read them out, just let them pass under the first line below. Stop at
 "What the catalog actually answers".
 
-> Five situations here. We will run the loan one in a moment.
+> Four steps, and the first one is the only one that needs a catalog.
 >
-> Because instead of guessing, Hindsight asks DataHub one question, through its Agent
-> Context Kit: where did this feature actually come from?
+> Instead of guessing, Hindsight asks DataHub one question, through its Agent Context
+> Kit: where did this feature actually come from?
 
 **Point at the middle hop of the path**, the long `urn:li:query:...` node. **Wait one beat.**
 
 > This right here is where the answer leaked in. DataHub's column-level lineage doesn't
 > just tell us these two columns are connected. It tells us what turned one into the other.
 
-### 4. The inversion (1:20 to 1:50)
+### 4. The inversion (1:15 to 1:45)
 
 This is the beat that wins. Slow down. Let the two bars sit on screen.
 
-**Scroll back up** to "Pick a situation you recognise" and **click the first card,
+**Keep scrolling** to "Pick a situation you recognise" and **click the first card,
 Loan approval**. It runs the audit and lands on the result. Say the first line while it runs.
 **Click** the **Technical** toggle, then **scroll** to
 "Importance gets this exactly backwards".
@@ -164,7 +166,7 @@ Loan approval**. It runs the audit and lands on the result. Say the first line w
 > this exactly backwards. Importance tells you what the model leaned on. It cannot
 > tell you whether the model was allowed to know it.
 
-### 5. It holds up (1:50 to 2:20)
+### 5. It holds up (1:45 to 2:15)
 
 Two ideas only: forty-two, and two percent. Everything else here is visual.
 
@@ -185,7 +187,7 @@ Two ideas only: forty-two, and two percent. Everything else here is visual.
 > Then we ran it on data we did not create. Same conclusion. And it can sweep every
 > feature at once.
 
-### 6. The loop closes (2:20 to 2:44)
+### 6. The loop closes (2:15 to 2:39)
 
 **Switch back** to tab 1, which is now the loan audit.
 **Scroll** to "Publish evidence to DataHub".
@@ -204,7 +206,7 @@ Two ideas only: forty-two, and two percent. Everything else here is visual.
 
 > The same mistake never has to be solved twice.
 
-### Close (2:44 to 2:51)
+### Close (2:39 to 2:46)
 
 **Switch** to tab 2 and **scroll** to the contributions row near the bottom.
 

@@ -84,44 +84,7 @@
 
 {% include "_impact.html" %}
 
-<section aria-labelledby="pick-heading">
-  <div class="section-heading">
-    <div>
-      <p class="eyebrow">Try it</p>
-      <h2 id="pick-heading">Pick a situation you recognise</h2>
-      <p class="lede">
-        {{ scenarios | length }} audits across three industries, including one that is
-        expected to pass. Each is a real audit against generated data &mdash; pick whichever
-        is closest to your world.
-      </p>
-    </div>
-  </div>
-  <div class="scenarios">
-    {#- Same card either way. Locally it runs the audit; on the public demo it
-        opens the run that was already recorded, so a visitor still reaches every
-        scenario without being able to spend the server's CPU. -#}
-    {% for s in scenarios %}
-    {% set recorded = scenario_links.get(s.slug) %}
-    {% if public_demo() %}
-    {#- A scenario with no recorded run still gets a card. Dropping it would
-        silently shorten the list and nobody would know a scenario existed. -#}
-    <a class="scenario-card" href="{{ '/audits/' ~ recorded if recorded else '/audits' }}">
-      {% include "_scenario_card_body.html" %}
-    </a>
-    {% else %}
-    <form method="post" action="/audits/run" class="scenario-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <input type="hidden" name="scenario" value="{{ s.slug }}">
-      <button class="scenario-card" type="submit">
-        {% include "_scenario_card_body.html" %}
-      </button>
-    </form>
-    {% endif %}
-    {% endfor %}
-  </div>
-</section>
 
-{% include "_stack.html" %}
 
 <section class="panel explainer" id="what-is-this" aria-labelledby="what-heading">
   <div>
@@ -169,6 +132,46 @@
     </article>
   </div>
 </section>
+
+{% include "_stack.html" %}
+
+<section aria-labelledby="pick-heading">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Try it</p>
+      <h2 id="pick-heading">Pick a situation you recognise</h2>
+      <p class="lede">
+        {{ scenarios | length }} audits across three industries, including one that is
+        expected to pass. Each is a real audit against generated data &mdash; pick whichever
+        is closest to your world.
+      </p>
+    </div>
+  </div>
+  <div class="scenarios">
+    {#- Same card either way. Locally it runs the audit; on the public demo it
+        opens the run that was already recorded, so a visitor still reaches every
+        scenario without being able to spend the server's CPU. -#}
+    {% for s in scenarios %}
+    {% set recorded = scenario_links.get(s.slug) %}
+    {% if public_demo() %}
+    {#- A scenario with no recorded run still gets a card. Dropping it would
+        silently shorten the list and nobody would know a scenario existed. -#}
+    <a class="scenario-card" href="{{ '/audits/' ~ recorded if recorded else '/audits' }}">
+      {% include "_scenario_card_body.html" %}
+    </a>
+    {% else %}
+    <form method="post" action="/audits/run" class="scenario-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="scenario" value="{{ s.slug }}">
+      <button class="scenario-card" type="submit">
+        {% include "_scenario_card_body.html" %}
+      </button>
+    </form>
+    {% endif %}
+    {% endfor %}
+  </div>
+</section>
+
 
 {% if latest %}
 <section class="activity-strip" aria-labelledby="activity-heading">
