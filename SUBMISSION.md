@@ -122,6 +122,16 @@ uv run hindsight serve      # http://127.0.0.1:8100
   - [datahub-skills#68](https://github.com/datahub-project/datahub-skills/pull/68), open: adds the `datahub-ml-release-audit` skill.
 - **Demo video:** _paste URL here_
 
-## Feedback survey
+## Additional info and Feedback Prize
 
-Opt in. Feedback to give: fine-grained lineage emission needs a worked end-to-end example in the docs; the Analytics Agent quickstart is bash-only and needs a documented Windows/WSL2 path.
+The judges-only step and all four feedback answers are in
+[`docs/DEVPOST_ADDITIONAL_INFO.md`](docs/DEVPOST_ADDITIONAL_INFO.md), including which DataHub
+technology boxes to tick and, more importantly, the one to leave alone.
+
+Quick reference:
+
+- **Challenge category:** Production ML Agents
+- **DataHub technologies:** Core Platform, MCP Server, Agent Context Kit, Skills, and Actions
+  under "Other". Not Analytics Agent, we did not use it.
+- **Newly created in the window:** yes, first commit 2026-07-27, latest 2026-08-07
+- **Country of residence:** yours to fill in
