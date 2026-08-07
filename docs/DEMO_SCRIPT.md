@@ -262,4 +262,4 @@ The screen can be technical. You should not be. Each of these has a plainer twin
 - [ ] Watch it once at 1.5x with the sound off. If the story still reads, the visuals carry it.
 - [ ] Paste the URL into `SUBMISSION.md` and the Devpost form.
 - [ ] Put the live demo in the description:
-      https://hindsight-production-abf8.up.railway.app
+      https://hindsight-production-dd6e.up.railway.app

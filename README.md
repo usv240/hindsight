@@ -2,7 +2,7 @@
 
 > Your model is not smarter. It has hindsight.
 
-**[Open the live demo](https://hindsight-production-abf8.up.railway.app)** &middot; nothing to install
+**[Open the live demo](https://hindsight-production-dd6e.up.railway.app)** &middot; nothing to install
 
 ---
 
@@ -46,7 +46,7 @@ before-and-after scores, and the verdict, in about forty lines.
 release gates are the ones that carry the verdict in their exit code: `3` blocks, `2` means
 the evidence was insufficient, `0` clears.
 
-Or open the [live demo](https://hindsight-production-abf8.up.railway.app) and click a
+Or open the [live demo](https://hindsight-production-dd6e.up.railway.app) and click a
 scenario.
 
 ---

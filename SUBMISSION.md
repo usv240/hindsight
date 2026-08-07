@@ -125,7 +125,7 @@ uv run hindsight serve      # http://127.0.0.1:8100
 
 ## Links
 
-- **Live demo:** https://hindsight-production-abf8.up.railway.app - read-only, five real audits, nothing to install
+- **Live demo:** https://hindsight-production-dd6e.up.railway.app - read-only, five real audits, nothing to install
 - **Repository:** https://github.com/usv240/hindsight
 - **Open-source contributions:**
   - [datahub#18705](https://github.com/datahub-project/datahub/pull/18705) — **merged** — documents the required `customType` field on `CUSTOM` incidents, which the tutorial omitted. Hit while building Hindsight's incident write-back; following the guide as written returns `customType is required: Failed to create incident.`
