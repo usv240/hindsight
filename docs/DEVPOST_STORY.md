@@ -133,15 +133,17 @@ are now reported as **unchecked**, never as clean.
   argument for having two independent routes.
 - **It works on data we did not create.** `examples/adapter/` is committed CSV in a different
   domain, with different column names and a different leak mechanism.
-- **309 tests**, CI on Ubuntu and Windows across Python 3.11 and 3.12, plus a WCAG 2.1 AA
-  contrast gate that runs against every route on every build.
+- **The control that cannot be allowed to fail.** The legitimate feature with the *higher*
+  importance score is re-audited on every single run, and the build breaks if it is ever
+  flagged. "It does not just block everything" is enforced, not asserted.
 - **A frozen generator with a committed seed**, and the collapse threshold margin published
-  (5.142 percentage points) rather than hidden.
+  (5.142 percentage points) rather than hidden. Whatever it produces is what we publish.
 - **Three contributions back to DataHub**, all found by building this:
   [#18705](https://github.com/datahub-project/datahub/pull/18705) (merged) documents a
   required field the incidents tutorial omitted;
   [#18822](https://github.com/datahub-project/datahub/pull/18822) stops
-  `datahub docker quickstart` crashing on legacy Windows code pages;
+  `datahub docker quickstart` crashing on legacy Windows code pages, which we only hit because
+  we develop and run CI on Windows as well as Linux;
   [datahub-skills#68](https://github.com/datahub-project/datahub-skills/pull/68) adds an ML
   release-audit skill.
 
