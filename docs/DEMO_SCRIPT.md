@@ -62,6 +62,10 @@ You only ever move right, except once: beat 6 comes back to tab 1.
 Record locally, not against the hosted demo. The hosted one is read-only by design, so it
 cannot show the write-back. Mention the URL at the end instead.
 
+**Reset the reading mode before the real take.** The audit page remembers Plain English or
+Technical in local storage, so a dry run leaves it on Technical and beat 4 then opens on the
+wrong state. Open an audit, click **Plain English**, and leave it there.
+
 Do one silent dry run first. The timings assume you are not hunting for a click.
 
 ---
@@ -150,22 +154,24 @@ steps. Do not read them out, just let them pass under the first line below. Stop
 
 This is the beat that wins. Slow down. Let the two bars sit on screen.
 
-**Keep scrolling** to "Pick a situation you recognise" and **click the first card,
-Loan approval**. It runs the audit and lands on the verdict.
+**Click** the **Loan approval** card. The whole card is the button, so anywhere on it works.
+It runs the audit in under a second and lands on the verdict.
 
-The audit page has its own nav across the top, so from here you **click, never scroll**.
+**Click "Technical"** in the Plain English / Technical switch, at the right-hand end of the
+nav row. **Do this first.** In Plain English the technical nav items do not exist, so none
+of the clicks below are available until you switch.
 
-**Click** "What the agent did" in that nav.
+**Click "What the agent did"** in the nav row.
 
 > Every DataHub call it made, in order. The MCP Server, the column lineage, the
 > SQL check.
 
-**Click** "The ablation trap" in the nav. **Click** the **Technical** toggle if the bars
-are not showing numbers.
+**Click "The ablation trap"** in the same nav row. Two labelled bars appear.
 
 > Until now we have only been following the evidence. Here is the surprising part.
 
-**Pause. Point at the two bars, longer one first. Then:**
+**Pause. Point at the shorter bar, "Planted leaked feature 0.21", then the taller one,
+"Legitimate control 0.24". Then:**
 
 > Two features. The legitimate one has the *higher* importance score. Hindsight
 > clears that one, and blocks the shorter.
@@ -197,7 +203,8 @@ Two ideas only: forty-two, and two percent. Everything else here is visual.
 ### 6. The loop closes (2:20 to 2:44)
 
 **Switch back** to tab 1, the loan audit.
-**Click** "Publish" in the audit nav. **Tick** the approval box, then **click** publish.
+**Click "Publish"** in the nav row. It is a technical item too, so it is there because you
+switched to Technical back in beat 4. Do not switch back to Plain English before this. **Tick** the approval box, then **click** publish.
 Keep talking while it runs.
 
 > When a person approves, and only then, it writes the finding back into DataHub. A
