@@ -32,11 +32,46 @@ green "DataHub connected" pill.
 
 **Production ML Agents** (also demonstrates Agents That Do Real Work)
 
-## Built with
+## Built with (Devpost tags, max 25)
 
-`python` · `datahub` · `mcp` · `duckdb` · `sqlglot` · `scikit-learn` · `fastapi` · `jinja` · `htmx` · `numpy` · `pytest` · `github-actions`
+Verified against `pyproject.toml` and the repo. 16 tags:
 
----
+```
+python  datahub  mcp  agent-context-kit  duckdb  sqlglot  scikit-learn
+fastapi  jinja  uvicorn  docker  railway  github-actions  pytest  ruff  uv
+```
+
+Two tags were in an earlier draft and are **wrong**, do not add them: `htmx` (no htmx
+anywhere in the templates or static files) and `numpy` (arrives only transitively via
+scikit-learn, not a declared dependency).
+
+## Try it out links
+
+1. `https://hindsight-production-dd6e.up.railway.app` - live demo, five real audits, nothing
+   to install
+2. `https://github.com/usv240/hindsight` - source, Apache 2.0
+
+## Image gallery
+
+Ten images in `docs/img/gallery/`, all exactly 3:2 as the form asks, 3.6 MB total. Upload in
+filename order; they tell the story in the same sequence as the video.
+
+| File | What a judge sees |
+|---|---|
+| `01-the-problem.png` | Scored 100% in testing, 83% once the answer was taken away |
+| `02-how-it-works.png` | The four steps, and the one that needs a catalog |
+| `03-datahub-lineage.png` | The query entity in the column path, Agent Context Kit named |
+| `04-what-is-audited.png` | The model, the feature, and the 31 day gap |
+| `05-agent-activity.png` | Every DataHub call in order, including the MCP Server |
+| `06-the-inversion.png` | The legitimate feature scores higher and is cleared anyway |
+| `07-timeline.png` | The one feature that reaches past the decision |
+| `08-writeback.png` | Four records written to DataHub, each re-read |
+| `09-benchmark.png` | 42 cases, 0 false positives, 0 false negatives |
+| `10-external-data.png` | Run on a dataset we did not create |
+
+Regenerate with `uv run python scripts/capture_gallery.py` while `hindsight serve` is running.
+Sections are located by heading id, so a layout change moves the crop rather than silently
+capturing the wrong thing.
 
 ## Project story (the big "About the project" box)
 

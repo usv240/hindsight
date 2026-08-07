@@ -176,3 +176,24 @@ One honest boundary, stated here as it is in the README: point-in-time reconstru
 availability timestamp. A nightly overwrite that keeps no history cannot be audited this way
 by anyone, including us, because the information needed to answer the question was never
 stored.
+
+## Research this builds on
+
+- **Kaufman, Rosset & Perlich**, *Leakage in Data Mining: Formulation, Detection, and
+  Avoidance*, KDD 2011. Defines leakage through legitimacy and learn-predict separation. Their
+  second class, leakage in training examples, needs record-level provenance and is explicitly
+  out of scope here rather than quietly implied.
+- **Yang, Brower-Sinning, Lewis & Kästner**, *Data Leakage in Notebooks*, ASE 2022,
+  [arXiv:2209.03345](https://arxiv.org/abs/2209.03345). Found leakage across 100,000+ public
+  notebooks. Their static analysis works *inside* the notebook. The class we target originates
+  upstream, in the pipeline, which is the gap Hindsight fills.
+- **Kapoor & Narayanan**, *Leakage and the Reproducibility Crisis in ML-based Science*,
+  Patterns 2023. 294 affected papers across 17 disciplines.
+
+We also checked whether this already exists before building it. Static analysers such as
+LeakageDetector (ICSME 2025) detect the three notebook-internal leakage types: overlap,
+multi-test and preprocessing. A feature store with correct as-of joins **prevents** this class
+outright, which is a better answer than detecting it, if every feature goes through the store.
+Hindsight is for the very common case where features are assembled in SQL upstream with no
+such guarantee, and for proving after the fact, to someone else, that a specific model was
+clean.
