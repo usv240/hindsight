@@ -229,8 +229,20 @@ Two ideas only: forty-two, and two percent. Everything else here is visual.
 
 **Switch back** to tab 1, the loan audit.
 **Click "Publish"** in the nav row. It is a technical item too, so it is there because you
-switched to Technical back in beat 4. Do not switch back to Plain English before this. **Tick** the approval box, then **click** publish.
-Keep talking while it runs.
+switched to Technical back in beat 4. Do not switch back to Plain English before this.
+
+**Tick the approval checkbox first.** The button relabels itself as you go, which is worth
+letting the camera catch:
+
+| State | Button reads |
+|---|---|
+| checkbox empty | **Preview write-back** - dry run, writes nothing |
+| checkbox ticked | **Publish approved evidence** |
+| after you click | **Publishing and re-reading DataHub evidence...** |
+
+**Do not click "Preview write-back".** That is the dry run, so nothing reaches the catalog and
+the tag never appears in tab 3. Tick first, then click **Publish approved evidence**. Keep
+talking while it runs.
 
 > When a person approves, and only then, it writes the finding back into DataHub. A
 > tag, the verdict, an audit document, an incident. Then it re-reads every one to
