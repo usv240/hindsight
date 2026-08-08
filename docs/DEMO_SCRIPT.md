@@ -40,10 +40,35 @@ lands if the setup at 0:12 has happened.
 ## Before you record
 
 ```powershell
+# 1. DataHub Core up. Beat 6 cannot run without it.
 uv run datahub docker quickstart --quickstart-compose-file docker/datahub.quickstart.yml
-uv run hindsight serve
+
+# 2. Bind the write-back target, or the publish panel shows "target is not bound"
+#    instead of the approval form.
+uv sync --extra dev --extra datahub
+uv run python -m hindsight.phase0.datahub_probe
+$target = (Get-Content evidence/phase0/datahub-roundtrip.local.json | ConvertFrom-Json).entities.downstream
+
+# 3. Make sure demo mode is OFF. If it is on, the whole publish form is replaced
+#    by a description of what it would do.
+$env:HINDSIGHT_PUBLIC_DEMO = $null
+
+uv run hindsight serve --target-urn $target
 curl http://127.0.0.1:8100/audits/latest    # warm the cache so no beat waits
 ```
+
+**Check all three before you record.** Open an audit and scroll to "Publish evidence to
+DataHub". You should see a checkbox and a publish button. If you see any of these instead,
+beat 6 will not work:
+
+| What you see | What is wrong |
+|---|---|
+| "Write-back is disabled on the public demo" | `HINDSIGHT_PUBLIC_DEMO` is set. Unset it and restart |
+| "Publishing is unavailable until DataHub is reachable" | DataHub Core is not up, or the console cannot reach it |
+| "Write-back target is not bound" | You started `serve` without `--target-urn` |
+
+The status pill top right should read **DataHub connected** in green. If it says
+"DataHub not configured", nothing in beat 6 exists on the page.
 
 Browser at 1600x1000, 100% zoom, dark theme. Hide bookmarks and extensions, and close any
 tab whose favicon is another company's logo. The rules forbid third-party trademarks you do
