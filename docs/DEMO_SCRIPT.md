@@ -80,7 +80,19 @@ Three tabs, left to right:
 |---|---|---|
 | 1 | `http://127.0.0.1:8100/` | the audit, once you click a scenario in beat 4 |
 | 2 | `http://127.0.0.1:8100/evidence` | unchanged |
-| 3 | DataHub, searching `hindsight` | shows the tag after you publish |
+| 3 | DataHub, **on the bound dataset's Schema tab** | the new tag appears there after you publish |
+
+Tab 3 should be the exact column page, not a search box. Get the URL with:
+
+```powershell
+$t = Get-Content .target_urn
+"http://localhost:9002/dataset/$([uri]::EscapeDataString($t))/Schema"
+```
+
+Open it **before** you start. The column `days_since_last_payment` already carries
+`hindsight:leakage-candidate`. After beat 6 publishes, `hindsight:leakage-confirmed`
+appears next to it, so the write lands on camera instead of you arriving at a column
+that was already tagged.
 
 You only ever move right, except once: beat 6 comes back to tab 1.
 
