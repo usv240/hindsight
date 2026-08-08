@@ -271,7 +271,10 @@ talking while it runs.
 
 ### Close (2:44 to 2:51)
 
-**Switch** to tab 2 and **scroll** to the contributions row near the bottom.
+**Switch** to tab 2 and **scroll to the bottom**, to the panel headed
+"Three pull requests to DataHub". It is the second-to-last section, just above
+"Recent runs". There is no jump link for it, so use End or scroll to the foot of
+the page. The table shows all three with #18705 marked **merged**.
 
 > Building this turned up three fixes for DataHub itself. One is already merged.
 >
